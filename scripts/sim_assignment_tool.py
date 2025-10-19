@@ -31,9 +31,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 from __init__ import create_app, db
-from admin.models.simulation_assignment import SimulationAssignment
-from admin.models.simulation import Simulation
-from admin.models.class_model import Class
+from instructor.models.simulation_assignment import SimulationAssignment
+from instructor.models.simulation import Simulation
+from instructor.models.class_model import Class
 
 
 def format_assignment(idx, a):

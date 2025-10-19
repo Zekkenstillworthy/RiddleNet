@@ -7551,6 +7551,16 @@ window.teamSessionManager = {
                     opacity: 1;
                 }
             }
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
             @keyframes fadeOut {
                 to {
                     opacity: 0;
@@ -8312,7 +8322,7 @@ function loadCollaborationSettings(simulationId) {
             });
     } else {
         // Fallback API call if collaboration manager is not available
-        fetch(`/admin/api/collaboration/simulation/${simulationId}/collaboration`)
+        fetch(`/instructor/api/collaboration/simulation/${simulationId}/collaboration`)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
@@ -12814,8 +12824,8 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         // PRIORITY 3: Legacy topology from simulation.topology
         else if (adminTopology && (adminTopology.devices || adminTopology.connections || adminTopology.links)) {
             topology = adminTopology;
-            source = 'admin_topology';
-            console.log('✅ [DYNAMIC-SIM] Using admin_topology with', topology.devices?.length || 0, 'devices');
+            source = 'instructor_topology';
+            console.log('✅ [DYNAMIC-SIM] Using instructor_topology with', topology.devices?.length || 0, 'devices');
             this.loadTopologyData(topology);
             this.topologyLoaded = true;
             this.topologyLoading = false;
@@ -16691,7 +16701,7 @@ class SimulationPerformanceFeedback {
         });
 
         // Admin real-time simulation update handlers
-        window.socketClient.on('admin_simulation_updated', (data) => {
+        window.socketClient.on('instructor_simulation_updated', (data) => {
             if (data.simulation_id == window.simulation_id) {
                 console.log('🔄 Admin updated simulation - syncing changes:', data);
                 this.handleAdminSimulationUpdate(data);
@@ -16699,7 +16709,7 @@ class SimulationPerformanceFeedback {
         });
         
         window.socketClient.on('simulation_update', (data) => {
-            if (data.type === 'admin_simulation_update' && data.simulation_id == window.simulation_id) {
+            if (data.type === 'instructor_simulation_update' && data.simulation_id == window.simulation_id) {
                 console.log('🔄 Class simulation update - syncing changes:', data);
                 this.handleAdminSimulationUpdate(data);
             }
@@ -18202,7 +18212,7 @@ window.testButtonState = testButtonState;
         window.currentUser = {
             id: userId,
             username: username,
-            is_admin: false,
+            is_instructor: false,
             profile_img: null
         };
         console.log('[DYNAMIC-SIM] ✅ Initialized currentUser from #session-data:', window.currentUser);
@@ -18212,7 +18222,7 @@ window.testButtonState = testButtonState;
         });
     } catch (e) {
         console.warn('[DYNAMIC-SIM] Failed to initialize currentUser, using defaults.', e);
-        window.currentUser = { id: null, username: '', is_admin: false, profile_img: null };
+        window.currentUser = { id: null, username: '', is_instructor: false, profile_img: null };
     }
 })();
 
@@ -19688,6 +19698,8 @@ class TaskAssignmentManager {
         await this.loadTaskConfig();
         await this.loadUserAssignment();
         this.setupEventListeners();
+        this.setupSocketListeners();
+        this.startBackgroundValidation();
         this.updateUI();
     }
 
@@ -19834,6 +19846,233 @@ class TaskAssignmentManager {
         }
 
         console.log('📋 [TASK MVP] Event listeners configured');
+    }
+
+    // ===== REAL-TIME SOCKET LISTENERS =====
+    setupSocketListeners() {
+        if (!window.socket) {
+            console.warn('📋 [TASK MVP] Socket not available, real-time updates disabled');
+            return;
+        }
+
+        // Join simulation room for real-time updates
+        window.socket.emit('join_simulation_room', { simulation_id: this.simulationId });
+        console.log('📋 [TASK MVP] Joined simulation room:', this.simulationId);
+
+        // Listen for task config updates from admin
+        window.socket.on('task_config_updated', async (data) => {
+            if (data.simulation_id === this.simulationId) {
+                console.log('📋 [TASK MVP] ✨ Task config updated by admin:', data.updated_by);
+                
+                // Show notification
+                this.showNotification(
+                    `📋 Task requirements updated by ${data.updated_by}`,
+                    'info',
+                    'var(--network-blue)'
+                );
+                
+                // Reload and re-render task config
+                await this.loadTaskConfig();
+                this.renderTaskRequirements();
+                this.updateProgressUI();
+            }
+        });
+
+        console.log('📋 [TASK MVP] Real-time socket listeners configured');
+    }
+
+    // ===== BACKGROUND VALIDATION WITH CONFLICT DETECTION =====
+    startBackgroundValidation() {
+        if (!this.taskConfig || !this.taskConfig.enabled) {
+            console.log('📋 [TASK MVP] Background validation disabled (no task config)');
+            return;
+        }
+
+        // Auto-validate every 30 seconds with conflict detection
+        this.validationInterval = setInterval(async () => {
+            if (this.userProgress && this.assignment && this.assignment.status !== 'submitted') {
+                console.log('📋 [TASK MVP] 🔄 Running background validation...');
+                await this.validateProgressWithConflictDetection();
+            }
+        }, 30000); // 30 seconds
+
+        console.log('📋 [TASK MVP] Background validation started (30s interval)');
+    }
+
+    // Enhanced validation with conflict and incomplete state detection
+    async validateProgressWithConflictDetection() {
+        try {
+            // Collect current progress
+            const progressData = {
+                devices_placed: this.userProgress.devices_placed || [],
+                devices_configured: this.userProgress.devices_configured || {},
+                connections_made: this.userProgress.connections_made || [],
+                cli_history: this.userProgress.cli_history || []
+            };
+
+            // Detect incomplete states
+            const issues = this.detectIncompleteStates();
+            if (issues.length > 0) {
+                console.warn('📋 [TASK MVP] ⚠️ Incomplete states detected:', issues);
+                this.showWarningNotification(issues);
+            }
+
+            // Call validation API
+            const response = await fetch(`/simulation/api/${this.simulationId}/validate-progress`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(progressData)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('📋 [TASK MVP] ✅ Validation complete:', result.completion_percentage + '%');
+                
+                // Update assignment reference
+                this.assignment = this.assignment || {};
+                this.assignment.completion_percentage = result.completion_percentage;
+                this.assignment.auto_grade_score = result.auto_grade_score;
+                
+                this.updateProgressUI();
+            }
+        } catch (error) {
+            console.error('📋 [TASK MVP] ❌ Validation error:', error);
+        }
+    }
+
+    // Detect incomplete or conflicting states
+    detectIncompleteStates() {
+        const issues = [];
+        
+        if (!this.taskConfig) return issues;
+
+        // Check device requirements
+        const requiredDevices = this.taskConfig.device_requirements || [];
+        const placedDevices = this.userProgress.devices_placed || [];
+        
+        if (requiredDevices.length > placedDevices.length) {
+            issues.push({
+                type: 'incomplete',
+                category: 'devices',
+                message: `Missing ${requiredDevices.length - placedDevices.length} required device(s)`,
+                severity: 'warning'
+            });
+        }
+
+        // Check connection requirements
+        const requiredConnections = this.taskConfig.connection_requirements || [];
+        const madeConnections = this.userProgress.connections_made || [];
+        
+        if (requiredConnections.length > madeConnections.length) {
+            issues.push({
+                type: 'incomplete',
+                category: 'connections',
+                message: `Missing ${requiredConnections.length - madeConnections.length} required connection(s)`,
+                severity: 'warning'
+            });
+        }
+
+        // Check CLI command requirements
+        const cliRequirements = this.taskConfig.cli_requirements || {};
+        const cliHistory = this.userProgress.cli_history || [];
+        
+        let totalRequiredCommands = 0;
+        Object.keys(cliRequirements).forEach(deviceId => {
+            totalRequiredCommands += (cliRequirements[deviceId] || []).length;
+        });
+        
+        if (totalRequiredCommands > cliHistory.length) {
+            issues.push({
+                type: 'incomplete',
+                category: 'cli',
+                message: `Missing ${totalRequiredCommands - cliHistory.length} required CLI command(s)`,
+                severity: 'info'
+            });
+        }
+
+        // Detect potential conflicts (e.g., duplicate device IDs)
+        const deviceIds = placedDevices.map(d => d.id || d.type);
+        const duplicates = deviceIds.filter((id, index) => deviceIds.indexOf(id) !== index);
+        
+        if (duplicates.length > 0) {
+            issues.push({
+                type: 'conflict',
+                category: 'devices',
+                message: `Duplicate device IDs detected: ${[...new Set(duplicates)].join(', ')}`,
+                severity: 'error'
+            });
+        }
+
+        return issues;
+    }
+
+    // Show warning notification for incomplete states
+    showWarningNotification(issues) {
+        const highSeverity = issues.filter(i => i.severity === 'error');
+        if (highSeverity.length > 0) {
+            this.showNotification(
+                `⚠️ ${highSeverity[0].message}`,
+                'warning',
+                'var(--warning-color)'
+            );
+        } else if (issues.length > 0) {
+            const totalIssues = issues.length;
+            this.showNotification(
+                `ℹ️ ${totalIssues} incomplete item${totalIssues > 1 ? 's' : ''} detected`,
+                'info',
+                'var(--network-blue)'
+            );
+        }
+    }
+
+    // Show real-time notification
+    showNotification(message, type = 'info', accentColor = 'var(--neon-green)') {
+        const notification = document.createElement('div');
+        notification.className = 'task-notification';
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 4px; height: 40px; background: ${accentColor}; border-radius: 2px;"></div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">${message}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">${new Date().toLocaleTimeString()}</div>
+                </div>
+                <i class="fas fa-check-circle" style="color: ${accentColor}; font-size: 1.2rem;"></i>
+            </div>
+        `;
+        notification.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            min-width: 320px;
+            padding: 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            animation: slideInRight 0.3s ease;
+            cursor: pointer;
+        `;
+        
+        notification.onclick = () => notification.remove();
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+
+    // Cleanup on destroy
+    destroy() {
+        if (this.validationInterval) {
+            clearInterval(this.validationInterval);
+            console.log('📋 [TASK MVP] Background validation stopped');
+        }
+        if (window.socket) {
+            window.socket.emit('leave_simulation_room', { simulation_id: this.simulationId });
+        }
     }
 
     handleDevicePlaced(device) {

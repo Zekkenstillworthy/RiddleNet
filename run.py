@@ -83,7 +83,7 @@ logger = logging.getLogger(__name__)
 # Inject socketio instance into notification controller
 if socketio:
     try:
-        from admin.controllers.notification_controller import set_socketio_instance
+        from instructor.controllers.notification_controller import set_socketio_instance
         set_socketio_instance(socketio)
         logger.info("✅ SocketIO instance injected into notification controller")
     except ImportError as e:
@@ -116,7 +116,7 @@ with app.app_context():
             
         # Run custom database setup if available
         try:
-            from admin.utils.database_setup import setup_database, migrate_existing_tables
+            from instructor.utils.database_setup import setup_database, migrate_existing_tables
             logger.info("Running database migrations and setup...")
             migrate_existing_tables()
             setup_database()
@@ -163,7 +163,7 @@ login_manager.login_message_category = 'info'
 @login_manager.user_loader
 def load_user(user_id):
     """ENHANCED user_loader - Proper session isolation between admin and user"""
-    from admin.models.user import Admin
+    from instructor.models.user import Instructor
     from user.models import User
     from flask import request, session
     
@@ -179,9 +179,9 @@ def load_user(user_id):
     
     print(f"🔍 User loader: ID={user_id_int}, namespace={auth_namespace}, path={request_path}")
     
-    # PRIORITY 1: Load admin user if session indicates admin auth (works for WebSocket + HTTP)
-    if auth_namespace == 'admin':
-        admin = db.session.get(Admin, user_id_int)
+    # PRIORITY 1: Load instructor user if session indicates admin auth (works for WebSocket + HTTP)
+    if auth_namespace == 'instructor':
+        admin = db.session.get(Instructor, user_id_int)
         if admin:
             print(f"🔐 Admin session: Loaded admin {admin.username} (ID: {user_id_int})")
             return admin
@@ -198,8 +198,8 @@ def load_user(user_id):
         return None
     
     # FALLBACK: Use path-based detection if no namespace in session (legacy support)
-    elif request_path.startswith('/admin'):
-        admin = db.session.get(Admin, user_id_int)
+    elif request_path.startswith('/instructor'):
+        admin = db.session.get(Instructor, user_id_int)
         if admin:
             print(f"🔐 Admin path fallback: Loaded admin {admin.username} (ID: {user_id_int})")
             return admin
@@ -231,9 +231,27 @@ def before_request_handler():
             logger.debug(f"Query params: {dict(request.args)}")
         logger.debug("="*80)
     
-    # Admin authentication check
-    if request.path.startswith('/admin'):
+    # Instructor authentication check
+    if request.path.startswith('/instructor'):
         from flask import session
+        
+        # Fix namespace if user is authenticated as instructor but namespace is missing/unknown
+        try:
+            if current_user.is_authenticated and hasattr(current_user, 'id'):
+                current_namespace = session.get('auth_namespace', 'unknown')
+                # Check if this is an Instructor by checking the class name
+                if current_user.__class__.__name__ == 'Instructor':
+                    if current_namespace != 'instructor':
+                        print(f"🔧 BEFORE_REQUEST: Fixing auth_namespace from '{current_namespace}' to 'instructor'")
+                        session['auth_namespace'] = 'instructor'
+                        session.modified = True
+                elif current_user.__class__.__name__ == 'User':
+                    if current_namespace != 'user':
+                        print(f"🔧 BEFORE_REQUEST: Fixing auth_namespace from '{current_namespace}' to 'user'")
+                        session['auth_namespace'] = 'user'
+                        session.modified = True
+        except Exception as e:
+            print(f"⚠️ BEFORE_REQUEST: Error fixing namespace: {e}")
         
         if app.debug:  # Only log in debug mode
             logger.debug("="*80)
@@ -255,7 +273,13 @@ def before_request_handler():
             '/admin/logout',
             '/admin/static/',
             '/admin/topology/',
-            '/admin/troubleshooting/'
+            '/admin/troubleshooting/',
+            '/instructor/',  # Allow access to instructor landing page
+            '/instructor/login',
+            '/instructor/signup',
+            '/instructor/forgot-password',
+            '/instructor/reset-password/',
+            '/instructor/logout'
         ])
         
         # Check if route is exempt
@@ -269,10 +293,10 @@ def before_request_handler():
             next_url = (request.full_path if request.query_string else request.path).rstrip('?')
             return redirect(url_for('auth.login', next=next_url))
         
-        # Check admin privileges
+        # Check instructor privileges
         if current_user.is_authenticated:
-            from admin.models.user import Admin
-            if not isinstance(current_user, Admin):
+            from instructor.models.user import Instructor
+            if not isinstance(current_user, Instructor):
                 flash('Access denied. Admin credentials required.', 'error')
                 next_url = (request.full_path if request.query_string else request.path).rstrip('?')
                 return redirect(url_for('auth.login', next=next_url))
@@ -318,34 +342,36 @@ logger.info("Registering Admin Blueprints...")
 try:
     import importlib
     blueprints_to_register = [
-        ('admin.controllers.auth_controller', 'auth_bp', '/admin', None),
-        ('admin.controllers.dashboard_controller', 'dashboard_bp', '/admin', None),
-        ('admin.controllers.user_controller', 'user_bp', '/admin', None),
-        ('admin.controllers.score_controller', 'score_bp', '/admin', None),
-        ('admin.controllers.essay_controller', 'essay_bp', '/admin', None),
-        ('admin.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
-        ('admin.controllers.class_controller', 'class_controller', '/admin', None),
-        ('admin.controllers.class_content_controller', 'class_content_controller_old', '/admin', None),
-        ('admin.controllers.lesson_editor_controller', 'lesson_editor_bp', None, 'lesson_editor_bp'),
-        ('admin.controllers.enhanced_module_controller', 'enhanced_module_bp', '/admin', None),
-        ('admin.controllers.module_lesson_editor_controller', 'module_lesson_editor_bp', None, None),
-        ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
-        ('admin.controllers.notification_controller', 'notification_controller', None, None),
-        ('admin.controllers.lesson_controller', 'lesson_bp', '/admin', None),
-        ('admin.controllers.tutorial_controller', 'tutorial_bp', None, None),
-        ('admin.controllers.rubric_controller', 'rubric_bp', None, None),
-        ('admin.controllers.admin_settings_controller', 'admin_settings_bp', None, None),
-        ('admin.routes.api_routes', 'api_bp', None, 'admin_api_bp'),
-        ('admin.routes.topology_routes', 'topology_bp', None, None),
-        ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),
-        ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),
-        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),
-        ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),
-        ('admin.routes.device_sync_api', 'device_sync_bp', None, 'device_sync_bp'),
-        ('admin.routes.collaboration_api', 'admin_collaboration_api_bp', None, 'admin_collaboration_api'),
-        ('admin.controllers.instructor_lab_controller', 'instructor_lab_bp', None, None),
-        ('admin.routes.lab_api', 'lab_api', None, None),
-        ('admin.routes.rnet_viewer_routes', 'rnet_viewer_bp', None, 'rnet_viewer_bp')
+        ('instructor.controllers.auth_controller', 'auth_bp', '/instructor', None),
+        ('instructor.controllers.dashboard_controller', 'dashboard_bp', '/instructor', None),
+        ('instructor.controllers.user_controller', 'user_bp', '/instructor', None),
+        ('instructor.controllers.score_controller', 'score_bp', '/instructor', None),
+        ('instructor.controllers.essay_controller', 'essay_bp', '/instructor', None),
+    ('instructor.controllers.question_controller', 'question_bp', '/instructor', None),
+        ('instructor.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
+        ('instructor.controllers.class_controller', 'class_controller', '/instructor', None),
+        ('instructor.controllers.class_content_controller', 'class_content_controller_old', '/instructor', None),
+        ('instructor.controllers.lesson_editor_controller', 'lesson_editor_bp', None, 'lesson_editor_bp'),
+        ('instructor.controllers.enhanced_module_controller', 'enhanced_module_bp', '/instructor', None),
+        ('instructor.controllers.deadline_controller', 'deadline_controller_bp', None, None),
+        ('instructor.controllers.module_lesson_editor_controller', 'module_lesson_editor_bp', None, None),
+        ('instructor.controllers.audit_log_controller', 'audit_log_bp', '/instructor', None),
+        ('instructor.controllers.notification_controller', 'notification_controller', None, None),
+        ('instructor.controllers.lesson_controller', 'lesson_bp', '/instructor', None),
+        ('instructor.controllers.tutorial_controller', 'tutorial_bp', None, None),
+        ('instructor.controllers.rubric_controller', 'rubric_bp', None, None),
+        ('instructor.controllers.admin_settings_controller', 'admin_settings_bp', None, None),
+        ('instructor.routes.api_routes', 'api_bp', None, 'admin_api_bp'),
+        ('instructor.routes.topology_routes', 'topology_bp', None, None),
+        ('instructor.routes.topology_api_routes', 'topology_api_bp', None, None),
+        ('instructor.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),
+        ('instructor.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),
+        ('instructor.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),
+        ('instructor.routes.device_sync_api', 'device_sync_bp', None, 'device_sync_bp'),
+        ('instructor.routes.collaboration_api', 'admin_collaboration_api_bp', None, 'admin_collaboration_api'),
+        ('instructor.controllers.instructor_lab_controller', 'instructor_lab_bp', None, None),
+        ('instructor.routes.lab_api', 'lab_api', None, None),
+        ('instructor.routes.rnet_viewer_routes', 'rnet_viewer_bp', None, 'rnet_viewer_bp')
     ]
     
     successful_registrations = 0
@@ -355,11 +381,15 @@ try:
         try:
             module = importlib.import_module(module_path)
             blueprint = getattr(module, blueprint_name)
-            # Register with custom name if alias is provided
-            if alias_name:
-                app.register_blueprint(blueprint, url_prefix=url_prefix, name=alias_name)
-            else:
-                app.register_blueprint(blueprint, url_prefix=url_prefix)
+            # Skip registration if blueprint already registered (avoids duplicate name errors)
+            if blueprint.name in app.blueprints:
+                logger.info(f"Skipping {blueprint.name} from {module_path}; already registered")
+                continue
+            # A previous refactor attempted to pass a custom name when registering blueprints.
+            # Flask's register_blueprint does not accept an arbitrary "name" kwarg, so the
+            # blueprint failed to register and the routes returned 404. We now always register
+            # without a custom name to ensure the blueprint mounts correctly.
+            app.register_blueprint(blueprint, url_prefix=url_prefix)
             
             # Update the blueprint's template search paths
             try:
@@ -447,7 +477,7 @@ except Exception as e:
 # Initialize and register dynamic class routes
 print("\n=== Registering Dynamic Class Routes ===")
 try:
-    from admin.services.dynamic_route_registry import route_registry
+    from instructor.services.dynamic_route_registry import route_registry
     
     # Initialize the route registry with the app
     route_registry.init_app(app)
@@ -569,7 +599,7 @@ if os.getenv('FLASK_DEBUG', '').lower() in ('true', '1', 'yes'):
     def debug_simulations():
         """Debug endpoint to check simulations without auth"""
         try:
-            from admin.models.simulation import Simulation
+            from instructor.models.simulation import Simulation
             simulations = Simulation.query.limit(10).all()
             sim_list = []
             for sim in simulations:
@@ -616,7 +646,7 @@ if os.getenv('FLASK_DEBUG', '').lower() in ('true', '1', 'yes'):
     def debug_simulation_edit(simulation_id):
         """Debug endpoint to access simulation edit without auth"""
         try:
-            from admin.controllers.simulation_controller import SimulationController
+            from instructor.controllers.simulation_controller import SimulationController
             simulation_controller = SimulationController()
             simulation_data = simulation_controller.get_simulation_by_id(simulation_id, include_steps=True)
             
@@ -629,7 +659,7 @@ if os.getenv('FLASK_DEBUG', '').lower() in ('true', '1', 'yes'):
                 'simulation_title': simulation_data.get('simulation', {}).get('title', 'Unknown'),
                 'message': f'Simulation {simulation_id} exists and can be edited',
                 'edit_url': f'/admin/simulation/edit/{simulation_id}',
-                'note': 'This is a debug endpoint. Use the proper admin route after logging in.'
+                'note': 'This is a debug endpoint. Use the proper instructor route after logging in.'
             }
         except Exception as e:
             return {'error': f'Debug error: {str(e)}'}, 500

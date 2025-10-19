@@ -1,0 +1,611 @@
+{% extends "instructor/base.html" %}
+
+{% block title %}{{ 'Edit' if lesson else 'Create' }} Lesson - {{ module.title }}{% endblock %}
+
+{% block head %}
+<style>
+:root {
+    /* Modern Gaming Network Theme - Matching Dashboard */
+    --primary-color: #0F172A;
+    --secondary-color: #1E293B;
+    --accent-color: #3B82F6;
+    --success-color: #10B981;
+    --warning-color: #F59E0B;
+    --danger-color: #EF4444;
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    
+    /* Background & Surface Colors */
+    --background: #020617;
+    --surface: #0F172A;
+    --surface-hover: #1E293B;
+    --border-color: rgba(59, 130, 246, 0.2);
+    --glass-bg: rgba(15, 23, 42, 0.8);
+    --glass-border: rgba(0, 217, 255, 0.15);
+    
+    /* Text Colors */
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #64748B;
+    
+    /* Admin Layout */
+    --border: var(--border-color);
+    --bg-primary: var(--surface);
+    --bg-secondary: var(--surface-hover);
+}
+
+/* Enhanced Modern Card Styling */
+.modern-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.modern-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(0, 217, 255, 0.2);
+    border-color: var(--cyber-glow);
+}
+
+/* Enhanced Main Content Layout */
+/* NOTE: .main-content base styles are in admin/base.html - DO NOT override margin-left */
+
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Enhanced Form Container */
+.lesson-form-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+}
+
+.lesson-form-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple), var(--neon-green));
+    animation: pulse 2s ease-in-out infinite alternate;
+}
+
+/* Enhanced Form Section Styling */
+.form-section {
+    margin-bottom: 40px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.form-section:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--border-color);
+}
+
+.section-title {
+    color: var(--text-primary);
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-title i {
+    color: var(--cyber-glow);
+    font-size: 1.2rem;
+    text-shadow: 0 0 8px currentColor;
+}
+
+/* Enhanced Form Input Styling */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-label {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+}
+
+.form-input, .form-textarea, .form-select {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color: var(--cyber-glow);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.15);
+    background: var(--surface-hover);
+}
+
+.form-textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+.form-textarea.large {
+    min-height: 220px;
+}
+
+/* Enhanced Checkbox and Selection Styling */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.form-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--cyber-glow);
+}
+
+.checkbox-label {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Enhanced Simulation Selector */
+.simulation-selector {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    max-height: 320px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cyber-glow) var(--surface);
+}
+
+.simulation-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.simulation-item:last-child {
+    border-bottom: none;
+}
+
+.simulation-item:hover {
+    background: var(--bg-primary);
+    border-color: var(--border-color);
+}
+
+.simulation-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--cyber-glow);
+}
+
+.simulation-info {
+    flex: 1;
+}
+
+.simulation-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin: 0 0 6px 0;
+    font-size: 1rem;
+}
+
+.simulation-description {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+/* Enhanced Form Actions */
+.form-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 2px solid var(--border-color);
+}
+
+/* Enhanced Button Styling to Match instructor Dashboard */
+.action-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    border-color: #2563eb;
+}
+
+.action-btn.primary:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Enhanced Help Text */
+.form-help {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 6px;
+    line-height: 1.5;
+    font-style: italic;
+}
+
+/* Enhanced Breadcrumb */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+}
+
+.breadcrumb-link {
+    color: var(--cyber-glow);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.breadcrumb-link:hover {
+    text-decoration: underline;
+    color: var(--neon-green);
+}
+
+/* Enhanced Responsive Design */
+@media (max-width: 768px) {
+    .lesson-form-container {
+        padding: 24px;
+        margin: 0 16px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+    
+    .action-btn {
+        justify-content: center;
+    }
+    
+    .main-content {
+        padding: 20px;
+    }
+}
+
+/* Animation Keyframes */
+@keyframes pulse {
+    0% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+@keyframes glow {
+    0%, 100% { 
+        box-shadow: 0 0 5px var(--cyber-glow);
+    }
+    50% { 
+        box-shadow: 0 0 20px var(--cyber-glow), 0 0 30px var(--cyber-glow);
+    }
+}
+
+/* Enhanced Focus States */
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+    animation: glow 2s ease-in-out infinite;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main-content">
+    <div class="admin-container">
+        <!-- Enhanced Header with Admin Actions Banner Style -->
+        <div class="instructor-actions-banner" style="position: relative; margin: -32px -32px 32px -32px;">
+            <div class="admin-nav-left">
+                <a href="{{ url_for('enhanced_module.edit_module_simple', module_id=module.id) }}" class="back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to {{ module.title }}
+                </a>
+                <div class="admin-nav-brand">
+                    <div class="logo-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <span>{{ action }} Lesson</span>
+                </div>
+            </div>
+            <div class="admin-nav-right">
+                <div class="preview-badge">{{ module.module_number }}</div>
+                <div class="user-profile">
+                    <div class="user-name">{{ module.title }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Header -->
+        <div class="page-header" style="margin-bottom: 32px;">
+            <div>
+                <div class="breadcrumb">
+                    <a href="{{ url_for('class_controller.class_overview', class_id=class_obj.id) }}" class="breadcrumb-link">
+                        <i class="fas fa-book"></i> {{ class_obj.name }}
+                    </a>
+                    <i class="fas fa-chevron-right"></i>
+                    <a href="{{ url_for('enhanced_module.edit_module_simple', module_id=module.id) }}" class="breadcrumb-link">
+                        {{ module.title }}
+                    </a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>{{ action }} Lesson</span>
+                </div>
+                <h1 class="page-title" style="color: var(--text-primary); margin: 16px 0 8px 0; font-size: 2rem; font-weight: 700;">
+                    <i class="fas fa-graduation-cap" style="color: var(--cyber-glow); margin-right: 12px;"></i>
+                    {{ action }} Lesson
+                </h1>
+                <p class="page-description" style="color: var(--text-secondary); font-size: 1.1rem; margin: 0;">
+                    {{ action }} lesson for Module {{ module.module_number }}: {{ module.title }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Enhanced Form Container with instructor Dashboard Styling -->
+        <div class="lesson-form-container modern-card" style="background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);">
+            <form method="POST" action="{{ url_for('lesson.update_lesson', lesson_id=lesson.id) if lesson else url_for('lesson.create_lesson', class_id=class_obj.id, module_id=module.id) }}">
+                <!-- Hidden field to ensure module_id is always present -->
+                <input type="hidden" name="module_id" value="{{ module.id }}">
+                
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-info-circle"></i>
+                    Basic Information
+                </h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Lesson Title *</label>
+                        <input type="text" name="title" class="form-input" 
+                               value="{{ lesson.title if lesson else '' }}" 
+                               placeholder="Enter lesson title" required>
+                        <div class="form-help">A clear, descriptive title for this lesson</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Lesson Number</label>
+                        <input type="text" name="lesson_number" class="form-input" 
+                               value="{{ lesson.lesson_number if lesson else suggested_number }}" 
+                               placeholder="e.g. 1.1">
+                        <div class="form-help">Optional lesson numbering (e.g. 1.1, 1.2)</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description *</label>
+                    <textarea name="description" class="form-textarea" 
+                              placeholder="Describe what students will learn in this lesson" required>{{ lesson.description if lesson else '' }}</textarea>
+                    <div class="form-help">Brief overview of the lesson content and goals</div>
+                </div>
+            </div>
+
+            <!-- Learning Content -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-book-open"></i>
+                    Learning Content
+                </h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Learning Objectives</label>
+                    <textarea name="learning_objectives" class="form-textarea" 
+                              placeholder="Enter each learning objective on a new line">{{ lesson.learning_objectives|join('\n') if lesson and lesson.learning_objectives else '' }}</textarea>
+                    <div class="form-help">One objective per line. What will students be able to do after this lesson?</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Key Concepts</label>
+                    <textarea name="key_concepts" class="form-textarea" 
+                              placeholder="Enter each key concept on a new line">{{ lesson.key_concepts|join('\n') if lesson and lesson.key_concepts else '' }}</textarea>
+                    <div class="form-help">One concept per line. Important terms and ideas covered in this lesson</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Lesson Content</label>
+                    <textarea name="content" class="form-textarea large" 
+                              placeholder="Enter the main lesson content (HTML supported)">{{ lesson.content if lesson else '' }}</textarea>
+                    <div class="form-help">Main lesson content. HTML tags are supported for formatting</div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Estimated Duration (minutes)</label>
+                        <input type="number" name="estimated_duration" class="form-input" 
+                               value="{{ lesson.estimated_duration if lesson else 30 }}" 
+                               min="1" max="300">
+                        <div class="form-help">Expected time for students to complete this lesson</div>
+                    </div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="requires_simulation" name="requires_simulation_completion" 
+                           class="form-checkbox" {{ 'checked' if lesson and lesson.requires_simulation_completion else '' }}>
+                    <label for="requires_simulation" class="checkbox-label">
+                        Require simulation completion to mark lesson as complete
+                    </label>
+                </div>
+            </div>
+
+            <!-- Attached Simulations -->
+            {% if simulations %}
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-flask"></i>
+                    Attached Simulations
+                </h3>
+                
+                <div class="simulation-selector">
+                    {% for simulation in simulations %}
+                    <div class="simulation-item">
+                        <input type="checkbox" name="simulation_ids" value="{{ simulation.id }}" 
+                               class="simulation-checkbox"
+                               {{ 'checked' if lesson and simulation.id in (lesson.simulation_ids or []) else '' }}>
+                        <div class="simulation-info">
+                            <h4 class="simulation-title">{{ simulation.title }}</h4>
+                            <p class="simulation-description">
+                                {{ simulation.description[:100] }}{{ '...' if simulation.description|length > 100 else '' }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="form-help">Select simulations that students should complete as part of this lesson</div>
+            </div>
+            {% endif %}
+
+            <!-- Enhanced Form Actions with instructor Dashboard Button Styling -->
+            <div class="form-actions">
+                <a href="{{ url_for('enhanced_module.edit_module_simple', module_id=module.id) }}" class="btn btn-secondary action-btn">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </a>
+                
+                {% if lesson %}
+                <a href="{{ url_for('lesson_editor.advanced_editor', lesson_id=lesson.id) }}" class="btn btn-primary action-btn primary">
+                    <i class="fas fa-magic"></i>
+                    Advanced Editor
+                </a>
+                {% endif %}
+                
+                <button type="submit" class="btn btn-primary action-btn primary">
+                    <i class="fas fa-save"></i>
+                    {{ action }} Lesson
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus title field
+    const titleInput = document.querySelector('input[name="title"]');
+    if (titleInput && !titleInput.value) {
+        titleInput.focus();
+    }
+    
+    // Auto-resize textareas
+    const textareas = document.querySelectorAll('.form-textarea');
+    textareas.forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+        
+        // Initial resize
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const title = document.querySelector('input[name="title"]').value.trim();
+        const description = document.querySelector('textarea[name="description"]').value.trim();
+        
+        if (!title) {
+            alert('Please enter a lesson title');
+            e.preventDefault();
+            return;
+        }
+        
+        if (!description) {
+            alert('Please enter a lesson description');
+            e.preventDefault();
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

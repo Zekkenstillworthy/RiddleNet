@@ -1,0 +1,859 @@
+{% extends "instructor/base.html" %}
+
+{% block title %}{{ class_data.name }} - Class Overview{% endblock %}
+
+{% block head %}
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{{ class_data.name }} - Class Overview</title>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"/>
+<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}" />
+<style>
+  :root {
+    /* Modern Gaming Network Theme - Matching User Management */
+    --primary-color: #0F172A;
+    --secondary-color: #1E293B;
+    --accent-color: #3B82F6;
+    --success-color: #10B981;
+    --warning-color: #F59E0B;
+    --danger-color: #EF4444;
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    
+    /* Background & Surface Colors */
+    --background: #020617;
+    --surface: #0F172A;
+    --surface-hover: #1E293B;
+    --border-color: rgba(59, 130, 246, 0.2);
+    --glass-bg: rgba(15, 23, 42, 0.8);
+    --glass-border: rgba(0, 217, 255, 0.15);
+    --card-bg: rgba(15, 23, 42, 0.8);
+    
+    /* Text Colors */
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #64748B;
+    --text-inverse: #ffffff;
+    
+    --glow-cyan: 0 0 30px rgba(0, 217, 255, 0.4);
+    --border-glow: rgba(0, 217, 255, 0.3);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #020617;
+    background-image: 
+        radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  .overview-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .overview-header {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 32px;
+    border: 1px solid var(--border-glow);
+    box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .overview-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 20px;
+  }
+
+  .header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .overview-title h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+  }
+
+  .class-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .stat-card {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(0, 217, 255, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--cyber-glow);
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .content-section {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-glow);
+    box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--cyber-glow);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 217, 255, 0.3);
+    color: white;
+    text-decoration: none;
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-glow);
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--cyber-glow);
+    text-decoration: none;
+  }
+
+  .btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+
+  .btn-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-glow);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .student-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid rgba(0, 217, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: rgba(139, 92, 246, 0.05);
+    gap: 12px;
+  }
+
+  .question-group-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid rgba(0, 217, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: rgba(139, 92, 246, 0.05);
+    gap: 12px;
+  }
+
+  .btn-danger {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glow);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--cyber-glow);
+    box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.2);
+  }
+
+  .student-list {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .student-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .student-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .performance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+  }
+
+  .performance-card {
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(0, 217, 255, 0.15);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .performance-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .performance-stats {
+    display: flex;
+    gap: 16px;
+  }
+
+  .performance-stat {
+    text-align: center;
+  }
+
+  .performance-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--cyber-glow);
+  }
+
+  .performance-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+  }
+
+  .modal-content {
+    background: var(--card-bg);
+    margin: 5% auto;
+    padding: 24px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 600px;
+    border: 1px solid var(--border-glow);
+    box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-glow);
+  }
+
+  .close-modal {
+    color: var(--text-muted);
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+
+  .close-modal:hover {
+    color: var(--cyber-glow);
+  }
+
+  .modal-body .btn-group {
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .content-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .overview-title {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    
+    .header-buttons {
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+    
+    .header-buttons .btn {
+      flex: 1;
+      min-width: auto;
+      text-align: center;
+      justify-content: center;
+    }
+    
+    .class-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .btn-group {
+      flex-wrap: wrap;
+    }
+    
+    .student-item .btn-group {
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .student-item .btn-group .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+{{ super() }}
+
+<div class="main-content">
+<div class="overview-container">
+  <!-- Header Section -->
+  <div class="overview-header">
+    <div class="overview-title">
+      <div>
+        <h1>{{ class_data.name }} - Class Overview</h1>
+        <p style="color: var(--text-secondary); margin: 8px 0 0 0;">
+          Class Code: {{ class_data.code }} | Section: {{ class_data.section or 'N/A' }}
+        </p>
+      </div>
+      <div class="header-buttons">
+        <button class="btn btn-secondary" onclick="editClassDetails()">
+          <i class="fas fa-edit"></i> Edit Class
+        </button>
+        <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_data.id) }}" class="btn btn-secondary">
+          <i class="fas fa-cogs"></i> Manage Content
+        </a>
+        <a href="{{ url_for('class_controller.index') }}" class="btn btn-primary">
+          <i class="fas fa-arrow-left"></i> Back to Classes
+        </a>
+      </div>
+    </div>
+    
+    <div class="class-stats">
+      <div class="stat-card">
+        <div class="stat-value">{{ students|length }}</div>
+        <div class="stat-label">Enrolled Students</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ class_data.max_students or 'Unlimited' }}</div>
+        <div class="stat-label">Max Capacity</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ question_groups|length }}</div>
+        <div class="stat-label">Quiz</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ class_data.status.title() if class_data.status else 'N/A' }}</div>
+        <div class="stat-label">Status</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <!-- Class Information Section -->
+    <div class="content-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="fas fa-info-circle"></i>
+          Class Information
+        </h3>
+        <button class="btn btn-secondary" onclick="editClassInfo()">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Class Name</label>
+        <div style="padding: 8px 0; color: var(--text-primary);">{{ class_data.name }}</div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <div style="padding: 8px 0; color: var(--text-primary);">{{ class_data.description or 'No description available' }}</div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Start Date</label>
+        <div style="padding: 8px 0; color: var(--text-primary);">{{ class_data.start_date.strftime('%Y-%m-%d') if class_data.start_date else 'Not set' }}</div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">End Date</label>
+        <div style="padding: 8px 0; color: var(--text-primary);">{{ class_data.end_date.strftime('%Y-%m-%d') if class_data.end_date else 'Not set' }}</div>
+      </div>
+    </div>
+
+    <!-- Quiz Section -->
+    <div class="content-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="fas fa-question-circle"></i>
+          Quiz
+        </h3>
+        <button class="btn btn-secondary" onclick="manageQuestionGroups()">
+          <i class="fas fa-plus"></i> Manage
+        </button>
+      </div>
+      
+      <div style="max-height: 300px; overflow-y: auto;">
+        {% for group in question_groups %}
+        <div class="question-group-item">
+          <div>
+            <strong>{{ group.name }}</strong>
+            <div style="color: var(--text-muted); font-size: 0.85rem;">
+              {{ group.questions|length if group.questions else 0 }} questions
+            </div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="removeQuestionGroup({{ group.id }})">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        {% else %}
+        <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+          No Quiz assigned
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Students Section -->
+  <div class="content-section">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="fas fa-users"></i>
+        Enrolled Students ({{ students|length }})
+      </h3>
+      <button class="btn btn-secondary" onclick="addStudent()">
+        <i class="fas fa-user-plus"></i> Add Student
+      </button>
+    </div>
+    
+    <div class="student-list">
+      {% for student in students %}
+      <div class="student-item">
+        <div class="student-info">
+          <div class="student-avatar">{{ student.username[0].upper() }}</div>
+          <div>
+            <strong>{{ student.username }}</strong>
+            <div style="color: var(--text-muted); font-size: 0.85rem;">
+              {{ student.email if student.email else 'No email' }}
+            </div>
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-secondary btn-sm" onclick="viewStudentProgress({{ student.id }})">
+            <i class="fas fa-chart-line"></i> Progress
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="removeStudent({{ student.id }})">
+            <i class="fas fa-times"></i> Remove
+          </button>
+        </div>
+      </div>
+      {% else %}
+      <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+        No students enrolled in this class
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Performance Overview -->
+  {% if performance_data %}
+  <div class="content-section">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="fas fa-chart-bar"></i>
+        Student Performance
+      </h3>
+    </div>
+    
+    <div class="performance-grid">
+      {% for data in performance_data %}
+      <div class="performance-card">
+        <div class="performance-header">
+          <strong>{{ data.student.username }}</strong>
+        </div>
+        <div class="performance-stats">
+          <div class="performance-stat">
+            <div class="performance-value">{{ "%.1f"|format(data.avg_score) }}%</div>
+            <div class="performance-label">Average</div>
+          </div>
+          <div class="performance-stat">
+            <div class="performance-value">{{ "%.1f"|format(data.best_score) }}%</div>
+            <div class="performance-label">Best</div>
+          </div>
+          <div class="performance-stat">
+            <div class="performance-value">{{ data.total_assessments }}</div>
+            <div class="performance-label">Assessments</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+</div>
+<!-- Edit Class Info Modal -->
+<div id="editClassModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Edit Class Information</h3>
+      <span class="close-modal" onclick="closeModal('editClassModal')">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="editClassForm">
+        <div class="form-group">
+          <label class="form-label">Class Name</label>
+          <input type="text" class="form-control" id="edit-class-name" value="{{ class_data.name }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" id="edit-class-description" rows="3">{{ class_data.description or '' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Start Date</label>
+          <input type="date" class="form-control" id="edit-start-date" value="{{ class_data.start_date.strftime('%Y-%m-%d') if class_data.start_date else '' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Date</label>
+          <input type="date" class="form-control" id="edit-end-date" value="{{ class_data.end_date.strftime('%Y-%m-%d') if class_data.end_date else '' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Max Students</label>
+          <input type="number" class="form-control" id="edit-max-students" value="{{ class_data.max_students or '' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-control" id="edit-status">
+            <option value="active" {{ 'selected' if class_data.status == 'active' else '' }}>Active</option>
+            <option value="inactive" {{ 'selected' if class_data.status == 'inactive' else '' }}>Inactive</option>
+            <option value="archived" {{ 'selected' if class_data.status == 'archived' else '' }}>Archived</option>
+          </select>
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('editClassModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Quiz Management Modal -->
+<div id="questionGroupsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Manage Quiz</h3>
+      <span class="close-modal" onclick="closeModal('questionGroupsModal')">&times;</span>
+    </div>
+    <div class="modal-body">
+      <h4 style="margin-bottom: 16px; color: var(--cyber-glow);">Available Quiz</h4>
+      <div style="max-height: 300px; overflow-y: auto;">
+        {% for group in available_question_groups %}
+        <div class="question-group-item">
+          <div>
+            <strong>{{ group.name }}</strong>
+            <div style="color: var(--text-muted); font-size: 0.85rem;">
+              {{ group.questions|length if group.questions else 0 }} questions
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addQuestionGroup({{ group.id }})">
+            <i class="fas fa-plus"></i> Add
+          </button>
+        </div>
+        {% else %}
+        <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+          No available Quiz to add
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Modal functions
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+function editClassInfo() {
+  document.getElementById('editClassModal').style.display = 'block';
+}
+
+function manageQuestionGroups() {
+  document.getElementById('questionGroupsModal').style.display = 'block';
+}
+
+// Class editing functions
+document.getElementById('editClassForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const formData = {
+    name: document.getElementById('edit-class-name').value,
+    description: document.getElementById('edit-class-description').value,
+    start_date: document.getElementById('edit-start-date').value,
+    end_date: document.getElementById('edit-end-date').value,
+    max_students: document.getElementById('edit-max-students').value,
+    status: document.getElementById('edit-status').value
+  };
+  
+  fetch(`/instructor/api/classes/{{ class_data.id }}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(formData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('Class updated successfully!');
+      location.reload();
+    } else {
+      alert('Error updating class: ' + data.error);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Error updating class');
+  });
+});
+
+// Quiz management
+function addQuestionGroup(groupId) {
+  fetch(`/instructor/api/classes/{{ class_data.id }}/question-groups`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({question_group_id: groupId})
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('Quiz added successfully!');
+      location.reload();
+    } else {
+      alert('Error adding Quiz: ' + data.error);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Error adding Quiz');
+  });
+}
+
+function removeQuestionGroup(groupId) {
+  if (confirm('Are you sure you want to remove this Quiz from the class?')) {
+    fetch(`/instructor/api/classes/{{ class_data.id }}/question-groups/${groupId}`, {
+      method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Quiz removed successfully!');
+        location.reload();
+      } else {
+        alert('Error removing Quiz: ' + data.error);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error removing Quiz');
+    });
+  }
+}
+
+// Student management
+function removeStudent(studentId) {
+  if (confirm('Are you sure you want to remove this student from the class?')) {
+    fetch(`/instructor/api/classes/{{ class_data.id }}/students/${studentId}`, {
+      method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Student removed successfully!');
+        location.reload();
+      } else {
+        alert('Error removing student: ' + data.error);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error removing student');
+    });
+  }
+}
+
+function addStudent() {
+  const username = prompt('Enter student username to add:');
+  if (username) {
+    fetch(`/instructor/api/classes/{{ class_data.id }}/students`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({username: username})
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Student added successfully!');
+        location.reload();
+      } else {
+        alert('Error adding student: ' + data.error);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error adding student');
+    });
+  }
+}
+
+function viewStudentProgress(studentId) {
+  // Implement student progress view
+  alert('Student progress feature coming soon!');
+}
+
+// Close modals when clicking outside
+window.addEventListener('click', function(event) {
+  const modals = document.querySelectorAll('.modal');
+  modals.forEach(modal => {
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <strong>Deadline Preview</strong>
+    </div>
+    <div class="card-body">
+        <p class="mb-1"><strong>Assignment:</strong> {{ assignment.title or 'Untitled assignment' }}</p>
+        <p class="mb-1"><strong>Availability:</strong>
+            {% if availability.is_available %}
+                <span class="badge bg-success">Available</span>
+            {% else %}
+                <span class="badge bg-secondary">Closed</span>
+            {% endif %}
+        </p>
+        <p class="mb-3">
+            {% if availability.time_remaining %}
+                <strong>Time remaining:</strong> {{ availability.time_remaining.formatted }}
+            {% else %}
+                <strong>Status:</strong> {% for message in availability.messages %}{{ message }}{% if not loop.last %}; {% endif %}{% endfor %}
+            {% endif %}
+        </p>
+
+        {% if penalty_preview %}
+        <div class="border rounded p-3 bg-light">
+            <h6 class="fw-bold">Penalty Preview</h6>
+            <ul class="mb-0">
+                <li><strong>Penalty Percentage:</strong> {{ penalty_preview.penalty_percentage }}%</li>
+                <li><strong>Calculation Method:</strong> {{ penalty_preview.calculation_method }}</li>
+                {% if penalty_preview.policy_name %}
+                <li><strong>Policy:</strong> {{ penalty_preview.policy_name }}</li>
+                {% endif %}
+            </ul>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No penalty information available yet.</p>
+        {% endif %}
+    </div>
+</div>

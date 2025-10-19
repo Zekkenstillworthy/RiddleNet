@@ -1,0 +1,1212 @@
+{% extends "instructor/base.html" %}
+
+{% block head %}
+    <title>Network Audit Console | RiddleNet Admin</title>
+    <!-- Include Chart.js for visualizing log statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <style>
+        /* Modern Audit Logs Styling */
+        .audit-logs-container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+            position: relative;
+        }
+        
+        /* Glass Morphism Cards */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 25px 50px -12px rgba(26, 35, 126, 0.8),
+                        0 0 0 1px rgba(59, 130, 246, 0.1) inset;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyber-glow), transparent);
+            transition: left 0.8s;
+        }
+
+        .glass-card:hover::before {
+            left: 100%;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 32px 64px -12px rgba(26, 35, 126, 0.9),
+                        0 0 20px rgba(59, 130, 246, 0.2);
+        }
+        
+        /* Header Section */
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding: 0 8px;
+        }
+        
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-title h2 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--cyber-glow));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.025em;
+        }
+
+        .header-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-color), var(--network-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        /* Modern Buttons */
+        .modern-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modern-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .modern-btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color), var(--network-purple));
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #DC2626);
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--text-secondary);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(30, 41, 59, 1);
+            border-color: rgba(59, 130, 246, 0.4);
+            color: var(--text-primary);
+        }
+        
+        /* Summary Cards Grid */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .metric-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple), var(--neon-green));
+            opacity: 0.8;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 20px 40px rgba(26, 35, 126, 0.8);
+        }
+
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 16px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-color), var(--network-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .metric-card h3 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .metric-value {
+            font-size: 32px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+            margin: 0;
+            text-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Charts Container */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+          .chart-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple));
+            opacity: 0.6;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .chart-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(180deg, var(--cyber-glow), var(--network-purple));
+            border-radius: 2px;
+        }        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .chart-wrapper canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block !important;
+            width: auto !important;
+            height: auto !important;
+        }
+
+        /* Specific styling for doughnut chart */
+        #actionTypeChart {
+            max-width: 300px;
+            max-height: 300px;
+        }
+
+        /* Specific styling for line chart */
+        #timelineChart {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Filter Panel */
+        .filter-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .filter-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--success-color), var(--cyber-glow));
+            opacity: 0.8;
+        }
+        
+        .filter-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .filter-title::before {
+            content: '⚡';
+            font-size: 20px;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 0;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            background: rgba(30, 41, 59, 1);
+        }
+        
+        .filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        /* Data Table */
+        .table-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .table-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--warning-color), var(--cyber-glow));
+            opacity: 0.8;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .data-table th {
+            background: rgba(30, 41, 59, 0.9);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+            position: relative;
+        }
+
+        .data-table th::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+        }
+        
+        .data-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+            color: var(--text-secondary);
+            transition: all 0.3s;
+        }
+        
+        .data-table tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .data-table tr:hover td {
+            color: var(--text-primary);
+        }
+        
+        /* Status Tags */
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-tag::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .status-tag:hover::before {
+            left: 100%;
+        }
+        
+        .tag-create { background: rgba(59, 130, 246, 0.2); color: var(--accent-color); border: 1px solid rgba(59, 130, 246, 0.3); }
+        .tag-update { background: rgba(16, 185, 129, 0.2); color: var(--success-color); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .tag-delete { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .tag-login { background: rgba(139, 92, 246, 0.2); color: var(--network-purple); border: 1px solid rgba(139, 92, 246, 0.3); }
+        .tag-review { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .tag-grade { background: rgba(0, 217, 255, 0.2); color: var(--cyber-glow); border: 1px solid rgba(0, 217, 255, 0.3); }
+        .tag-default { background: rgba(100, 116, 139, 0.2); color: var(--text-muted); border: 1px solid rgba(100, 116, 139, 0.3); }
+        
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 32px;
+            padding: 24px;
+        }
+        
+        .pagination a, .pagination span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .pagination a:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: var(--accent-color);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+        
+        .pagination .active {
+            background: linear-gradient(135deg, var(--accent-color), var(--network-purple));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                135deg,
+                rgba(2, 6, 23, 0.95) 0%,
+                rgba(15, 23, 42, 0.98) 50%,
+                rgba(26, 35, 126, 0.95) 100%
+            );
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            z-index: 1000;
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            position: relative;
+            background: linear-gradient(
+                135deg,
+                rgba(15, 23, 42, 0.95) 0%,
+                rgba(30, 41, 59, 0.92) 100%
+            );
+            backdrop-filter: blur(30px) saturate(150%);
+            -webkit-backdrop-filter: blur(30px) saturate(150%);
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            border-radius: 20px;
+            padding: 32px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 
+                0 0 0 1px rgba(0, 217, 255, 0.3),
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 16px 64px rgba(0, 217, 255, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            animation: slideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: translateY(0);
+        }
+
+        /* Animated border using pseudo-element */
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            padding: 2px;
+            background: linear-gradient(
+                135deg,
+                rgba(0, 217, 255, 0.5),
+                rgba(139, 92, 246, 0.3),
+                rgba(0, 217, 255, 0.5)
+            );
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .modal h2 {
+            margin: 0 0 20px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal h2::before {
+            content: '🗑️';
+            font-size: 20px;
+        }
+        
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            width: 36px;
+            height: 36px;
+            font-size: 24px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .close:hover {
+            color: #EF4444;
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.3);
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .audit-logs-container {
+                padding: 20px 16px;
+            }
+
+            .content-header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .modern-btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .data-table {
+                font-size: 12px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+{{ super() }}
+<div class="main-content">
+    <div class="audit-logs-container">
+        <div class="content-header">
+            <div class="header-title">
+                <div class="header-icon">
+                    <i class='bx bx-shield-check'></i>
+                </div>
+                <h2>Network Audit Console</h2>
+            </div>
+            <div class="header-actions">
+                <a href="{{ url_for('audit_log.export_logs') }}" class="modern-btn btn-primary">
+                    <i class='bx bx-download'></i>
+                    Export Logs
+                </a>
+                <button class="modern-btn btn-danger" onclick="openClearModal()">
+                    <i class='bx bx-trash'></i>
+                    Clear Old Logs
+                </button>
+            </div>
+        </div>
+
+        <!-- Network Metrics Dashboard -->
+        <div class="summary-grid">
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class='bx bx-data'></i>
+                </div>
+                <h3>Total Network Events</h3>
+                <p class="metric-value">{{ total_logs }}</p>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class='bx bx-pulse'></i>
+                </div>
+                <h3>Today's Activity</h3>
+                <p class="metric-value">{{ today_logs }}</p>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class='bx bx-group'></i>
+                </div>
+                <h3>Active Nodes</h3>
+                <p class="metric-value">{{ users|length + admins|length }}</p>
+            </div>
+        </div>        <!-- Analytics Dashboard -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3 class="chart-title">
+                    <i class='bx bx-pie-chart-alt-2'></i>
+                    Activity by Action Type
+                </h3>
+                <div class="chart-wrapper">
+                    <canvas id="actionTypeChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3 class="chart-title">
+                    <i class='bx bx-line-chart'></i>
+                    Network Activity Timeline
+                </h3>
+                <div class="chart-wrapper">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Smart Filter Console -->
+        <div class="filter-panel glass-card">
+            <h3 class="filter-title">Smart Filter Console</h3>
+            <form action="{{ url_for('audit_log.index') }}" method="get">
+                <div class="filter-grid">
+                    <div class="form-group">
+                        <label for="user_id" class="form-label">Network Node</label>
+                        <select id="user_id" name="user_id" class="form-control">
+                            <option value="">All Nodes</option>
+                            <optgroup label="Admin Nodes">
+                                {% for instructor in admins %}
+                                <option value="{{ instructor.id }}" {% if selected_user_id == admin.id %}selected{% endif %}>
+                                    {{ instructor.username }} (Admin)
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="User Nodes">
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if selected_user_id == user.id %}selected{% endif %}>
+                                    {{ user.username }}
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="action_type" class="form-label">Action Type</label>
+                        <select id="action_type" name="action_type" class="form-control">
+                            <option value="">All Actions</option>
+                            {% for action in action_types %}
+                            <option value="{{ action }}" {% if selected_action_type == action %}selected{% endif %}>
+                                {{ action|capitalize }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="entity_type" class="form-label">Entity Type</label>
+                        <select id="entity_type" name="entity_type" class="form-control">
+                            <option value="">All Entities</option>
+                            {% for entity in entity_types %}
+                            <option value="{{ entity }}" {% if selected_entity_type == entity %}selected{% endif %}>
+                                {{ entity|capitalize }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="from_date" class="form-label">From Date</label>
+                        <input type="date" id="from_date" name="from_date" class="form-control" 
+                               value="{{ selected_from_date if selected_from_date not in [None, 'None', ''] else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="to_date" class="form-label">To Date</label>
+                        <input type="date" id="to_date" name="to_date" class="form-control"
+                               value="{{ selected_to_date if selected_to_date not in [None, 'None', ''] else '' }}">
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="modern-btn btn-primary">
+                        <i class='bx bx-filter'></i>
+                        Apply Filters
+                    </button>
+                    <a href="{{ url_for('audit_log.index') }}" class="modern-btn btn-secondary">
+                        <i class='bx bx-refresh'></i>
+                        Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Network Event Logs -->
+        <div class="table-container glass-card">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Event ID</th>
+                        <th>Network Node</th>
+                        <th>Action</th>
+                        <th>Event Message</th>
+                        <th>Target Entity</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs.items %}
+                    <tr>
+                        <td>
+                            <span style="font-family: 'JetBrains Mono', monospace; color: var(--cyber-glow);">
+                                #{{ log.id }}
+                            </span>
+                        </td>                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class='bx bx-{{ "shield" if log.user and log.user.is_instructor else "user" }}'></i>
+                                <span>
+                                    {% if log.user %}
+                                    {{ log.user.username }}
+                                    {% else %}
+                                    <span style="color: var(--cyber-glow);">System</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-tag tag-{{ log.action_type|lower if log.action_type in ['review', 'delete', 'create', 'update', 'login', 'grade'] else 'default' }}">
+                                {{ log.action_type|capitalize }}
+                            </span>
+                        </td>
+                        <td>{{ log.message }}</td>
+                        <td>
+                            {% if log.related_entity_type %}
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <i class='bx bx-cube'></i>
+                                <span style="font-family: 'JetBrains Mono', monospace;">
+                                    {{ log.related_entity_type|capitalize }} #{{ log.related_entity_id }}
+                                </span>
+                            </div>
+                            {% else %}
+                            <span style="color: var(--text-muted);">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+                                {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class='bx bx-search' style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                            No network events found in the current filter scope.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Modern Pagination -->
+            {% if logs.pages > 1 %}
+            <div class="pagination">
+                {% if logs.has_prev %}
+                <a href="{{ url_for('audit_log.index', page=logs.prev_num, **request.args) }}">
+                    <i class='bx bx-chevron-left'></i>
+                    Previous
+                </a>
+                {% endif %}
+                
+                {% for page_num in logs.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                    {% if page_num %}
+                        {% if page_num == logs.page %}
+                        <span class="active">{{ page_num }}</span>
+                        {% else %}
+                        <a href="{{ url_for('audit_log.index', page=page_num, **request.args) }}">{{ page_num }}</a>
+                        {% endif %}
+                    {% else %}
+                        <span style="color: var(--text-muted);">...</span>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if logs.has_next %}
+                <a href="{{ url_for('audit_log.index', page=logs.next_num, **request.args) }}">
+                    Next
+                    <i class='bx bx-chevron-right'></i>
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Clear Logs Modal -->
+<div id="clearLogsModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeClearModal()">&times;</span>
+        <h2>Purge Network Logs</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">
+            This action will permanently delete historical network events. Please specify the retention period for audit logs.
+        </p>
+        <form action="{{ url_for('audit_log.clear_logs') }}" method="post">
+            <div class="form-group">
+                <label for="days" class="form-label">Retention Period</label>
+                <input type="number" id="days" name="days" value="30" min="1" class="form-control" 
+                       style="font-family: 'JetBrains Mono', monospace;">
+                <small style="color: var(--text-muted); font-size: 12px; margin-top: 4px; display: block;">
+                    <i class='bx bx-info-circle'></i>
+                    Events older than this period will be permanently deleted
+                </small>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="modern-btn btn-secondary" onclick="closeClearModal()">
+                    <i class='bx bx-x'></i>
+                    Cancel
+                </button>
+                <button type="submit" class="modern-btn btn-danger">
+                    <i class='bx bx-trash'></i>
+                    Purge Logs
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Modern Chart.js Configuration with Gaming Theme
+    const modernChartDefaults = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#F8FAFC',
+                    font: {
+                        family: 'Inter',
+                        size: 12,
+                        weight: 500
+                    },
+                    usePointStyle: true,
+                    pointStyle: 'circle',
+                    padding: 20
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleColor: '#F8FAFC',
+                bodyColor: '#CBD5E1',
+                borderColor: 'rgba(59, 130, 246, 0.5)',
+                borderWidth: 1,
+                cornerRadius: 8,
+                displayColors: true,
+                titleFont: {
+                    family: 'Inter',
+                    weight: 600
+                },
+                bodyFont: {
+                    family: 'Inter'
+                }
+            }
+        }
+    };
+
+    // Initialize Action Type Doughnut Chart
+    const actionTypeData = {{ action_type_data|safe }};
+    const actionTypes = Object.keys(actionTypeData);
+    const actionCounts = Object.values(actionTypeData);
+    
+    const ctx1 = document.getElementById('actionTypeChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+            labels: actionTypes.map(type => type.charAt(0).toUpperCase() + type.slice(1)),
+            datasets: [{
+                data: actionCounts,
+                backgroundColor: [
+                    '#3B82F6', // Primary Blue
+                    '#8B5CF6', // Purple
+                    '#10B981', // Green
+                    '#F59E0B', // Yellow
+                    '#EF4444', // Red
+                    '#06B6D4', // Cyan
+                    '#84CC16', // Lime
+                    '#6B7280'  // Gray
+                ],
+                borderColor: 'rgba(15, 23, 42, 0.8)',
+                borderWidth: 3,
+                hoverBorderWidth: 4,
+                hoverBorderColor: '#00D9FF'
+            }]
+        },
+        options: {
+            ...modernChartDefaults,
+            cutout: '70%',
+            plugins: {
+                ...modernChartDefaults.plugins,
+                legend: {
+                    ...modernChartDefaults.plugins.legend,
+                    position: 'right'
+                }
+            },
+            animation: {
+                animateScale: true,
+                animateRotate: true
+            }
+        }
+    });
+    
+    // Initialize Timeline Chart
+    const timelineLabels = [];
+    const timelineData = [];
+    
+    // Create data for the last 7 days
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        timelineLabels.push(date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+        }));
+        timelineData.push(Math.floor(Math.random() * 20) + 5);
+    }
+    
+    const ctx2 = document.getElementById('timelineChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: timelineLabels,
+            datasets: [{
+                label: 'Network Events',
+                data: timelineData,
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderColor: '#3B82F6',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#00D9FF',
+                pointBorderColor: '#3B82F6',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                pointHoverBackgroundColor: '#00D9FF',
+                pointHoverBorderColor: '#FFFFFF',
+                pointHoverBorderWidth: 3
+            }]
+        },
+        options: {
+            ...modernChartDefaults,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#CBD5E1',
+                        font: {
+                            family: 'JetBrains Mono',
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(59, 130, 246, 0.1)',
+                        drawBorder: false
+                    },
+                    border: {
+                        display: false
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#CBD5E1',
+                        font: {
+                            family: 'Inter',
+                            size: 11,
+                            weight: 500
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(59, 130, 246, 0.1)',
+                        drawBorder: false
+                    },
+                    border: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                ...modernChartDefaults.plugins,
+                legend: {
+                    display: false
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+    
+    // Enhanced Modal Functions with Animations
+    function openClearModal() {
+        const modal = document.getElementById('clearLogsModal');
+        modal.style.display = 'block';
+        requestAnimationFrame(() => {
+            modal.classList.add('show');
+        });
+    }
+    
+    function closeClearModal() {
+        const modal = document.getElementById('clearLogsModal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+    
+    // Enhanced Click Outside Detection
+    window.onclick = function(event) {
+        const modal = document.getElementById('clearLogsModal');
+        if (event.target === modal) {
+            closeClearModal();
+        }
+    }
+
+    // Keyboard Support
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modal = document.getElementById('clearLogsModal');
+            if (modal.style.display === 'block') {
+                closeClearModal();
+            }
+        }
+    });
+
+    // Add subtle hover effects to table rows
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableRows = document.querySelectorAll('.data-table tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateX(4px)';
+            });
+            row.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateX(0)';
+            });
+        });
+    });
+</script>
+{% endblock %}

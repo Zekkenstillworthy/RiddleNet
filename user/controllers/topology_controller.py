@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, jsonify, request, session
 from flask_login import current_user, login_required
 import json
-from admin.models.topology import Topology
+from instructor.models.topology import Topology
 from user.models.topology_progress import TopologyProgress
 from __init__ import db
 

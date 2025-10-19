@@ -15,8 +15,8 @@ Features:
 from flask import Blueprint, render_template, request, jsonify, abort, redirect, url_for, current_app
 from flask_login import login_required, current_user
 from services.database_simulation_service import DatabaseSimulationService
-from admin.models.simulation import Simulation
-from admin.models.class_model import Class
+from instructor.models.simulation import Simulation
+from instructor.models.class_model import Class
 
 # Create blueprint for enhanced routes
 enhanced_user_bp = Blueprint('enhanced_user', __name__)

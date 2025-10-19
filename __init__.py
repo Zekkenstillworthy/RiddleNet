@@ -69,7 +69,7 @@ def create_app(config=None):
     # Set maximum content length for uploads (100MB)
     app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max upload
     
-    # Fix session cookie configuration to ensure proper admin_session cookie delivery
+    # Fix session cookie configuration to ensure proper instructor_session cookie delivery
     app.config['SESSION_COOKIE_PATH'] = '/'
     app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow for localhost
     app.config['SESSION_COOKIE_SECURE'] = False  # Allow HTTP for development
@@ -133,7 +133,7 @@ def create_app(config=None):
     try:
         from utils.split_session_interface import SplitSessionInterface
         app.session_interface = SplitSessionInterface()
-        print("[create_app] SplitSessionInterface enabled (admin_session / user_session cookies)")
+        print("[create_app] SplitSessionInterface enabled (instructor_session / user_session cookies)")
     except Exception as e:
         print(f"[create_app] WARNING: Could not enable SplitSessionInterface: {e}")
 
@@ -173,44 +173,44 @@ def create_app(config=None):
             print(f"Error registering API blueprint: {e}")
             # Continue without the API if it fails to load
             
-        # Register admin blueprints
+        # Register instructor blueprints
         try:
-            from admin.controllers.auth_controller import auth_bp
-            app.register_blueprint(auth_bp, url_prefix='/admin')
-            print("✅ Admin auth blueprint registered")
+            from instructor.controllers.auth_controller import auth_bp
+            app.register_blueprint(auth_bp, url_prefix='/instructor')
+            print("✅ Instructor auth blueprint registered")
         except Exception as e:
-            print(f"⚠️ Error registering admin auth blueprint: {e}")
+            print(f"⚠️ Error registering instructor auth blueprint: {e}")
             
         try:
-            from admin.controllers.dashboard_controller import dashboard_bp
-            app.register_blueprint(dashboard_bp, url_prefix='/admin')
-            print("✅ Admin dashboard blueprint registered")
+            from instructor.controllers.dashboard_controller import dashboard_bp
+            app.register_blueprint(dashboard_bp, url_prefix='/instructor')
+            print("✅ Instructor dashboard blueprint registered")
         except Exception as e:
-            print(f"⚠️ Error registering admin dashboard blueprint: {e}")
+            print(f"⚠️ Error registering instructor dashboard blueprint: {e}")
             
         try:
-            from admin.controllers.class_content_controller import class_content_controller_old
-            app.register_blueprint(class_content_controller_old, url_prefix='/admin')
-            print("✅ Admin class content controller blueprint registered")
+            from instructor.controllers.class_content_controller import class_content_controller_old
+            app.register_blueprint(class_content_controller_old, url_prefix='/instructor')
+            print("✅ Instructor class content controller blueprint registered")
         except Exception as e:
-            print(f"⚠️ Error registering admin class content controller blueprint: {e}")
+            print(f"⚠️ Error registering instructor class content controller blueprint: {e}")
             
         try:
-            from admin.controllers.essay_controller import essay_bp
-            app.register_blueprint(essay_bp, url_prefix='/admin')
-            print("✅ Admin essay controller blueprint registered")
+            from instructor.controllers.essay_controller import essay_bp
+            app.register_blueprint(essay_bp, url_prefix='/instructor')
+            print("✅ Instructor essay controller blueprint registered")
         except Exception as e:
-            print(f"⚠️ Error registering admin essay controller blueprint: {e}")
+            print(f"⚠️ Error registering instructor essay controller blueprint: {e}")
             
         try:
-            from admin.routes.collaboration_api import admin_collaboration_api_bp
+            from instructor.routes.collaboration_api import admin_collaboration_api_bp
             app.register_blueprint(admin_collaboration_api_bp)
-            print("✅ Admin collaboration API blueprint registered")
+            print("✅ Instructor collaboration API blueprint registered")
         except Exception as e:
-            print(f"⚠️ Error registering admin collaboration API blueprint: {e}")
+            print(f"⚠️ Error registering instructor collaboration API blueprint: {e}")
             
         try:
-            from admin.routes.rnet_viewer_routes import rnet_viewer_bp
+            from instructor.routes.rnet_viewer_routes import rnet_viewer_bp
             app.register_blueprint(rnet_viewer_bp)
             print("✅ RNet file viewer blueprint registered")
         except Exception as e:
@@ -227,7 +227,7 @@ def create_app(config=None):
     
     # Register RNet file viewer blueprint (moved out of commented section)
     try:
-        from admin.routes.rnet_viewer_routes import rnet_viewer_bp
+        from instructor.routes.rnet_viewer_routes import rnet_viewer_bp
         app.register_blueprint(rnet_viewer_bp)
         print("✅ RNet file viewer blueprint registered")
     except Exception as e:
@@ -265,32 +265,32 @@ def create_app(config=None):
         auth_namespace = session.get('auth_namespace', 'none')
         
         # CRITICAL FIX: Strict namespace-based isolation
-        if path.startswith('/admin'):
-            # Admin routes: ONLY allow admin namespace
-            if current_user.is_authenticated and auth_namespace == 'admin':
-                from admin.models.user import Admin
-                if isinstance(current_user, Admin):
-                    print(f"Context processor [{path}]: Admin route - authenticated admin: {current_user.username} (namespace: {auth_namespace})")
+        if path.startswith('/instructor'):
+            # Instructor routes: ONLY allow instructor namespace
+            if current_user.is_authenticated and auth_namespace == 'instructor':
+                from instructor.models.user import Instructor
+                if isinstance(current_user, Instructor):
+                    print(f"Context processor [{path}]: Instructor route - authenticated instructor: {current_user.username} (namespace: {auth_namespace})")
                     return dict(user=current_user)
             
-            print(f"Context processor [{path}]: Admin route - no admin authentication (namespace: {auth_namespace})")
+            print(f"Context processor [{path}]: Instructor route - no instructor authentication (namespace: {auth_namespace})")
             return dict(user=None)
         
-        # User routes: Support both user and admin access with namespace checking
+        # User routes: Support both user and instructor access with namespace checking
         if current_user.is_authenticated:
             from user.models.user import User
-            from admin.models.user import Admin
+            from instructor.models.user import Instructor
             
             if isinstance(current_user, User) and auth_namespace == 'user':
                 print(f"Context processor [{path}]: User route - authenticated user: {current_user.username} (namespace: {auth_namespace})")
                 return dict(user=current_user)
-            elif isinstance(current_user, Admin) and auth_namespace == 'admin':
-                # Allow admin to access class routes but maintain admin context
+            elif isinstance(current_user, Instructor) and auth_namespace == 'instructor':
+                # Allow instructor to access class routes but maintain instructor context
                 if '/class/' in path:
-                    print(f"Context processor [{path}]: Admin {current_user.username} accessing class route (namespace: {auth_namespace})")
+                    print(f"Context processor [{path}]: Instructor {current_user.username} accessing class route (namespace: {auth_namespace})")
                     return dict(user=current_user)
                 else:
-                    print(f"Context processor [{path}]: Admin {current_user.username} blocked from user route (namespace: {auth_namespace})")
+                    print(f"Context processor [{path}]: Instructor {current_user.username} blocked from user route (namespace: {auth_namespace})")
                     return dict(user=None)
             else:
                 print(f"Context processor [{path}]: Authentication type/namespace mismatch - user type: {type(current_user)}, namespace: {auth_namespace}")
@@ -319,7 +319,7 @@ def create_app(config=None):
     
     # Add context processor for admin sidebar classes
     @app.context_processor
-    def inject_admin_sidebar_context():
+    def inject_instructor_sidebar_context():
         """Inject classes for admin sidebar display"""
         from flask import request
         from flask_login import current_user
@@ -330,14 +330,14 @@ def create_app(config=None):
             path = "unknown"
         
         # Only inject for admin routes
-        if path.startswith('/admin'):
+        if path.startswith('/instructor'):
             try:
-                from admin.models.class_model import Class
+                from instructor.models.class_model import Class
                 
                 # Check if user is authenticated admin
                 if current_user.is_authenticated and hasattr(current_user, 'role'):
-                    # If super_admin, show all classes
-                    if current_user.role == 'super_admin':
+                    # If super_instructor, show all classes
+                    if current_user.role == 'super_instructor':
                         all_classes_query = Class.query.all()
                     else:
                         all_classes_query = Class.query.filter_by(created_by=getattr(current_user, 'id', None)).all()

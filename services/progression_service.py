@@ -4,7 +4,7 @@ Learning Paths feature has been removed from the system.
 """
 
 from __init__ import db
-from admin.models.simulation import Simulation
+from instructor.models.simulation import Simulation
 from user.models import User
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
@@ -36,7 +36,7 @@ class ProgressionService:
     def is_simulation_completed(self, user_id, simulation_id):
         """Check if a user has completed a simulation"""
         try:
-            from admin.models.simulation import SimulationAttempt
+            from instructor.models.simulation import SimulationAttempt
             
             attempt = SimulationAttempt.query.filter_by(
                 user_id=user_id,
@@ -58,7 +58,7 @@ class ProgressionService:
     def mark_simulation_completed(self, user_id, simulation_id, score=None):
         """Mark a simulation as completed for a user"""
         try:
-            from admin.models.simulation import SimulationAttempt
+            from instructor.models.simulation import SimulationAttempt
             
             # Check if already completed
             existing_attempt = SimulationAttempt.query.filter_by(
@@ -95,7 +95,7 @@ class ProgressionService:
     def update_module_progress(self, user_id, module_id):
         """Update module progress based on completed lessons"""
         try:
-            from admin.models.module import Module, ModuleProgress, LessonProgress, Lesson
+            from instructor.models.module import Module, ModuleProgress, LessonProgress, Lesson
             
             # Get the module
             module = Module.query.get(module_id)
@@ -152,7 +152,7 @@ class ProgressionService:
         
         try:
             # Count completed simulations
-            from admin.models.simulation import SimulationAttempt
+            from instructor.models.simulation import SimulationAttempt
             completed_count = SimulationAttempt.query.filter_by(
                 user_id=user_id,
                 is_completed=True

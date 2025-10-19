@@ -8,13 +8,13 @@ import json
 import math
 from typing import Dict, List, Optional, Tuple
 
-from admin.models.deadline_policy import (
+from instructor.models.deadline_policy import (
     DeadlinePolicy, PenaltyTier, AssignmentAvailabilityWindow,
     StudentDeadlineExtension, DeadlineCalculationLog
 )
-from admin.models.class_content import ClassAssignment
-from admin.models.assignment_submission import AssignmentSubmission
-from admin import db
+from instructor.models.class_content import ClassAssignment
+from instructor.models.assignment_submission import AssignmentSubmission
+from __init__ import db
 
 class DeadlineService:
     """Service for managing deadlines and calculating penalties"""

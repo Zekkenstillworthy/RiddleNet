@@ -164,7 +164,7 @@ class ScoreViewer {
         `;
 
         try {
-            const response = await fetch(`/admin/scores/user/${userId}`);
+            const response = await fetch(`/instructor/scores/user/${userId}`);
             const data = await response.json();
 
             if (data.success) {
@@ -221,7 +221,7 @@ class ScoreViewer {
                         <span class="date-time">${score.date_attempted}</span>
                     </td>
                     <td>
-                        <form action="/admin/scores/delete/${score.id}" method="POST" style="display: inline;">
+                        <form action="/instructor/scores/delete/${score.id}" method="POST" style="display: inline;">
                             <button type="submit" class="btn btn-danger delete-score-btn" data-score-id="${score.id}">
                                 <i class='fas fa-trash'></i>
                                 Delete
@@ -374,7 +374,7 @@ class ScoreViewer {
 
 // Initialize the Score Viewer when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    if (window.location.pathname.includes('/admin/scores')) {
+    if (window.location.pathname.includes('/instructor/scores') || window.location.pathname.includes('/admin/scores')) {
         window.scoreViewer = new ScoreViewer();
     }
 });

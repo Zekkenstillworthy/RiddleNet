@@ -1,7 +1,22 @@
 
 from functools import wraps
-from flask import jsonify, request
+from flask import jsonify, request, session
 from flask_login import current_user
+
+def instructor_required(f):
+	"""Decorator to require instructor authentication"""
+	@wraps(f)
+	def wrapper(*args, **kwargs):
+		if not getattr(current_user, 'is_authenticated', False):
+			return jsonify({'error': 'Authentication required'}), 401
+		role = getattr(current_user, 'role', None)
+		namespace = session.get('auth_namespace')
+		if role not in ('instructor', 'super_instructor', 'admin') \
+			and not getattr(current_user, 'is_instructor', False) \
+			and namespace != 'instructor':
+			return jsonify({'error': 'Instructor access required'}), 403
+		return f(*args, **kwargs)
+	return wrapper
 
 def teacher_required(f):
 	@wraps(f)
@@ -9,19 +24,22 @@ def teacher_required(f):
 		if not getattr(current_user, 'is_authenticated', False):
 			return jsonify({'error': 'Authentication required'}), 401
 		role = getattr(current_user, 'role', None)
-		if role not in ('admin', 'super_admin', 'instructor') and not getattr(current_user, 'is_instructor', False):
+		namespace = session.get('auth_namespace')
+		if role not in ('instructor', 'super_instructor', 'admin') \
+			and not getattr(current_user, 'is_instructor', False) \
+			and namespace != 'instructor':
 			return jsonify({'error': 'Instructor access required'}), 403
 		return f(*args, **kwargs)
 	return wrapper
 
 
-def owner_required(model_cls, param_name: str = 'id', field_name: str = 'created_by', allow_superadmin: bool = True):
+def owner_required(model_cls, param_name: str = 'id', field_name: str = 'created_by', allow_superinstructor: bool = True):
 	def decorator(f):
 		@wraps(f)
 		def wrapper(*args, **kwargs):
 			if not getattr(current_user, 'is_authenticated', False):
 				return jsonify({'error': 'Authentication required'}), 401
-			if allow_superadmin and getattr(current_user, 'role', None) == 'super_admin':
+			if allow_superinstructor and getattr(current_user, 'role', None) == 'super_instructor':
 				return f(*args, **kwargs)
 			obj_id = kwargs.get(param_name)
 			if obj_id is None:

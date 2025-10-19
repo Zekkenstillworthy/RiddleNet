@@ -7,7 +7,7 @@ from flask import Blueprint, jsonify, current_app, request
 from flask_login import current_user
 
 try:
-    from admin.models.simulation_content import (
+    from instructor.models.simulation_content import (
         SimulationTutorial, DeviceConfiguration, 
         DeviceCLICommand, DeviceConnection
     )
@@ -217,7 +217,7 @@ def get_simulation_content_summary(simulation_id):
         
         # Get simulation info if available
         try:
-            from admin.models.simulation import Simulation
+            from instructor.models.simulation import Simulation
             simulation = Simulation.query.get(simulation_id)
             simulation_name = simulation.title if simulation else f"Simulation {simulation_id}"
         except:

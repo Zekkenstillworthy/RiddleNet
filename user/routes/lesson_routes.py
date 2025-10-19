@@ -3,10 +3,10 @@ User-facing lesson routes
 """
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for, session, current_app
 from flask_login import login_required, current_user
-from admin import db
-from admin.models.module import Module, Lesson, LessonProgress
-from admin.models.class_model import Class
-from admin.models.simulation import Simulation, SimulationAttempt
+from __init__ import db
+from instructor.models.module import Module, Lesson, LessonProgress
+from instructor.models.class_model import Class
+from instructor.models.simulation import Simulation, SimulationAttempt
 from services.progression_service import ProgressionService
 from utils.auth_decorators import user_required
 from datetime import datetime

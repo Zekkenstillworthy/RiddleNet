@@ -2,7 +2,7 @@
 Namespace Validator - Session Poisoning Prevention
 ====================================================
 This module provides decorators and utilities to enforce strict namespace
-isolation between admin and user sessions, preventing session poisoning attacks.
+isolation between Instructor and user sessions, preventing session poisoning attacks.
 """
 
 from functools import wraps
@@ -15,14 +15,14 @@ def require_namespace(namespace):
     Decorator to enforce strict namespace validation on routes.
     
     Args:
-        namespace (str): The required namespace ('admin' or 'user')
+        namespace (str): The required namespace ('instructor' or 'user')
     
     Usage:
         @app.route('/admin/profile')
         @login_required
-        @require_namespace('admin')
+        @require_namespace('instructor')
         def admin_profile():
-            # This route can only be accessed with admin namespace
+            # This route can only be accessed with Instructor namespace
             pass
     """
     def decorator(f):
@@ -37,17 +37,17 @@ def require_namespace(namespace):
                 session.clear()  # Clear potentially poisoned session
                 
                 # Redirect to appropriate login page
-                if namespace == 'admin':
+                if namespace == 'instructor':
                     return redirect(url_for('auth.login'))
                 else:
                     return redirect(url_for('user.login'))
             
             # Additional validation: Check current_user type matches namespace
             if current_user.is_authenticated:
-                if namespace == 'admin':
-                    from admin.models.user import Admin
-                    if not isinstance(current_user, Admin):
-                        flash('Access denied. Admin credentials required.', 'error')
+                if namespace == 'instructor':
+                    from instructor.models.user import Instructor
+                    if not isinstance(current_user, Instructor):
+                        flash('Access denied. Instructor credentials required.', 'error')
                         session.clear()
                         return redirect(url_for('auth.login'))
                 
@@ -89,15 +89,15 @@ def validate_namespace_on_request():
     path = request.path
     auth_namespace = session.get('auth_namespace', 'unknown')
     
-    # Validate admin routes
-    if path.startswith('/admin'):
-        if auth_namespace != 'admin':
+    # Validate instructor routes
+    if path.startswith('/instructor'):
+        if auth_namespace != 'instructor':
             if current_user.is_authenticated:
-                flash('Access denied. Admin credentials required.', 'error')
+                flash('Access denied. Instructor credentials required.', 'error')
                 session.clear()
                 return redirect(url_for('auth.login'))
     
-    # Validate user routes (with some exceptions for admin access)
+    # Validate user routes (with some exceptions for Instructor access)
     elif path.startswith('/users') or path.startswith('/class'):
         # Some routes like /users/profile should be user-only
         if '/profile' in path and auth_namespace != 'user':
@@ -123,11 +123,11 @@ def clear_session_on_namespace_mismatch():
     
     # Check if namespace matches user type
     try:
-        from admin.models.user import Admin
+        from instructor.models.user import Instructor
         from user.models.user import User
         
-        if isinstance(current_user, Admin) and auth_namespace != 'admin':
-            print(f"[SECURITY] Namespace mismatch: Admin user with namespace '{auth_namespace}'")
+        if isinstance(current_user, Instructor) and auth_namespace != 'instructor':
+            print(f"[SECURITY] Namespace mismatch: Instructor user with namespace '{auth_namespace}'")
             session.clear()
             return False
         
@@ -149,7 +149,7 @@ def get_safe_namespace():
     Get the current namespace with validation.
     
     Returns:
-        str: 'admin', 'user', or None if invalid
+        str: 'instructor', 'user', or None if invalid
     """
     if not current_user.is_authenticated:
         return None
@@ -158,15 +158,15 @@ def get_safe_namespace():
     
     # Validate namespace matches user type
     try:
-        from admin.models.user import Admin
+        from instructor.models.user import Instructor
         from user.models.user import User
         
-        if isinstance(current_user, Admin):
-            if auth_namespace != 'admin':
-                print(f"[SECURITY] Namespace poisoning detected: Admin with namespace '{auth_namespace}'")
+        if isinstance(current_user, Instructor):
+            if auth_namespace != 'instructor':
+                print(f"[SECURITY] Namespace poisoning detected: Instructor with namespace '{auth_namespace}'")
                 session.clear()
                 return None
-            return 'admin'
+            return 'instructor'
         
         if isinstance(current_user, User):
             if auth_namespace != 'user':
@@ -188,7 +188,7 @@ def enforce_namespace_isolation(admin_func, user_func):
     Decorator that routes to different functions based on namespace.
     
     Args:
-        admin_func: Function to call for admin namespace
+        admin_func: Function to call for Instructor namespace
         user_func: Function to call for user namespace
     
     Usage:
@@ -201,7 +201,7 @@ def enforce_namespace_isolation(admin_func, user_func):
         def decorated_function(*args, **kwargs):
             namespace = get_safe_namespace()
             
-            if namespace == 'admin':
+            if namespace == 'instructor':
                 return admin_func(*args, **kwargs)
             elif namespace == 'user':
                 return user_func(*args, **kwargs)
@@ -246,6 +246,6 @@ def log_security_event(event_type, details):
     try:
         from socket_manager import socketio
         if socketio:
-            socketio.emit('security_alert', log_entry, room='admin_room')
+            socketio.emit('security_alert', log_entry, room='instructor_room')
     except:
         pass  # WebSocket not available

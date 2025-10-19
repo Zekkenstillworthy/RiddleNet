@@ -8,14 +8,14 @@ import json
 import hashlib
 
 from __init__ import db
-from admin.models.lab import Lab, LabTopology, LabDevice, LabIPConfig, LabSubmission, LabDeadline, ExportHash
-from admin.models.rubric import Rubric, RubricCriterion
+from instructor.models.lab import Lab, LabTopology, LabDevice, LabIPConfig, LabSubmission, LabDeadline, ExportHash
+from instructor.models.rubric import Rubric, RubricCriterion
 
 
 class LabService:
     @staticmethod
-    def create_lab(owner_admin_id: int, title: str, description: str = None, class_id: int = None, rubric_id: int = None) -> Lab:
-        lab = Lab(title=title, description=description, owner_admin_id=owner_admin_id, class_id=class_id, rubric_id=rubric_id)
+    def create_lab(owner_instructor_id: int, title: str, description: str = None, class_id: int = None, rubric_id: int = None) -> Lab:
+        lab = Lab(title=title, description=description, owner_instructor_id=owner_instructor_id, class_id=class_id, rubric_id=rubric_id)
         db.session.add(lab)
         db.session.commit()
         return lab
@@ -124,7 +124,7 @@ class LabService:
         lab = Lab(
             title=lab_info.get('title', 'Imported Lab'),
             description=lab_info.get('description'),
-            owner_admin_id=lab_info.get('owner_admin_id'),
+            owner_instructor_id=lab_info.get('owner_instructor_id'),
             class_id=lab_info.get('class_id'),
             rubric_id=lab_info.get('rubric_id')
         )

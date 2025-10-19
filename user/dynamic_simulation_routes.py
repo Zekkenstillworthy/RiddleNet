@@ -1,18 +1,18 @@
 """
 Dynamic Simulation Routes Generator
-Automatically creates routes for admin-created simulations - Learning Paths feature removed
+Automatically creates routes for instructor-created simulations - Learning Paths feature removed
 """
 
 from flask import Blueprint, render_template, session, request, jsonify, redirect, url_for, flash, current_app
 from user.models.user import User as UserModel
 from user.models.score import Score
-from admin.models.simulation import Simulation, SimulationAttempt
-from admin.models.class_model import Class
+from instructor.models.simulation import Simulation, SimulationAttempt
+from instructor.models.class_model import Class
 # Learning Path models removed - import stubs to prevent errors
-from admin.models.learning_path import LearningPath, LearningPathSimulation, UserLearningProgress
-from admin.models.simulation_assignment import SimulationAssignment
-from admin.services.assignment_service import assignment_service
-from admin import db
+from instructor.models.learning_path import LearningPath, LearningPathSimulation, UserLearningProgress
+from instructor.models.simulation_assignment import SimulationAssignment
+from instructor.services.assignment_service import assignment_service
+from __init__ import db
 from functools import wraps
 import json
 import re
@@ -975,7 +975,7 @@ def get_simulation_tutorial(simulation_id):
     try:
         # Try to import Tutorial model - handle gracefully if it doesn't exist
         try:
-            from admin.models.tutorial_system import Tutorial
+            from instructor.models.tutorial_system import Tutorial
             # Get tutorial data for the simulation
             tutorial = Tutorial.query.filter_by(simulation_id=simulation_id).first()
             
@@ -1146,7 +1146,7 @@ def run_simulation(simulation_id):
         if lobby_id:
             # Check if user is in this lobby
             from services.troubleshooting_lobbies import lobby_manager
-            from admin.models.collaboration import CollaborationLobby, TeamAssignment
+            from instructor.models.collaboration import CollaborationLobby, TeamAssignment
             
             # Get lobby from memory first
             lobby = lobby_manager.get_lobby(lobby_id)
@@ -1162,7 +1162,7 @@ def run_simulation(simulation_id):
                         'max_participants': db_lobby.max_participants,
                         'class_id': db_lobby.class_id,
                         'simulation_id': db_lobby.simulation_id,
-                        'admin_created': True
+                        'instructor_created': True
                     }
                     lobby = lobby_manager.create_lobby(
                         creator_id=db_lobby.creator_id,
@@ -1200,14 +1200,14 @@ def run_simulation(simulation_id):
                 print(f"WARNING: Lobby {lobby_id} not found, collaboration session will not be inherited")
         
         # Import collaboration model and get settings
-        from admin.models.collaboration import CollaborationSetting
+        from instructor.models.collaboration import CollaborationSetting
         
         # Get collaboration settings
         collaboration_setting = CollaborationSetting.query.filter_by(simulation_id=simulation_id).first()
 
         # Check if user has access to this simulation - now with proper import
-        from admin.models.simulation import SimulationAttempt
-        from admin.models.class_model import Class
+        from instructor.models.simulation import SimulationAttempt
+        from instructor.models.class_model import Class
         from flask_login import current_user
         from flask import url_for
         
@@ -1294,7 +1294,7 @@ def run_simulation(simulation_id):
             'task_mode': task_mode,
             'topology_locked': topology_locked,
             'configuration_enabled': configuration_enabled,
-            'admin_provided_topology': simulation_config.get('admin_topology', {}),
+            'instructor_provided_topology': simulation_config.get('instructor_topology', {}),
             'device_config_templates': simulation_config.get('device_templates', {}),
             
             # Troubleshooting-specific data
@@ -1357,7 +1357,7 @@ def run_simulation(simulation_id):
         # Load available topologies if topology is enabled
         if topology_enabled:
             try:
-                from admin.models.topology import Topology
+                from instructor.models.topology import Topology
                 topologies = Topology.query.filter_by(is_active=True).all()
                 
                 available_topologies = []
@@ -1774,7 +1774,7 @@ def update_network_state(simulation_id):
             # Additional validation against selected topology type if specified
             if selected_topology:
                 try:
-                    from admin.models.topology import Topology as TopologyModel
+                    from instructor.models.topology import Topology as TopologyModel
                     topology_model = TopologyModel.query.filter_by(topology_type=selected_topology).first()
                     if topology_model:
                         # Validate device requirements
@@ -1906,7 +1906,7 @@ def get_simulation_topology_config(simulation_id):
         topology_data = None
         if selected_topology:
             try:
-                from admin.models.topology import Topology
+                from instructor.models.topology import Topology
                 topology_model = Topology.query.filter_by(topology_type=selected_topology).first()
                 if topology_model:
                     topology_data = {
@@ -1972,7 +1972,7 @@ def validate_simulation_topology(simulation_id):
         
         if selected_topology and topology_validation['isValid']:
             try:
-                from admin.models.topology import Topology
+                from instructor.models.topology import Topology
                 topology_model = Topology.query.filter_by(topology_type=selected_topology).first()
                 
                 if topology_model:
@@ -2060,7 +2060,7 @@ def execute_cli_command(simulation_id):
         # Process CLI command based on device type and current state
         response = process_cli_command(command, device_id, attempt.session_data)
 
-        # Evaluate against admin-authored CLI rules if present in simulation_config
+        # Evaluate against instructor-authored CLI rules if present in simulation_config
         try:
             sim_cfg = simulation.simulation_config or {}
             if isinstance(sim_cfg, str):
@@ -3183,7 +3183,7 @@ def get_task_mode(simulation_id):
             'task_mode': task_mode,
             'topology_locked': topology_locked,
             'configuration_enabled': configuration_enabled,
-            'admin_provided_topology': simulation_config.get('admin_topology', {}),
+            'instructor_provided_topology': simulation_config.get('instructor_topology', {}),
             'device_config_templates': simulation_config.get('device_templates', {})
         })
         
@@ -3192,7 +3192,7 @@ def get_task_mode(simulation_id):
 
 @dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/admin-topology', methods=['GET'])
 @user_login_required
-def get_admin_topology(simulation_id):
+def get_instructor_topology(simulation_id):
     """Get admin-provided topology for configuration mode"""
     try:
         user = get_user_from_session()
@@ -3219,12 +3219,12 @@ def get_admin_topology(simulation_id):
                 'message': 'Admin topology only available in configuration or combined mode'
             }), 400
         
-        admin_topology = simulation_config.get('admin_topology', {})
+        instructor_topology = simulation_config.get('instructor_topology', {})
         device_templates = simulation_config.get('device_templates', {})
         
         return jsonify({
             'success': True,
-            'admin_topology': admin_topology,
+            'instructor_topology': instructor_topology,
             'device_templates': device_templates,
             'task_mode': task_mode
         })
@@ -3853,7 +3853,7 @@ def get_simulation_topology(simulation_id):
         
         # Get admin-defined topology
         network_topology = simulation_config.get('network_topology', {})
-        admin_topology = network_topology if (network_topology.get('devices') or network_topology.get('connections')) else simulation_config
+        instructor_topology = network_topology if (network_topology.get('devices') or network_topology.get('connections')) else simulation_config
         
         # Check for attempt-specific topology and device states
         attempt = SimulationAttempt.query.filter_by(
@@ -3888,7 +3888,7 @@ def get_simulation_topology(simulation_id):
             source = 'attempt'
             last_modified = attempt.updated_at.isoformat() if attempt.updated_at else None
         else:
-            topology = admin_topology
+            topology = instructor_topology
             source = 'admin' if network_topology else 'legacy'
             last_modified = simulation.updated_at.isoformat() if simulation.updated_at else None
         
@@ -4127,7 +4127,7 @@ def register_dynamic_routes(app):
 def get_collaboration_settings(simulation_id):
     """Get collaboration settings for a simulation"""
     try:
-        from admin.models.collaboration import CollaborationSetting
+        from instructor.models.collaboration import CollaborationSetting
         
         # Get collaboration settings for this simulation
         settings = CollaborationSetting.query.filter_by(simulation_id=simulation_id).first()
@@ -4187,7 +4187,7 @@ def join_collaboration_lobby(simulation_id):
             }), 400
         
         # Get collaboration settings to verify lobby is allowed
-        from admin.models.collaboration import CollaborationSetting, CollaborationLobby, TeamAssignment
+        from instructor.models.collaboration import CollaborationSetting, CollaborationLobby, TeamAssignment
         
         setting = CollaborationSetting.query.filter_by(simulation_id=simulation_id).first()
         if not setting or not setting.collaboration_enabled:
@@ -4217,7 +4217,7 @@ def join_collaboration_lobby(simulation_id):
                 'max_participants': db_lobby.max_participants,
                 'class_id': db_lobby.class_id,
                 'simulation_id': db_lobby.simulation_id,
-                'admin_created': True,
+                'instructor_created': True,
                 'collaboration_settings': setting.to_dict()
             }
             lobby = lobby_manager.create_lobby(

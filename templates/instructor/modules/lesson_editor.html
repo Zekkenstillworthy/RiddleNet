@@ -1,0 +1,1288 @@
+{% extends 'instructor/base.html' %}
+
+{% block title %}Module Lesson Editor - {{ module.title }}{% endblock %}
+
+
+{% block content %}
+<style>
+/* Module Lesson Editor Styles - Based on module preview but editable */
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #f3f4f6;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --dark-bg: #0a0a0a;
+    --card-bg: rgba(255, 255, 255, 0.02);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.5);
+    --cyber-glow: #00d9ff;
+    --editor-highlight: #4f46e5;
+}
+
+/* Force dark theme throughout the page */
+body, html {
+    background: var(--dark-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Ensure all containers maintain dark theme */
+.container, .content, main, section, article {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+}
+
+.editor-mode-indicator {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    padding: 8px 16px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3);
+}
+
+.editor-container {
+    display: grid;
+    grid-template-columns: 300px 1fr 320px;
+    gap: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+    min-height: calc(100vh - 120px);
+}
+
+/* Left Sidebar - Lesson Navigation */
+.lesson-nav-sidebar {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    height: fit-content;
+    backdrop-filter: blur(10px);
+}
+
+.nav-sidebar-header {
+    margin-bottom: 20px;
+}
+
+.nav-sidebar-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.nav-sidebar-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.lesson-nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.lesson-nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-color);
+}
+
+.lesson-nav-item.active {
+    background: var(--editor-highlight);
+    border-color: var(--editor-highlight);
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.3);
+}
+
+.lesson-nav-number {
+    background: var(--cyber-glow);
+    color: var(--dark-bg);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.lesson-nav-info {
+    flex: 1;
+}
+
+.lesson-nav-title {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.lesson-nav-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Main Content Area */
+.main-editor-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+}
+
+/* Ensure no white backgrounds anywhere */
+.main-editor-content * {
+    background-color: transparent !important;
+    color: inherit;
+}
+
+.main-editor-content textarea,
+.main-editor-content input,
+.main-editor-content div[contenteditable="true"] {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.main-editor-content textarea:focus,
+.main-editor-content input:focus,
+.main-editor-content div[contenteditable="true"]:focus {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--cyber-glow) !important;
+}
+
+.editor-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(79, 70, 229, 0.1);
+}
+
+.editor-breadcrumb {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.editor-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.editable-title {
+    background: transparent;
+    border: 2px dashed transparent;
+    border-radius: 6px;
+    padding: 4px 8px;
+    transition: all 0.2s ease;
+}
+
+.editable-title:hover {
+    border-color: var(--editor-highlight);
+    background: rgba(79, 70, 229, 0.1);
+}
+
+.editable-title.editing {
+    border-color: var(--editor-highlight);
+    background: rgba(79, 70, 229, 0.2);
+    outline: none;
+}
+
+.editor-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.editor-content {
+    padding: 20px;
+}
+
+.content-section {
+    margin-bottom: 32px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.edit-btn {
+    background: var(--editor-highlight);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.edit-btn:hover {
+    background: #3730a3;
+    transform: translateY(-1px);
+}
+
+.editable-description {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 2px dashed var(--border-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 60px;
+    resize: vertical;
+    transition: all 0.2s ease;
+    color: var(--text-primary) !important;
+    line-height: 1.6;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.editable-description:hover {
+    border-color: var(--editor-highlight);
+    background: rgba(79, 70, 229, 0.1) !important;
+}
+
+.editable-description.editing {
+    border-color: var(--editor-highlight);
+    background: rgba(79, 70, 229, 0.2) !important;
+    outline: none;
+    color: var(--text-primary) !important;
+}
+
+.editable-description::placeholder {
+    color: var(--text-muted) !important;
+}
+
+/* Dropdown (details/summary) preview styles for inserted content */
+details.lesson-dropdown {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 12px 0;
+    background: rgba(255,255,255,0.03);
+}
+details.lesson-dropdown summary {
+    cursor: pointer;
+    color: var(--text-primary);
+}
+details.lesson-dropdown .dropdown-body {
+    margin-top: 8px;
+    color: var(--text-secondary);
+}
+
+.objectives-container {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.objectives-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.objective-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.objective-item:hover {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.objective-icon {
+    color: var(--success-color);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.editable-objective {
+    background: transparent;
+    border: 1px dashed transparent;
+    border-radius: 4px;
+    padding: 2px 4px;
+    flex: 1;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.editable-objective:hover {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.editable-objective.editing {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.2);
+    outline: none;
+}
+
+/* Right Sidebar - Media Management */
+.media-sidebar {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    height: fit-content;
+    backdrop-filter: blur(10px);
+}
+
+.media-sidebar-header {
+    margin-bottom: 20px;
+}
+
+.media-sidebar-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.media-category {
+    margin-bottom: 24px;
+}
+
+.media-category-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.media-count {
+    background: var(--cyber-glow);
+    color: var(--dark-bg);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.media-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.media-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.media-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--cyber-glow);
+    transform: translateY(-1px);
+}
+
+.media-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.media-icon.video {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.media-icon.image {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    color: white;
+}
+
+.media-icon.document {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.media-info {
+    flex: 1;
+}
+
+.media-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.media-size {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.media-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.media-item:hover .media-actions {
+    opacity: 1;
+}
+
+.media-action-btn {
+    background: var(--editor-highlight);
+    color: white;
+    border: none;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.media-action-btn:hover {
+    background: #3730a3;
+}
+
+.upload-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 12px;
+}
+
+.upload-zone:hover {
+    border-color: var(--cyber-glow);
+    background: rgba(0, 217, 255, 0.05);
+    color: var(--cyber-glow);
+}
+
+.upload-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+.empty-media {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.empty-media i {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    display: block;
+    opacity: 0.5;
+}
+
+/* Action Bar */
+.editor-action-bar {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    gap: 12px;
+    z-index: 1000;
+}
+
+.action-btn {
+    background: var(--success-color);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.action-btn:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.action-btn.secondary {
+    background: var(--editor-highlight);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.action-btn.secondary:hover {
+    background: #3730a3;
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+}
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--success-color);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    z-index: 1001;
+    animation: slideInRight 0.3s ease;
+}
+
+.toast.show {
+    display: flex;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .editor-container {
+        grid-template-columns: 280px 1fr 300px;
+        gap: 16px;
+        padding: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .editor-container {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .lesson-nav-sidebar,
+    .media-sidebar {
+        order: 2;
+    }
+    
+    .main-editor-content {
+        order: 1;
+    }
+    
+    .editor-action-bar {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        margin-top: 20px;
+        justify-content: center;
+    }
+}
+</style>
+
+<!-- Editor Mode Indicator -->
+<div class="editor-mode-indicator">
+    <i class="fas fa-edit"></i>
+    MODULE LESSON EDITOR - Edit content, organize media, and manage lessons
+    <i class="fas fa-tools"></i>
+</div>
+
+<div class="editor-container">
+    <!-- Left Sidebar - Lesson Navigation -->
+    <div class="lesson-nav-sidebar">
+        <div class="nav-sidebar-header">
+            <div class="nav-sidebar-title">{{ module.title }}</div>
+            <div class="nav-sidebar-subtitle">{{ class_data.name }} - Module {{ module.module_number }}</div>
+        </div>
+        
+        <div class="lesson-nav-list">
+            {% for lesson in lessons %}
+            <div class="lesson-nav-item {% if selected_lesson and lesson.id == selected_lesson.id %}active{% endif %}" 
+                 onclick="selectLesson({{ lesson.id }})">
+                <div class="lesson-nav-number">{{ loop.index }}</div>
+                <div class="lesson-nav-info">
+                    <div class="lesson-nav-title">{{ lesson.title or 'Untitled Lesson' }}</div>
+                    <div class="lesson-nav-meta">
+                        {% if lesson.estimated_duration %}{{ lesson.estimated_duration }} min{% endif %}
+                        {% if lesson.type %}• {{ lesson.type }}{% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            {% if not lessons %}
+            <div class="empty-media">
+                <i class="fas fa-book"></i>
+                No lessons yet. Create your first lesson to start editing.
+            </div>
+            {% endif %}
+        </div>
+        
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <a href="{{ url_for('lesson.new_lesson', class_id=class_data.id, module_id=module.id) }}" 
+               class="edit-btn" style="width: 100%; justify-content: center; text-decoration: none;">
+                <i class="fas fa-plus"></i>
+                Add New Lesson
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-editor-content">
+        {% if selected_lesson %}
+        <div class="editor-header">
+            <div class="editor-breadcrumb">
+                <a href="/instructor/classes" style="color: var(--text-secondary); text-decoration: none;">Classes</a>
+                <span> > </span>
+                <a href="/instructor/classes/{{ class_data.id }}" style="color: var(--text-secondary); text-decoration: none;">{{ class_data.name }}</a>
+                <span> > </span>
+                <span>{{ module.title }}</span>
+            </div>
+            
+            <div class="editor-title editable-title" contenteditable="true" data-field="title" data-lesson-id="{{ selected_lesson.id }}">
+                {{ selected_lesson.title or 'Untitled Lesson' }}
+            </div>
+            
+            <div class="editor-meta">
+                <span><i class="fas fa-clock"></i> {{ selected_lesson.estimated_duration or 15 }} minutes</span>
+                <span><i class="fas fa-book"></i> {{ selected_lesson.type or 'Lesson' }}</span>
+                <span><i class="fas fa-sort"></i> Order: {{ selected_lesson.order_index or 0 }}</span>
+            </div>
+        </div>
+        
+        <div class="editor-content">
+            <!-- Lesson Description Section -->
+            <div class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-align-left"></i>
+                        Description
+                    </div>
+                </div>
+                <textarea class="editable-description" 
+                          placeholder="Enter lesson description..." 
+                          data-field="description" 
+                          data-lesson-id="{{ selected_lesson.id }}">{{ selected_lesson.description or '' }}</textarea>
+            </div>
+
+            <!-- Learning Objectives Section -->
+            <div class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-bullseye"></i>
+                        Learning Objectives
+                    </div>
+                    <button class="edit-btn" onclick="addObjective()">
+                        <i class="fas fa-plus"></i>
+                        Add Objective
+                    </button>
+                </div>
+                
+                <div class="objectives-container">
+                    <ul class="objectives-list" id="objectivesList">
+                        {% if selected_lesson.learning_objectives %}
+                            {% for objective in selected_lesson.learning_objectives %}
+                            <li class="objective-item">
+                                <i class="fas fa-check-circle objective-icon"></i>
+                                <div class="editable-objective" 
+                                     contenteditable="true" 
+                                     data-index="{{ loop.index0 }}"
+                                     data-lesson-id="{{ selected_lesson.id }}">{{ objective }}</div>
+                                <button class="media-action-btn" onclick="removeObjective({{ loop.index0 }})" style="margin-left: 8px;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </li>
+                            {% endfor %}
+                        {% else %}
+                            <li class="objective-item">
+                                <i class="fas fa-check-circle objective-icon"></i>
+                                <div class="editable-objective" 
+                                     contenteditable="true" 
+                                     placeholder="Enter learning objective..."
+                                     data-index="0"
+                                     data-lesson-id="{{ selected_lesson.id }}"></div>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Lesson Content Section -->
+            <div class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-file-alt"></i>
+                        Lesson Content
+                    </div>
+                    <button class="edit-btn" onclick="insertDropdown()" title="Insert collapsible dropdown section">
+                        <i class="fas fa-square-caret-down"></i>
+                        Insert Dropdown
+                    </button>
+                </div>
+                <textarea class="editable-description" 
+                          style="min-height: 200px;" 
+                          placeholder="Enter lesson content..." 
+                          data-field="content" 
+                          data-lesson-id="{{ selected_lesson.id }}">{{ selected_lesson.content or '' }}</textarea>
+            </div>
+        </div>
+        
+        {% else %}
+        <!-- Empty State -->
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 400px; text-align: center; color: var(--text-muted);">
+            <i class="fas fa-graduation-cap" style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;"></i>
+            <h3 style="color: var(--text-primary); margin-bottom: 12px;">Select a Lesson to Edit</h3>
+            <p style="margin-bottom: 24px;">Choose a lesson from the sidebar to start editing its content and organizing media files.</p>
+            <a href="{{ url_for('lesson.new_lesson', class_id=class_data.id, module_id=module.id) }}" 
+               class="edit-btn">
+                <i class="fas fa-plus"></i>
+                Create First Lesson
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Sidebar - Media Management -->
+    <div class="media-sidebar">
+        <div class="media-sidebar-header">
+            <div class="media-sidebar-title">
+                <i class="fas fa-folder-open"></i>
+                Media Library
+            </div>
+            {% if selected_lesson %}
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                {{ selected_lesson.title or 'Untitled Lesson' }}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if selected_lesson %}
+        <!-- Videos Section -->
+        <div class="media-category">
+            <div class="media-category-title">
+                <span><i class="fas fa-video"></i> Videos</span>
+                <span class="media-count" id="videoCount">0</span>
+            </div>
+            <div class="media-items" id="videoContainer">
+                <!-- Videos will be loaded here -->
+            </div>
+            <div class="upload-zone" onclick="uploadMedia('video')">
+                <div class="upload-icon"><i class="fas fa-video"></i></div>
+                <div>Drop video files here or click to upload</div>
+            </div>
+        </div>
+
+        <!-- Images Section -->
+        <div class="media-category">
+            <div class="media-category-title">
+                <span><i class="fas fa-image"></i> Images</span>
+                <span class="media-count" id="imageCount">0</span>
+            </div>
+            <div class="media-items" id="imageContainer">
+                <!-- Images will be loaded here -->
+            </div>
+            <div class="upload-zone" onclick="uploadMedia('image')">
+                <div class="upload-icon"><i class="fas fa-image"></i></div>
+                <div>Drop images here or click to upload</div>
+            </div>
+        </div>
+
+        <!-- Documents Section -->
+        <div class="media-category">
+            <div class="media-category-title">
+                <span><i class="fas fa-file-alt"></i> Documents</span>
+                <span class="media-count" id="documentCount">0</span>
+            </div>
+            <div class="media-items" id="documentContainer">
+                <!-- Documents will be loaded here -->
+            </div>
+            <div class="upload-zone" onclick="uploadMedia('document')">
+                <div class="upload-icon"><i class="fas fa-file-alt"></i></div>
+                <div>Drop DOCX files here or click to upload</div>
+            </div>
+        </div>
+        
+        {% else %}
+        <div class="empty-media">
+            <i class="fas fa-folder-open"></i>
+            Select a lesson to view and organize its media files
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Action Bar -->
+<div class="editor-action-bar">
+    <button class="action-btn secondary" onclick="previewModule()">
+        <i class="fas fa-eye"></i>
+        Preview Module
+    </button>
+    <button class="action-btn" onclick="saveAllChanges()">
+        <i class="fas fa-save"></i>
+        Save Changes
+    </button>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+    <i class="fas fa-check"></i>
+    <span id="toastMessage">Changes saved successfully!</span>
+</div>
+
+<script>
+// Global variables
+let selectedLessonId = {{ selected_lesson.id if selected_lesson else 'null' }};
+let hasUnsavedChanges = false;
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadMediaForLesson();
+    setupEditableElements();
+});
+
+// Select a lesson
+function selectLesson(lessonId) {
+    if (hasUnsavedChanges) {
+        if (!confirm('You have unsaved changes. Do you want to continue without saving?')) {
+            return;
+        }
+    }
+    
+    window.location.href = `{{ url_for('module_lesson_editor.edit_module_lessons', class_id=class_data.id, module_id=module.id) }}?selected_lesson_id=${lessonId}`;
+}
+
+// Setup editable elements
+function setupEditableElements() {
+    // Title editing
+    const editableTitle = document.querySelector('.editable-title');
+    if (editableTitle) {
+        editableTitle.addEventListener('blur', function() {
+            updateLessonField(this.dataset.lessonId, this.dataset.field, this.textContent.trim());
+        });
+        
+        editableTitle.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur();
+            }
+        });
+    }
+    
+    // Description and content editing
+    const editableTextareas = document.querySelectorAll('.editable-description');
+    editableTextareas.forEach(textarea => {
+        textarea.addEventListener('blur', function() {
+            updateLessonField(this.dataset.lessonId, this.dataset.field, this.value);
+        });
+        
+        textarea.addEventListener('input', function() {
+            hasUnsavedChanges = true;
+        });
+    });
+    
+    // Objective editing
+    const editableObjectives = document.querySelectorAll('.editable-objective');
+    editableObjectives.forEach(objective => {
+        objective.addEventListener('blur', function() {
+            updateObjective(this.dataset.lessonId, this.dataset.index, this.textContent.trim());
+        });
+        
+        objective.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur();
+            }
+        });
+    });
+}
+
+// Update lesson field
+function updateLessonField(lessonId, field, value) {
+    const data = {};
+    data[field] = value;
+    
+    fetch(`/instructor/api/lessons/${lessonId}/content`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Changes saved successfully!', 'success');
+            hasUnsavedChanges = false;
+        } else {
+            showToast('Error saving changes: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error saving changes', 'error');
+    });
+}
+
+// Update objective
+function updateObjective(lessonId, index, value) {
+    // Get all objectives
+    const objectives = [];
+    const objectiveElements = document.querySelectorAll('.editable-objective');
+    objectiveElements.forEach(el => {
+        const text = el.textContent.trim();
+        if (text) {
+            objectives.push(text);
+        }
+    });
+    
+    updateLessonField(lessonId, 'learning_objectives', objectives);
+}
+
+// Add new objective
+function addObjective() {
+    const objectivesList = document.getElementById('objectivesList');
+    const newIndex = objectivesList.children.length;
+    
+    const newObjective = document.createElement('li');
+    newObjective.className = 'objective-item';
+    newObjective.innerHTML = `
+        <i class="fas fa-check-circle objective-icon"></i>
+        <div class="editable-objective" 
+             contenteditable="true" 
+             placeholder="Enter learning objective..."
+             data-index="${newIndex}"
+             data-lesson-id="${selectedLessonId}"></div>
+        <button class="media-action-btn" onclick="removeObjective(${newIndex})" style="margin-left: 8px;">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    objectivesList.appendChild(newObjective);
+    
+    // Focus on the new objective
+    const editableObjective = newObjective.querySelector('.editable-objective');
+    editableObjective.focus();
+    
+    // Setup event listeners
+    editableObjective.addEventListener('blur', function() {
+        updateObjective(this.dataset.lessonId, this.dataset.index, this.textContent.trim());
+    });
+    
+    editableObjective.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            this.blur();
+        }
+    });
+}
+
+// Remove objective
+function removeObjective(index) {
+    const objectivesList = document.getElementById('objectivesList');
+    const objectives = objectivesList.children;
+    
+    if (objectives.length > index) {
+        objectives[index].remove();
+        
+        // Update all remaining objectives with new indices
+        Array.from(objectives).forEach((obj, i) => {
+            const editableObj = obj.querySelector('.editable-objective');
+            editableObj.dataset.index = i;
+            
+            const removeBtn = obj.querySelector('.media-action-btn');
+            removeBtn.setAttribute('onclick', `removeObjective(${i})`);
+        });
+        
+        // Save updated objectives
+        updateObjective(selectedLessonId, 0, ''); // This will collect all objectives
+    }
+}
+
+// Load media for current lesson
+function loadMediaForLesson() {
+    if (!selectedLessonId) return;
+    
+    fetch(`/instructor/api/lessons/${selectedLessonId}/media`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayMediaFiles(data.media);
+            } else {
+                console.error('Error loading media:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+// Display media files
+function displayMediaFiles(mediaFiles) {
+    const videoContainer = document.getElementById('videoContainer');
+    const imageContainer = document.getElementById('imageContainer');
+    const documentContainer = document.getElementById('documentContainer');
+    
+    // Clear containers
+    if (videoContainer) videoContainer.innerHTML = '';
+    if (imageContainer) imageContainer.innerHTML = '';
+    if (documentContainer) documentContainer.innerHTML = '';
+    
+    let videoCount = 0, imageCount = 0, documentCount = 0;
+    
+    mediaFiles.forEach(media => {
+        const mediaElement = createMediaElement(media);
+        
+        if (media.file_type && media.file_type.startsWith('video/')) {
+            videoContainer?.appendChild(mediaElement);
+            videoCount++;
+        } else if (media.file_type && media.file_type.startsWith('image/')) {
+            imageContainer?.appendChild(mediaElement);
+            imageCount++;
+        } else {
+            documentContainer?.appendChild(mediaElement);
+            documentCount++;
+        }
+    });
+    
+    // Update counts
+    document.getElementById('videoCount').textContent = videoCount;
+    document.getElementById('imageCount').textContent = imageCount;
+    document.getElementById('documentCount').textContent = documentCount;
+    
+    // Show empty state if no media
+    if (mediaFiles.length === 0) {
+        [videoContainer, imageContainer, documentContainer].forEach(container => {
+            if (container) {
+                container.innerHTML = '<div class="empty-media"><i class="fas fa-folder-open"></i>No files yet</div>';
+            }
+        });
+    }
+}
+
+// Create media element
+function createMediaElement(media) {
+    const mediaItem = document.createElement('div');
+    mediaItem.className = 'media-item';
+    
+    let iconClass = 'fas fa-file';
+    let mediaClass = 'document';
+    
+    if (media.file_type) {
+        if (media.file_type.startsWith('video/')) {
+            iconClass = 'fas fa-play';
+            mediaClass = 'video';
+        } else if (media.file_type.startsWith('image/')) {
+            iconClass = 'fas fa-image';
+            mediaClass = 'image';
+        }
+    }
+    
+    mediaItem.innerHTML = `
+        <div class="media-icon ${mediaClass}">
+            <i class="${iconClass}"></i>
+        </div>
+        <div class="media-info">
+            <div class="media-name">${media.original_filename || 'Unknown'}</div>
+            <div class="media-size">${formatFileSize(media.file_size || 0)}</div>
+        </div>
+        <div class="media-actions">
+            <button class="media-action-btn" onclick="insertMediaIntoContent('${media.file_url}', '${mediaClass}')">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button class="media-action-btn" onclick="deleteMedia(${media.id})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    return mediaItem;
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Upload media
+function uploadMedia(type) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    
+    if (type === 'video') {
+        input.accept = 'video/*';
+    } else if (type === 'image') {
+        input.accept = 'image/*';
+    } else if (type === 'document') {
+        input.accept = '.doc,.docx,.pdf,.txt';
+    }
+    
+    input.onchange = function(event) {
+        const files = event.target.files;
+        if (files.length > 0) {
+            uploadFiles(files);
+        }
+    };
+    
+    input.click();
+}
+
+// Upload files
+function uploadFiles(files) {
+    // This would typically upload files to a server
+    // For now, we'll show a placeholder
+    showToast('File upload feature coming soon!', 'info');
+}
+
+// Insert media into content
+function insertMediaIntoContent(fileUrl, mediaType) {
+    // Find the content textarea
+    const contentTextarea = document.querySelector('[data-field="content"]');
+    if (contentTextarea) {
+        let insertText = '';
+        
+        if (mediaType === 'video') {
+            insertText = `\n[VIDEO: ${fileUrl}]\n`;
+        } else if (mediaType === 'image') {
+            insertText = `\n[IMAGE: ${fileUrl}]\n`;
+        } else {
+            insertText = `\n[DOCUMENT: ${fileUrl}]\n`;
+        }
+        
+        // Insert at cursor position or append
+        const cursorPos = contentTextarea.selectionStart || contentTextarea.value.length;
+        const textBefore = contentTextarea.value.substring(0, cursorPos);
+        const textAfter = contentTextarea.value.substring(cursorPos);
+        
+        contentTextarea.value = textBefore + insertText + textAfter;
+        contentTextarea.focus();
+        
+        // Mark as having unsaved changes
+        hasUnsavedChanges = true;
+        showToast('Media reference added to content', 'success');
+    }
+}
+
+// Insert a collapsible dropdown (details/summary) into lesson content
+function insertDropdown() {
+    const contentTextarea = document.querySelector('[data-field="content"]');
+    if (!contentTextarea) return;
+
+    const snippet = `\n<details class="lesson-dropdown">\n  <summary><strong>New Section</strong> — click to expand</summary>\n  <div class="dropdown-body">\n    <p>Write details here. You can add lists, images, and code snippets.</p>\n  </div>\n</details>\n`;
+
+    const start = contentTextarea.selectionStart ?? contentTextarea.value.length;
+    const end = contentTextarea.selectionEnd ?? contentTextarea.value.length;
+    const before = contentTextarea.value.slice(0, start);
+    const after = contentTextarea.value.slice(end);
+    contentTextarea.value = before + snippet + after;
+    contentTextarea.focus();
+    // place cursor after inserted block
+    const pos = (before + snippet).length;
+    contentTextarea.setSelectionRange(pos, pos);
+
+    hasUnsavedChanges = true;
+    showToast('Dropdown section inserted', 'success');
+}
+
+// Delete media
+function deleteMedia(mediaId) {
+    if (confirm('Are you sure you want to delete this media file?')) {
+        // This would typically delete from server
+        showToast('Delete media feature coming soon!', 'info');
+    }
+}
+
+// Preview module
+function previewModule() {
+    window.open(`{{ url_for('class_content_controller_old.preview_module_page', class_id=class_data.id, module_id=module.id) }}`, '_blank');
+}
+
+// Save all changes
+function saveAllChanges() {
+    showToast('All changes saved successfully!', 'success');
+    hasUnsavedChanges = false;
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    toast.className = `toast show ${type}`;
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+// Warn about unsaved changes
+window.addEventListener('beforeunload', function(e) {
+    if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+    }
+});
+</script>
+{% endblock %}

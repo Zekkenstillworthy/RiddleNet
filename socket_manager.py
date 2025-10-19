@@ -44,60 +44,60 @@ def admin_only(f):
             return
         
         # Enhanced admin check with multiple validation methods
-        is_admin = False
+        is_instructor = False
         admin_check_results = []
         
-        # Method 1: Check if user is instance of Admin model (from admins table)
+        # Method 1: Check if user is instance of Instructor model (from admins table)
         try:
-            from admin.models.user import Admin
-            if isinstance(current_user, Admin):
-                is_admin = True
-                admin_check_results.append(f"✅ Admin model instance ({current_user.__tablename__})")
+            from instructor.models.user import Instructor
+            if isinstance(current_user, Instructor):
+                is_instructor = True
+                admin_check_results.append(f"✅ Instructor model instance ({current_user.__tablename__})")
         except ImportError as e:
-            admin_check_results.append(f"⚠️ Admin model import failed: {e}")
+            admin_check_results.append(f"⚠️ Instructor model import failed: {e}")
         
-        # Method 2: Check if user is instance of AdminUser model (from admin_users table)
-        if not is_admin:
+        # Method 2: Check if user is instance of InstructorUser model (from admin_users table)
+        if not is_instructor:
             try:
-                from admin.models.user import AdminUser
-                if isinstance(current_user, AdminUser):
-                    is_admin = True
-                    admin_check_results.append(f"✅ AdminUser model instance ({current_user.__tablename__})")
+                from instructor.models.user import InstructorUser
+                if isinstance(current_user, InstructorUser):
+                    is_instructor = True
+                    admin_check_results.append(f"✅ InstructorUser model instance ({current_user.__tablename__})")
             except ImportError:
-                admin_check_results.append("⚠️ AdminUser model not available")
+                admin_check_results.append("⚠️ InstructorUser model not available")
         
-        # Method 3: Check for is_admin attribute
-        if not is_admin and hasattr(current_user, 'is_admin') and current_user.is_admin:
-            is_admin = True
-            admin_check_results.append(f"✅ is_admin=True")
+        # Method 3: Check for is_instructor attribute
+        if not is_instructor and hasattr(current_user, 'is_instructor') and current_user.is_instructor:
+            is_instructor = True
+            admin_check_results.append(f"✅ is_instructor=True")
         
         # Method 4: Check for admin role
-        if not is_admin and hasattr(current_user, 'role'):
+        if not is_instructor and hasattr(current_user, 'role'):
             role = getattr(current_user, 'role', '').lower()
             if role in ['admin', 'super_admin', 'administrator']:
-                is_admin = True
+                is_instructor = True
                 admin_check_results.append(f"✅ Admin role: {current_user.role}")
         
         # Method 5: Check table name directly
-        if not is_admin and hasattr(current_user, '__tablename__'):
+        if not is_instructor and hasattr(current_user, '__tablename__'):
             if current_user.__tablename__ in ['admins', 'admin_users']:
-                is_admin = True
+                is_instructor = True
                 admin_check_results.append(f"✅ Admin table: {current_user.__tablename__}")
         
         # Method 6: Check if user exists in admin tables by username
-        if not is_admin and hasattr(current_user, 'username'):
+        if not is_instructor and hasattr(current_user, 'username'):
             try:
-                from admin.models.user import Admin, AdminUser
+                from instructor.models.user import Instructor, InstructorUser
                 # Check admins table
-                admin_user = Admin.query.filter_by(username=current_user.username).first()
+                admin_user = Instructor.query.filter_by(username=current_user.username).first()
                 if admin_user:
-                    is_admin = True
+                    is_instructor = True
                     admin_check_results.append(f"✅ Found in admins table (ID: {admin_user.id})")
                 else:
                     # Check admin_users table
-                    admin_user = AdminUser.query.filter_by(username=current_user.username).first()
-                    if admin_user and admin_user.is_admin:
-                        is_admin = True
+                    admin_user = InstructorUser.query.filter_by(username=current_user.username).first()
+                    if admin_user and admin_user.is_instructor:
+                        is_instructor = True
                         admin_check_results.append(f"✅ Found in admin_users table (ID: {admin_user.id})")
             except Exception as e:
                 admin_check_results.append(f"⚠️ Admin table lookup failed: {e}")
@@ -107,15 +107,15 @@ def admin_only(f):
         print(f"   - User type: {type(current_user)}")
         print(f"   - User ID: {getattr(current_user, 'id', 'N/A')}")
         print(f"   - Table name: {getattr(current_user, '__tablename__', 'N/A')}")
-        print(f"   - Has is_admin: {hasattr(current_user, 'is_admin')}")
-        print(f"   - is_admin value: {getattr(current_user, 'is_admin', 'N/A')}")
+        print(f"   - Has is_instructor: {hasattr(current_user, 'is_instructor')}")
+        print(f"   - is_instructor value: {getattr(current_user, 'is_instructor', 'N/A')}")
         print(f"   - Has role: {hasattr(current_user, 'role')}")
         print(f"   - Role value: {getattr(current_user, 'role', 'N/A')}")
         for result in admin_check_results:
             print(f"   {result}")
         
         # Final validation
-        if not is_admin:
+        if not is_instructor:
             print(f"❌ Admin validation failed - all methods returned false")
             emit('error', {'message': 'Unauthorized: Admin access required'})
             return
@@ -126,7 +126,7 @@ def admin_only(f):
         func_name = f.__name__
         if 'announcement' in func_name.lower():
             print(f"📢 Announcement-related admin function called: {func_name}")
-            print(f"   - Admin user: {current_user.username}")
+            print(f"   - Instructor user: {current_user.username}")
             print(f"   - Function args: {args}")
             print(f"   - Function kwargs: {kwargs}")
         
@@ -181,61 +181,61 @@ def register_handlers():
                 
                 print(f"✅ User {username} joined rooms: user_{user_id}, all_users, announcements")
                 
-                # ENHANCED admin detection - support both Admin and AdminUser models
-                is_admin = False
+                # ENHANCED admin detection - support both Admin and InstructorUser models
+                is_instructor = False
                 admin_detection_log = []
                 
-                # Method 1: Check if user is instance of Admin model (from admins table)
+                # Method 1: Check if user is instance of Instructor model (from admins table)
                 try:
-                    from admin.models.user import Admin
-                    if isinstance(current_user, Admin):
-                        is_admin = True
-                        admin_detection_log.append("✅ Admin model instance detected")
-                        print(f"🔐 Admin detected: {username} (instance of Admin model)")
+                    from instructor.models.user import Instructor
+                    if isinstance(current_user, Instructor):
+                        is_instructor = True
+                        admin_detection_log.append("✅ Instructor model instance detected")
+                        print(f"🔐 Admin detected: {username} (instance of Instructor model)")
                 except ImportError:
-                    admin_detection_log.append("⚠️ Admin model import failed")
+                    admin_detection_log.append("⚠️ Instructor model import failed")
                 
-                # Method 2: Check if user is instance of AdminUser model (from admin_users table)
+                # Method 2: Check if user is instance of InstructorUser model (from admin_users table)
                 try:
-                    from admin.models.user import AdminUser
-                    if isinstance(current_user, AdminUser):
-                        is_admin = True
-                        admin_detection_log.append("✅ AdminUser model instance detected")
-                        print(f"🔐 AdminUser detected: {username} (instance of AdminUser model)")
+                    from instructor.models.user import InstructorUser
+                    if isinstance(current_user, InstructorUser):
+                        is_instructor = True
+                        admin_detection_log.append("✅ InstructorUser model instance detected")
+                        print(f"🔐 InstructorUser detected: {username} (instance of InstructorUser model)")
                     else:
-                        # Check if user exists in AdminUser table by ID or username
-                        admin_by_id = AdminUser.query.filter_by(id=user_id).first()
-                        admin_by_username = AdminUser.query.filter_by(username=username).first()
+                        # Check if user exists in InstructorUser table by ID or username
+                        admin_by_id = InstructorUser.query.filter_by(id=user_id).first()
+                        admin_by_username = InstructorUser.query.filter_by(username=username).first()
                         
-                        if admin_by_id and admin_by_id.is_admin:
-                            is_admin = True
-                            admin_detection_log.append(f"✅ Found in AdminUser table by ID (Admin: {admin_by_id.is_admin})")
-                            print(f"🔐 Admin found in AdminUser table by ID: {username}")
-                        elif admin_by_username and admin_by_username.is_admin:
-                            is_admin = True
-                            admin_detection_log.append(f"✅ Found in AdminUser table by username (Admin: {admin_by_username.is_admin})")
-                            print(f"🔐 Admin found in AdminUser table by username: {username}")
+                        if admin_by_id and admin_by_id.is_instructor:
+                            is_instructor = True
+                            admin_detection_log.append(f"✅ Found in InstructorUser table by ID (Admin: {admin_by_id.is_instructor})")
+                            print(f"🔐 Admin found in InstructorUser table by ID: {username}")
+                        elif admin_by_username and admin_by_username.is_instructor:
+                            is_instructor = True
+                            admin_detection_log.append(f"✅ Found in InstructorUser table by username (Admin: {admin_by_username.is_instructor})")
+                            print(f"🔐 Admin found in InstructorUser table by username: {username}")
                         else:
-                            admin_detection_log.append("❌ Not found in AdminUser table or not admin")
+                            admin_detection_log.append("❌ Not found in InstructorUser table or not admin")
                 except ImportError:
-                    admin_detection_log.append("⚠️ AdminUser model import failed")
+                    admin_detection_log.append("⚠️ InstructorUser model import failed")
                 except Exception as e:
-                    admin_detection_log.append(f"❌ AdminUser check error: {e}")
+                    admin_detection_log.append(f"❌ InstructorUser check error: {e}")
                 
-                # Method 3: Check if regular User has admin privileges (is_admin field)
+                # Method 3: Check if regular User has instructor privileges (is_instructor field)
                 try:
-                    if hasattr(current_user, 'is_admin') and current_user.is_admin:
-                        is_admin = True
-                        admin_detection_log.append("✅ is_admin=True on current_user")
-                        print(f"🔐 Admin privileges detected: {username} (is_admin=True)")
+                    if hasattr(current_user, 'is_instructor') and current_user.is_instructor:
+                        is_instructor = True
+                        admin_detection_log.append("✅ is_instructor=True on current_user")
+                        print(f"🔐 Instructor privileges detected: {username} (is_instructor=True)")
                 except:
-                    admin_detection_log.append("❌ is_admin check failed")
+                    admin_detection_log.append("❌ is_instructor check failed")
                 
                 # Method 4: Check if user_type indicates admin role
                 try:
                     if hasattr(current_user, 'user_type') and current_user.user_type in ['admin', 'instructor']:
-                        is_admin = True
-                        admin_detection_log.append(f"✅ Admin user_type: {current_user.user_type}")
+                        is_instructor = True
+                        admin_detection_log.append(f"✅ Instructor user_type: {current_user.user_type}")
                         print(f"🔐 Admin role detected: {username} (user_type={getattr(current_user, 'user_type', 'unknown')})")
                 except:
                     admin_detection_log.append("❌ user_type check failed")
@@ -243,7 +243,7 @@ def register_handlers():
                 # Method 5: Check tablename for admin tables
                 try:
                     if hasattr(current_user, '__tablename__') and current_user.__tablename__ in ['admin_users', 'admins']:
-                        is_admin = True
+                        is_instructor = True
                         admin_detection_log.append(f"✅ Admin table: {current_user.__tablename__}")
                         print(f"🔐 Admin table detected: {username} (table: {current_user.__tablename__})")
                 except:
@@ -253,9 +253,9 @@ def register_handlers():
                 print(f"🔍 Admin detection results for {username}:")
                 for log_entry in admin_detection_log:
                     print(f"   {log_entry}")
-                print(f"🎯 Final admin status: {'ADMIN' if is_admin else 'USER'}")
+                print(f"🎯 Final admin status: {'ADMIN' if is_instructor else 'USER'}")
                 
-                if is_admin:
+                if is_instructor:
                     join_room('admin_room')
                     print(f"✅ Admin {username} joined admin room")
                     
@@ -290,7 +290,7 @@ def register_handlers():
                     'user_id': user_id,
                     'username': username,
                     'timestamp': datetime.utcnow().isoformat(),
-                    'is_admin': is_admin
+                    'is_instructor': is_instructor
                 }, room='admin_room')
                 
             else:
@@ -459,7 +459,7 @@ def emit_admin_user_update():
         print(f"📊 Sent user update to admin panel: {len(connected_users)} users")
         
     except Exception as e:
-        print(f"❌ Error sending admin user update: {e}")
+        print(f"❌ Error sending instructor user update: {e}")
 
 def emit_admin_activity(activity_type, username, details, icon='bx-info-circle'):
     """Send activity update to admin panel"""

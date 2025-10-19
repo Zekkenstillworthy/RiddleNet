@@ -17,11 +17,11 @@ import json
 import random
 from typing import Dict, List, Optional, Tuple
 
-from admin.models.topology import Topology
+from instructor.models.topology import Topology
 from user.models.topology_progress import TopologyProgress
-from admin.models.simulation import Simulation
+from instructor.models.simulation import Simulation
 from user.models import User, Score
-from admin import db
+from __init__ import db
 
 
 class GamifiedTopologyService:

@@ -10,11 +10,11 @@ import uuid
 from collections import defaultdict
 from threading import Lock
 
-from admin import db
-from admin.models.collaboration import CollaborationSetting, CollaborationLobby, TeamAssignment
-from admin.models.simulation import Simulation
-from admin.models.class_model import Class
-from admin.models.user import User
+from __init__ import db
+from instructor.models.collaboration import CollaborationSetting, CollaborationLobby, TeamAssignment
+from instructor.models.simulation import Simulation
+from instructor.models.class_model import Class
+from instructor.models.user import User
 
 
 class TeamSession:
@@ -741,7 +741,7 @@ def get_collaboration_service():
 # Utility functions for integration with other parts of the system
 
 def create_team_assignments(class_id: int, simulation_id: int, teams: List[Dict[str, Any]], 
-                          admin_id: int) -> Dict[str, Any]:
+                          instructor_id: int) -> Dict[str, Any]:
     """Create team assignments for a class and simulation"""
     try:
         assignments = []
@@ -753,7 +753,7 @@ def create_team_assignments(class_id: int, simulation_id: int, teams: List[Dict[
                 team_name=team_data['name'],
                 team_members=team_data['members'],  # List of user IDs
                 team_leader=team_data.get('leader'),
-                created_by=admin_id
+                created_by=instructor_id
             )
             
             db.session.add(team_assignment)
@@ -802,7 +802,7 @@ def get_collaboration_settings(simulation_id: int) -> Dict[str, Any]:
             'roles': ['Leader', 'Observer', 'Operator']
         }
 
-def save_collaboration_settings(simulation_id: int, settings: Dict[str, Any], admin_id: int) -> Dict[str, Any]:
+def save_collaboration_settings(simulation_id: int, settings: Dict[str, Any], instructor_id: int) -> Dict[str, Any]:
     """Save collaboration settings for a simulation"""
     try:
         setting = CollaborationSetting.query.filter_by(simulation_id=simulation_id).first()
@@ -810,7 +810,7 @@ def save_collaboration_settings(simulation_id: int, settings: Dict[str, Any], ad
         if not setting:
             setting = CollaborationSetting(
                 simulation_id=simulation_id,
-                created_by=admin_id
+                created_by=instructor_id
             )
             db.session.add(setting)
         

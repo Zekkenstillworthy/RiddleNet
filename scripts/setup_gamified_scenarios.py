@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from application import create_app
 from user.models import db
-from admin.models.topology import Topology
+from instructor.models.topology import Topology
 from datetime import datetime
 
 def create_initial_scenarios():

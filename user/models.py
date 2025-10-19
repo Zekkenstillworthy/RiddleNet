@@ -15,7 +15,10 @@ def __getattr__(name):
         from user.models.topology_progress import TopologyProgress
         return TopologyProgress
     elif name == 'class_students':
-        from admin.models.class_model import class_students
+        from instructor.models.class_model import class_students
         return class_students
+    elif name == 'SimulationProgress':
+        from instructor.models.simulation_progress import SimulationProgress
+        return SimulationProgress
     else:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

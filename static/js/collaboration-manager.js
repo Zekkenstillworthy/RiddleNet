@@ -450,7 +450,7 @@ class CollaborationManager {
                     // Join the admin collaboration monitoring room
                     this.socket.emit('join_admin_collaboration_monitoring');
                 });
-                \
+                
                 this.socket.on('joined_collaboration_monitoring', (data) => {
                     console.log('✅ Joined collaboration monitoring room:', data.message);
                 });

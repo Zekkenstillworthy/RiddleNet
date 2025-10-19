@@ -7,9 +7,9 @@ from functools import wraps
 from flask import jsonify, request, current_app
 from flask_login import current_user
 
-def admin_required(f):
+def instructor_required(f):
     """
-    Decorator to ensure only authenticated admin users can access endpoints
+    Decorator to ensure only authenticated instructor users can access endpoints
     Supports multiple admin validation methods for flexibility
     ENHANCED: No longer relies on session namespace for admin validation
     """
@@ -27,55 +27,55 @@ def admin_required(f):
             print("❌ Admin decorator: User not authenticated, redirecting to login")
             if request.is_json:
                 return jsonify({'error': 'Authentication required'}), 401
-            # For admin routes, redirect to admin login instead of user login
+            # For instructor routes, redirect to admin login instead of user login
             from flask import redirect, url_for, session
             session['admin_login_redirect'] = request.url
             return redirect(url_for('auth.login'))
         
         # Check multiple admin validation methods
-        is_admin = False
+        is_instructor = False
         
-        # Method 1: Check Admin model instance (MOST RELIABLE)
+        # Method 1: Check Instructor model instance (MOST RELIABLE)
         try:
-            from admin.models.user import Admin
-            if isinstance(current_user, Admin):
-                is_admin = True
-                print(f"✅ Admin decorator: Admin model instance detected for {current_user.username}")
-                current_app.logger.debug(f"Admin validation successful: {current_user.username} (Admin model instance)")
+            from instructor.models.user import Instructor
+            if isinstance(current_user, Instructor):
+                is_instructor = True
+                print(f"✅ Admin decorator: Instructor model instance detected for {current_user.username}")
+                current_app.logger.debug(f"Admin validation successful: {current_user.username} (Instructor model instance)")
         except ImportError:
             pass
         
-        # Method 2: Check is_admin attribute
-        if not is_admin and hasattr(current_user, 'is_admin') and current_user.is_admin:
-            is_admin = True
-            print(f"✅ Admin decorator: is_admin=True for {current_user.username}")
-            current_app.logger.debug(f"Admin validation successful: {current_user.username} (is_admin=True)")
+        # Method 2: Check is_instructor attribute
+        if not is_instructor and hasattr(current_user, 'is_instructor') and current_user.is_instructor:
+            is_instructor = True
+            print(f"✅ Admin decorator: is_instructor=True for {current_user.username}")
+            current_app.logger.debug(f"Admin validation successful: {current_user.username} (is_instructor=True)")
         
         # Method 3: Check role attribute
-        if not is_admin and hasattr(current_user, 'role') and current_user.role in ['admin', 'super_admin']:
-            is_admin = True
+        if not is_instructor and hasattr(current_user, 'role') and current_user.role in ['admin', 'super_admin']:
+            is_instructor = True
             print(f"✅ Admin decorator: role={current_user.role} for {current_user.username}")
             current_app.logger.debug(f"Admin validation successful: {current_user.username} (role={current_user.role})")
         
         # Method 4: Check if user ID is in admin table (FALLBACK)
-        if not is_admin:
+        if not is_instructor:
             try:
-                from admin.models.user import Admin
-                admin_user = Admin.query.filter_by(username=current_user.username).first()
+                from instructor.models.user import Instructor
+                admin_user = Instructor.query.filter_by(username=current_user.username).first()
                 if admin_user:
-                    is_admin = True
+                    is_instructor = True
                     print(f"✅ Admin decorator: Found in admin table for {current_user.username}")
                     current_app.logger.debug(f"Admin validation successful: {current_user.username} (found in admin table)")
             except Exception as e:
                 print(f"❌ Admin decorator: Admin table lookup failed: {e}")
                 current_app.logger.warning(f"Admin table lookup failed: {e}")
         
-        if not is_admin:
+        if not is_instructor:
             print(f"❌ Admin decorator: Admin validation failed for user: {getattr(current_user, 'username', 'unknown')}")
             current_app.logger.warning(f"Admin validation failed for user: {getattr(current_user, 'username', 'unknown')}")
             if request.is_json:
                 return jsonify({'error': 'Admin access required'}), 403
-            # For admin routes, redirect to admin login instead of user login
+            # For instructor routes, redirect to admin login instead of user login
             from flask import redirect, url_for, session
             session['admin_login_redirect'] = request.url
             return redirect(url_for('auth.login'))
@@ -84,7 +84,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def api_admin_required(f):
+def api_instructor_required(f):
     """
     Decorator specifically for API endpoints that require admin access
     Always returns JSON responses
@@ -94,32 +94,32 @@ def api_admin_required(f):
         if not current_user.is_authenticated:
             return jsonify({'error': 'Authentication required'}), 401
         
-        # Use the same admin validation logic as admin_required
-        is_admin = False
+        # Use the same admin validation logic as instructor_required
+        is_instructor = False
         
         try:
-            from admin.models.user import Admin
-            if isinstance(current_user, Admin):
-                is_admin = True
+            from instructor.models.user import Instructor
+            if isinstance(current_user, Instructor):
+                is_instructor = True
         except ImportError:
             pass
         
-        if not is_admin and hasattr(current_user, 'is_admin') and current_user.is_admin:
-            is_admin = True
+        if not is_instructor and hasattr(current_user, 'is_instructor') and current_user.is_instructor:
+            is_instructor = True
         
-        if not is_admin and hasattr(current_user, 'role') and current_user.role in ['admin', 'super_admin']:
-            is_admin = True
+        if not is_instructor and hasattr(current_user, 'role') and current_user.role in ['admin', 'super_admin']:
+            is_instructor = True
         
-        if not is_admin:
+        if not is_instructor:
             try:
-                from admin.models.user import Admin
-                admin_user = Admin.query.filter_by(username=current_user.username).first()
+                from instructor.models.user import Instructor
+                admin_user = Instructor.query.filter_by(username=current_user.username).first()
                 if admin_user:
-                    is_admin = True
+                    is_instructor = True
             except Exception:
                 pass
         
-        if not is_admin:
+        if not is_instructor:
             return jsonify({'error': 'Admin access required'}), 403
         
         return f(*args, **kwargs)
@@ -128,7 +128,7 @@ def api_admin_required(f):
 def user_required(f):
     """
     Decorator to ensure only authenticated users can access endpoints
-    Less strict than admin_required
+    Less strict than instructor_required
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):

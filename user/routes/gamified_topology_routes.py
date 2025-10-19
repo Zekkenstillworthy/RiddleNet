@@ -18,8 +18,8 @@ import json
 from utils.auth_decorators import user_login_required
 from services.gamified_topology_service import GamifiedTopologyService
 from user.models.topology_progress import TopologyProgress
-from admin.models.topology import Topology
-from admin import db
+from instructor.models.topology import Topology
+from __init__ import db
 
 # Create the blueprint
 gamified_topology_bp = Blueprint('gamified_topology', __name__, url_prefix='/topology')

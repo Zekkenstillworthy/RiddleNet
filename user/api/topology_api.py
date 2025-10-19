@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from admin.models.topology import Topology
+from instructor.models.topology import Topology
 from __init__ import db
 from flask_cors import cross_origin
 

@@ -5,8 +5,8 @@ API routes for collaborative troubleshooting lobby management
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from services.troubleshooting_lobbies import lobby_manager
-from admin.models.class_model import Class
-from admin.models.activity_log import ActivityLog
+from instructor.models.class_model import Class
+from instructor.models.activity_log import ActivityLog
 
 # Create blueprint for collaborative troubleshooting API
 collaborative_troubleshooting_api_bp = Blueprint(

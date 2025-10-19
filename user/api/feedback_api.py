@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from user.models.performance_feedback import PerformanceFeedback, FeedbackSession
 from user.models.user import User
-from admin.models.user import Admin
+from instructor.models.user import Instructor
 from __init__ import db
 from sqlalchemy import func, desc
 from datetime import datetime, timedelta
@@ -10,10 +10,10 @@ import json
 
 feedback_api = Blueprint('feedback_api', __name__)
 
-def is_admin():
+def is_instructor():
     """Check if current user is admin"""
     return (hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins') or \
-           (hasattr(current_user, 'is_admin') and current_user.is_admin)
+           (hasattr(current_user, 'is_instructor') and current_user.is_instructor)
 
 @feedback_api.route('/api/feedback/sessions', methods=['GET'])
 @login_required
@@ -21,7 +21,7 @@ def get_feedback_sessions():
     """Get feedback sessions for current user or all users (if admin)"""
     try:
         # Check if user is admin
-        if is_admin():
+        if is_instructor():
             # Admin can see all sessions
             sessions = FeedbackSession.query.order_by(desc(FeedbackSession.start_time)).all()
         else:
@@ -55,7 +55,7 @@ def get_session_analytics(session_id):
             }), 404
         
         # Check permissions
-        if not is_admin() and session.user_id != current_user.id:
+        if not is_instructor() and session.user_id != current_user.id:
             return jsonify({
                 'success': False,
                 'error': 'Unauthorized'
@@ -121,7 +121,7 @@ def get_session_analytics(session_id):
 def get_feedback_dashboard():
     """Get dashboard data for admin monitoring"""
     try:
-        if not is_admin():
+        if not is_instructor():
             return jsonify({
                 'success': False,
                 'error': 'Admin access required'
@@ -223,7 +223,7 @@ def get_user_feedback_summary(user_id):
     """Get feedback summary for a specific user"""
     try:
         # Check permissions
-        if not is_admin() and current_user.id != user_id:
+        if not is_instructor() and current_user.id != user_id:
             return jsonify({
                 'success': False,
                 'error': 'Unauthorized'
@@ -342,7 +342,7 @@ def export_session_data(session_id):
             }), 404
         
         # Check permissions
-        if not is_admin() and session.user_id != current_user.id:
+        if not is_instructor() and session.user_id != current_user.id:
             return jsonify({
                 'success': False,
                 'error': 'Unauthorized'

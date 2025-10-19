@@ -15,9 +15,13 @@ def get_topology_progress_model():
     return TopologyProgress
 
 def get_class_students_table():
-    # Import the table from admin models where it's defined
-    from admin.models.class_model import class_students
+    # Import the table from instructor models where it's defined
+    from instructor.models.class_model import class_students
     return class_students
+
+def get_simulation_progress_model():
+    from instructor.models.simulation_progress import SimulationProgress
+    return SimulationProgress
 
 def get_user_notification_model():
     from .user_notification import UserNotification
@@ -38,6 +42,8 @@ def __getattr__(name):
         return get_topology_progress_model()
     elif name == 'class_students':
         return get_class_students_table()
+    elif name == 'SimulationProgress':
+        return get_simulation_progress_model()
     elif name == 'UserNotification':
         return get_user_notification_model()
     elif name == 'NotificationPreferences':

@@ -2,7 +2,7 @@ from socket_manager import socketio, authenticated_only, admin_only, user_connec
 from flask_socketio import emit, join_room, leave_room
 from flask import request
 from flask_login import current_user
-from utils.auth_decorators import admin_required
+from utils.auth_decorators import instructor_required
 from __init__ import db
 from datetime import datetime, timedelta
 from typing import List
@@ -38,11 +38,11 @@ def emit_simulation_update(class_id: int, update_data: dict):
     except Exception as e:
         print(f"❌ Error sending simulation update: {str(e)}")
 
-def emit_admin_simulation_updated(simulation_id: int, update_data: dict):
+def emit_instructor_simulation_updated(simulation_id: int, update_data: dict):
     """Emit real-time simulation update to users currently viewing the simulation"""
     try:
         notification_data = {
-            'type': 'admin_simulation_update',
+            'type': 'instructor_simulation_update',
             'simulation_id': simulation_id,
             'update_data': update_data,
             'timestamp': datetime.utcnow().isoformat(),
@@ -50,11 +50,11 @@ def emit_admin_simulation_updated(simulation_id: int, update_data: dict):
         }
         
         # Emit to users currently viewing this simulation
-        socketio.emit('admin_simulation_updated', notification_data, room=f'simulation_{simulation_id}')
+        socketio.emit('instructor_simulation_updated', notification_data, room=f'simulation_{simulation_id}')
         
         # Also emit to any class rooms that might have this simulation assigned
-        from admin.models.simulation import Simulation
-        from admin.models.class_content import ClassAssignment
+        from instructor.models.simulation import Simulation
+        from instructor.models.class_content import ClassAssignment
         
         simulation = Simulation.query.get(simulation_id)
         if simulation:
@@ -102,9 +102,9 @@ def emit_grade_notification(user_id: int, grade_data: dict):
 def emit_new_simulation_available(simulation_id: int, category: str, class_ids: List[int] = None):
     """Notify users when new simulation is available"""
     try:
-        from admin.models.simulation import Simulation
-        from admin.models.class_model import Class
-        from admin.services.enhanced_class_template_generator import EnhancedClassTemplateGenerator
+        from instructor.models.simulation import Simulation
+        from instructor.models.class_model import Class
+        from instructor.services.enhanced_class_template_generator import EnhancedClassTemplateGenerator
         
         simulation = Simulation.query.get(simulation_id)
         if not simulation:
@@ -188,8 +188,8 @@ def emit_new_learning_path_available(path_id: int, category: str, class_ids: Lis
 def emit_assignment_created(assignment_id: int, class_id: int, assignment_type: str):
     """Notify users when new assignment is created"""
     try:
-        from admin.models.simulation_assignment import SimulationAssignment
-        from admin.models.simulation import Simulation
+        from instructor.models.simulation_assignment import SimulationAssignment
+        from instructor.models.simulation import Simulation
         
         assignment = SimulationAssignment.query.get(assignment_id)
         if not assignment:
@@ -343,7 +343,7 @@ def handle_leave_module_room(data):
             print(f"📚 User {current_user.id} left module room {room}")
 
 @socketio.on('module_simulation_linked')
-@admin_required
+@instructor_required
 def handle_module_simulation_linked(data):
     """Handle module-simulation linking/unlinking events"""
     try:
@@ -539,7 +539,7 @@ def handle_topology_completion(data):
         'topology_type': topology_type,
         'score': score,
         'timestamp': datetime.utcnow().isoformat()
-    }, room='admin_room')
+    }, room='instructor_room')
 
 # Essay submission events
 @socketio.on('essay_submission')
@@ -563,7 +563,7 @@ def handle_essay_submission(data):
         'category': category,
         'content_length': len(content),
         'timestamp': datetime.utcnow().isoformat()
-    }, room='admin_room')
+    }, room='instructor_room')
 
 # Admin specific events
 
@@ -659,8 +659,8 @@ def handle_send_notification(data):
             'title': title,
             'message': message,
             'type': notification_type,
-        'from_admin': True,
-        'admin_name': getattr(current_user, 'username', 'Admin'),
+        'from_instructor': True,
+        'instructor_name': getattr(current_user, 'username', 'Admin'),
         'timestamp': datetime.utcnow().isoformat()
     }
     
@@ -680,8 +680,8 @@ def handle_debug_admin_status(data=None):
             'username': getattr(current_user, 'username', 'Unknown'),
             'user_type': str(type(current_user)),
             'is_authenticated': current_user.is_authenticated,
-            'has_is_admin': hasattr(current_user, 'is_admin'),
-            'is_admin_value': getattr(current_user, 'is_admin', None),
+            'has_is_instructor': hasattr(current_user, 'is_instructor'),
+            'is_instructor_value': getattr(current_user, 'is_instructor', None),
             'has_role': hasattr(current_user, 'role'),
             'role_value': getattr(current_user, 'role', None),
             'timestamp': datetime.utcnow().isoformat()
@@ -689,8 +689,8 @@ def handle_debug_admin_status(data=None):
         
         # Check if user exists in admin table
         try:
-            from admin.models.user import Admin
-            admin_user = Admin.query.filter_by(username=current_user.username).first()
+            from instructor.models.user import Instructor
+            admin_user = Instructor.query.filter_by(username=current_user.username).first()
             user_info['exists_in_admin_table'] = admin_user is not None
             if admin_user:
                 user_info['admin_table_id'] = admin_user.id
@@ -2098,7 +2098,7 @@ def handle_team_chat_send(data):
         
         # Check if chat is enabled (use existing collaboration settings)
         try:
-            from admin.models.collaboration import CollaborationSetting
+            from instructor.models.collaboration import CollaborationSetting
             if simulation_session_id:
                 # Check collaboration settings for this simulation
                 settings = CollaborationSetting.query.filter_by(

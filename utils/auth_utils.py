@@ -1,5 +1,5 @@
 """
-Authentication utilities for handling both admin and user access
+Authentication utilities for handling both instructor and user access
 """
 
 from functools import wraps
@@ -8,9 +8,9 @@ from flask_login import current_user
 
 def flexible_login_required(f):
     """
-    UPDATED: Decorator that BLOCKS admin access to user routes 
+    UPDATED: Decorator that BLOCKS instructor access to user routes 
     Only allows regular users to access user routes for proper separation
-    TEMPORARY: Allow admin access for debugging assignments
+    TEMPORARY: Allow instructor access for debugging assignments
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -21,20 +21,20 @@ def flexible_login_required(f):
         except Exception as _e:
             # Avoid breaking the route from debug logging
             print(f"[AUTH][WARN] flexible_login_required pre-log failed: {_e}")
-        # TEMPORARY: Allow admin access for debugging - comment out the block below
-        # FIRST: Block admin access to user routes
+        # TEMPORARY: Allow instructor access for debugging - comment out the block below
+        # FIRST: Block instructor access to user routes
         if False and current_user.is_authenticated:  # Temporarily disabled
-            from admin.models.user import Admin
-            if isinstance(current_user, Admin):
-                # Admin trying to access user route - block it
-                print(f"🚫 BLOCKED: Admin {current_user.username} attempting to access user route: {request.path}")
-                flash('Admins cannot access student portals. Please use the admin panel instead.', 'warning')
-                return redirect('/admin/')
+            from instructor.models.user import Instructor
+            if isinstance(current_user, Instructor):
+                # Instructor trying to access user route - block it
+                print(f"🚫 BLOCKED: Instructor {current_user.username} attempting to access user route: {request.path}")
+                flash('Instructors cannot access student portals. Please use the instructor panel instead.', 'warning')
+                return redirect('/instructor/')
         
         # Check if regular user is authenticated via Flask-Login
         if current_user.is_authenticated:
-            from admin.models.user import Admin
-            # TEMPORARY: Allow admin access for debugging
+            from instructor.models.user import Instructor
+            # TEMPORARY: Allow instructor access for debugging
             try:
                 print(f"[AUTH] Flask-Login authenticated as: {getattr(current_user, 'username', None)} (type={type(current_user).__name__}) -> allow")
             except Exception:
@@ -58,12 +58,12 @@ def flexible_login_required(f):
 
 def get_current_user_context():
     """
-    Get current user context for templates, handling both admin and user authentication
-    FIXED: Prevents admin session contamination in user templates
+    Get current user context for templates, handling both instructor and user authentication
+    FIXED: Prevents instructor session contamination in user templates
     """
     user_context = {
         'is_authenticated': False,
-        'is_admin': False,
+        'is_instructor': False,
         'user': None,
         'user_id': None,
         'username': None,
@@ -72,24 +72,24 @@ def get_current_user_context():
     
     print(f"🔍 get_current_user_context: Starting with default context")
     
-    # Check Flask-Login authentication (admin or user)
+    # Check Flask-Login authentication (instructor or user)
     if current_user.is_authenticated:
         print(f"🔍 Flask-Login user authenticated: {current_user.username}")
         user_context['is_authenticated'] = True
         user_context['user_id'] = current_user.id
         user_context['username'] = current_user.username
         
-        # STRICT admin check - only Admin model instances are admins
-        from admin.models.user import Admin
-        if isinstance(current_user, Admin):
-            print(f"🔍 Admin user detected: {current_user.username}")
-            user_context['is_admin'] = True
-            # CRITICAL FIX: Do NOT pass admin object as 'user' to prevent contamination
-            # Admin templates can use current_user directly
-            user_context['user'] = None  # Prevents admin data bleeding into user templates
+        # STRICT instructor check - only Instructor model instances are instructors
+        from instructor.models.user import Instructor
+        if isinstance(current_user, Instructor):
+            print(f"🔍 Instructor user detected: {current_user.username}")
+            user_context['is_instructor'] = True
+            # CRITICAL FIX: Do NOT pass instructor object as 'user' to prevent contamination
+            # Instructor templates can use current_user directly
+            user_context['user'] = None  # Prevents instructor data bleeding into user templates
             
             # Try to find a corresponding regular user account with the same username
-            # This allows admins to have profile pictures when viewing student interfaces
+            # This allows instructors to have profile pictures when viewing student interfaces
             from user.models.user import User
             regular_user = User.query.filter_by(username=current_user.username).first()
             if regular_user and regular_user.profile_img:
@@ -117,7 +117,7 @@ def get_current_user_context():
             user_context['user_id'] = user.id
             user_context['username'] = user.username
             user_context['profile_img'] = getattr(user, 'profile_img', None)
-            user_context['is_admin'] = False
+            user_context['is_instructor'] = False
     else:
         print(f"🔍 No authentication found")
     

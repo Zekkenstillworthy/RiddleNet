@@ -34,8 +34,8 @@ class NotificationPreferences(db.Model):
     system_update_email = db.Column(db.Boolean, default=True)
     system_update_websocket = db.Column(db.Boolean, default=True)
     
-    admin_notice_email = db.Column(db.Boolean, default=True)
-    admin_notice_websocket = db.Column(db.Boolean, default=True)
+    instructor_notice_email = db.Column(db.Boolean, default=True)
+    instructor_notice_websocket = db.Column(db.Boolean, default=True)
     
     security_alert_email = db.Column(db.Boolean, default=True)
     security_alert_websocket = db.Column(db.Boolean, default=True)
@@ -93,9 +93,9 @@ class NotificationPreferences(db.Model):
                     'email': self.system_update_email,
                     'websocket': self.system_update_websocket
                 },
-                'admin_notice': {
-                    'email': self.admin_notice_email,
-                    'websocket': self.admin_notice_websocket
+                'instructor_notice': {
+                    'email': self.instructor_notice_email,
+                    'websocket': self.instructor_notice_websocket
                 },
                 'security_alert': {
                     'email': self.security_alert_email,

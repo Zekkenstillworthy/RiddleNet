@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from user.models.user_notification import UserNotification
 from user.models.notification_preferences import NotificationPreferences
-from admin.models.notification_history import NotificationHistory
+from instructor.models.notification_history import NotificationHistory
 from utils.auth_decorators import user_required
 from __init__ import db
 import json
@@ -353,7 +353,7 @@ def test_notification():
 def get_recent_announcements():
     """Get recent system announcements for display on page load"""
     try:
-        # Get recent notifications and filter for system announcements AND admin notices
+        # Get recent notifications and filter for system announcements AND Instructor notices
         all_notifications = UserNotification.get_user_notifications(
             user_id=current_user.id,
             limit=50,  # Get more to filter from
@@ -365,7 +365,7 @@ def get_recent_announcements():
         # Note: Keep this list in sync with services/notification_service.py
         ANNOUNCEMENT_TYPES = [
             'system_announcement',   # Explicit system-wide announcements
-            'admin_notice',          # Admin notices
+            'instructor_notice',          # Instructor notices
             'maintenance_alert',     # Legacy/alternate maintenance type
             'system_update',         # General system updates
             'maintenance',           # Maintenance notifications
@@ -379,25 +379,25 @@ def get_recent_announcements():
         announcement_data = []
         for announcement in announcements:
             # Try to get the actual admin name from the notification
-            admin_name = 'System'  # Default fallback
+            instructor_name = 'System'  # Default fallback
             
             # Check if there's sender info in the notification
             if hasattr(announcement, 'sender_id') and announcement.sender_id:
                 try:
-                    from admin.models.user import Admin
-                    admin = Admin.query.get(announcement.sender_id)
-                    if admin:
-                        admin_name = admin.username
+                    from instructor.models.user import Instructor
+                    instructor = Instructor.query.get(announcement.sender_id)
+                    if instructor:
+                        instructor_name = instructor.username
                 except:
                     pass  # Keep default if lookup fails
             
             # For certain types, use more specific names
             if announcement.notification_type in ['maintenance', 'maintenance_alert']:
-                admin_name = 'System Maintenance'
+                instructor_name = 'System Maintenance'
             elif announcement.notification_type == 'security_alert':
-                admin_name = 'Security Team'
+                instructor_name = 'Security Team'
             elif announcement.notification_type == 'course_update':
-                admin_name = 'Course Admin'
+                instructor_name = 'Course Instructor'
             
             announcement_data.append({
                 'id': announcement.id,
@@ -408,8 +408,8 @@ def get_recent_announcements():
                 'type': announcement.notification_type,
                 'priority': announcement.priority,
                 'timestamp': announcement.created_at.isoformat(),
-                'from_admin': True,
-                'admin_name': admin_name,  # Now uses actual admin name when available
+                'from_instructor': True,
+                'instructor_name': instructor_name,  # Now uses actual admin name when available
                 'source': 'system_announcement',  # Keep source stable for now
                 'is_read': announcement.is_read,
                 'created_at': announcement.created_at.isoformat()

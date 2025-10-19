@@ -5,8 +5,9 @@ Provides comprehensive API support for the new network simulation engine
 
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
-from user.models import db, User, SimulationProgress
-from admin.models.simulation import Simulation
+from user.models import db, User
+from instructor.models.simulation_progress import SimulationProgress
+from instructor.models.simulation import Simulation
 from user.utils import validate_simulation_access
 import json
 from datetime import datetime

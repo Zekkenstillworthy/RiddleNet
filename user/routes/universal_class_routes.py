@@ -8,19 +8,19 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from user.models.user import User
 from user.models.score import Score  # Import Score to ensure SQLAlchemy relationship works
-from admin.models.class_model import Class
-from admin.models.module import Module, Lesson, LessonProgress
-from admin.models.simulation import Simulation, SimulationAttempt
-from admin.models.question_group import QuestionGroup
-from admin.models.question import Question, StandardQuestion
-from admin.models.simulation import Simulation
-from admin.models.simulation_assignment import SimulationAssignment
-from admin.models.module import Module, Lesson
-from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
-from admin.models.assignment_submission import AssignmentSubmission
+from instructor.models.class_model import Class
+from instructor.models.module import Module, Lesson, LessonProgress
+from instructor.models.simulation import Simulation, SimulationAttempt
+from instructor.models.question_group import QuestionGroup
+from instructor.models.question import Question, StandardQuestion
+from instructor.models.simulation import Simulation
+from instructor.models.simulation_assignment import SimulationAssignment
+from instructor.models.module import Module, Lesson
+from instructor.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+from instructor.models.assignment_submission import AssignmentSubmission
 # ClassTopic removed - content now organized under Modules
 from utils.auth_utils import flexible_login_required, get_current_user_context
-from admin import db
+from __init__ import db
 from sqlalchemy import and_
 import json, ast
 
@@ -36,7 +36,7 @@ def dynamic_class_detail(class_id):
     This route dynamically generates class pages using a single template:
     - Pulls all content from database (modules, simulations, assessments)
     - Supports custom styling per class (colors, CSS)
-    - Admin can create new classes without needing new templates
+    - Instructor can create new classes without needing new templates
     - All content is database-driven and configurable
     """
     print(f"🚀 ROUTE HIT: /class/{class_id} - dynamic_class_detail called")
@@ -489,7 +489,7 @@ def module_detail(class_id, module_id):
         # Get user's submissions for these assignments
         assignment_submissions = {}
         if user_id:
-            from admin.models.assignment_submission import AssignmentSubmission
+            from instructor.models.assignment_submission import AssignmentSubmission
             submissions = AssignmentSubmission.query.filter_by(student_id=user_id).all()
             assignment_submissions = {sub.assignment_id: sub for sub in submissions}
         
@@ -599,11 +599,11 @@ def module_detail(class_id, module_id):
 
                 try:
                     raw_objectives = getattr(active_lesson, 'learning_objectives', [])
-                    print(f"DEBUG: Raw learning_objectives for lesson {active_lesson.id}: {repr(raw_objectives)} (type: {type(raw_objectives)})")
                     active_lesson.learning_objectives = _normalize_list_field(raw_objectives)
-                    print(f"DEBUG: Normalized learning_objectives: {active_lesson.learning_objectives}")
                 except Exception as nerr:
                     print(f"Normalization error (learning_objectives) for lesson {active_lesson.id}: {nerr}")
+                    import traceback
+                    traceback.print_exc()
                     active_lesson.learning_objectives = []
                 try:
                     raw_concepts = getattr(active_lesson, 'key_concepts', [])
@@ -621,7 +621,7 @@ def module_detail(class_id, module_id):
                 
                 # Get lesson-specific simulations
                 if hasattr(active_lesson, 'simulation_ids') and active_lesson.simulation_ids:
-                    from admin.models.simulation import Simulation
+                    from instructor.models.simulation import Simulation
                     # Safely normalize simulation_ids (may be stored as list, JSON string, python repr, or comma-separated)
                     raw_ids = active_lesson.simulation_ids
                     normalized_ids = []

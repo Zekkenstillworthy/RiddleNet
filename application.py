@@ -64,7 +64,7 @@ login_manager.login_message_category = 'info'
 @login_manager.user_loader
 def load_user(user_id):
     """Enhanced user_loader with proper session isolation and poisoning prevention"""
-    from admin.models.user import Admin
+    from instructor.models.user import Instructor
     from user.models import User
     from flask import session
     
@@ -77,15 +77,15 @@ def load_user(user_id):
     auth_namespace = session.get('auth_namespace', 'unknown')
     
     # CRITICAL FIX: Strict namespace validation with no fallback
-    if auth_namespace == 'admin':
-        user = db.session.get(Admin, user_id_int)
+    if auth_namespace == 'instructor':
+        user = db.session.get(Instructor, user_id_int)
         if user:
-            # Verify the loaded user is actually an Admin instance
-            if not isinstance(user, Admin):
-                print(f"[SECURITY] Namespace poisoning: Expected Admin, got {type(user)}")
+            # Verify the loaded user is actually an Instructor instance
+            if not isinstance(user, Instructor):
+                print(f"[SECURITY] Namespace poisoning: Expected Instructor, got {type(user)}")
                 session.clear()
                 return None
-            print(f"[AUTH] Loaded admin user: {user.username} (ID: {user_id_int})")
+            print(f"[AUTH] Loaded instructor user: {user.username} (ID: {user_id_int})")
             return user
         return None
     
@@ -147,32 +147,32 @@ def register_blueprints():
     
     # Admin blueprints
     admin_blueprints = [
-        ('admin.controllers.auth_controller', 'auth_bp', '/admin'),
-        ('admin.controllers.dashboard_controller', 'dashboard_bp', '/admin'),
-        ('admin.controllers.user_controller', 'user_bp', '/admin'),
-        ('admin.controllers.score_controller', 'score_bp', '/admin'),
-        ('admin.controllers.essay_controller', 'essay_bp', '/admin'),
-        ('admin.controllers.question_group_controller', 'question_group_bp', '/admin/groups'),
-        ('admin.controllers.class_controller', 'class_controller', '/admin'),
-        ('admin.controllers.class_content_controller', 'class_content_controller_old', '/admin'),
-        ('admin.controllers.lesson_editor_controller', 'lesson_editor_bp', None),
-        ('admin.controllers.enhanced_module_controller', 'enhanced_module_bp', '/admin'),
-        ('admin.controllers.module_lesson_editor_controller', 'module_lesson_editor_bp', None),
-        ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin'),
-        ('admin.controllers.notification_controller', 'notification_controller', None),
-        ('admin.controllers.lesson_controller', 'lesson_bp', '/admin'),
-        ('admin.controllers.tutorial_controller', 'tutorial_bp', None),
-        ('admin.controllers.rubric_controller', 'rubric_bp', None),
-        ('admin.controllers.admin_settings_controller', 'admin_settings_bp', None),
-        ('admin.routes.api_routes', 'api_bp', None),
-        ('admin.routes.topology_routes', 'topology_bp', None),
-        ('admin.routes.topology_api_routes', 'topology_api_bp', None),
-        ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None),
-        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None),
-        ('admin.routes.simulation_routes', 'admin_simulation_bp', None),
-        ('admin.routes.collaboration_api', 'admin_collaboration_api_bp', None),
-        ('admin.controllers.instructor_lab_controller', 'instructor_lab_bp', None),
-        ('admin.routes.lab_api', 'lab_api', None)
+        ('instructor.controllers.auth_controller', 'auth_bp', '/admin'),
+        ('instructor.controllers.dashboard_controller', 'dashboard_bp', '/admin'),
+        ('instructor.controllers.user_controller', 'user_bp', '/admin'),
+        ('instructor.controllers.score_controller', 'score_bp', '/admin'),
+        ('instructor.controllers.essay_controller', 'essay_bp', '/admin'),
+        ('instructor.controllers.question_group_controller', 'question_group_bp', '/admin/groups'),
+        ('instructor.controllers.class_controller', 'class_controller', '/admin'),
+        ('instructor.controllers.class_content_controller', 'class_content_controller_old', '/admin'),
+        ('instructor.controllers.lesson_editor_controller', 'lesson_editor_bp', None),
+        ('instructor.controllers.enhanced_module_controller', 'enhanced_module_bp', '/admin'),
+        ('instructor.controllers.module_lesson_editor_controller', 'module_lesson_editor_bp', None),
+        ('instructor.controllers.audit_log_controller', 'audit_log_bp', '/admin'),
+        ('instructor.controllers.notification_controller', 'notification_controller', None),
+        ('instructor.controllers.lesson_controller', 'lesson_bp', '/admin'),
+        ('instructor.controllers.tutorial_controller', 'tutorial_bp', None),
+        ('instructor.controllers.rubric_controller', 'rubric_bp', None),
+        ('instructor.controllers.admin_settings_controller', 'admin_settings_bp', None),
+        ('instructor.routes.api_routes', 'api_bp', None),
+        ('instructor.routes.topology_routes', 'topology_bp', None),
+        ('instructor.routes.topology_api_routes', 'topology_api_bp', None),
+        ('instructor.routes.troubleshooting_routes', 'troubleshooting_bp', None),
+        ('instructor.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None),
+        ('instructor.routes.simulation_routes', 'admin_simulation_bp', None),
+        ('instructor.routes.collaboration_api', 'admin_collaboration_api_bp', None),
+        ('instructor.controllers.instructor_lab_controller', 'instructor_lab_bp', None),
+        ('instructor.routes.lab_api', 'lab_api', None)
     ]
     
     for module_path, blueprint_name, url_prefix in admin_blueprints:
@@ -237,8 +237,8 @@ def enforce_namespace_security():
             return redirect(url_for('auth.login'))
         
         # Double-check user type matches namespace
-        from admin.models.user import Admin
-        if current_user.is_authenticated and not isinstance(current_user, Admin):
+        from instructor.models.user import Instructor
+        if current_user.is_authenticated and not isinstance(current_user, Instructor):
             log_security_event('TYPE_MISMATCH', {
                 'namespace': 'admin',
                 'user_type': type(current_user).__name__
@@ -293,8 +293,8 @@ def check_admin_auth():
             return redirect(url_for('auth.login', next=next_url))
         
         if current_user.is_authenticated:
-            from admin.models.user import Admin
-            if not isinstance(current_user, Admin):
+            from instructor.models.user import Instructor
+            if not isinstance(current_user, Instructor):
                 flash('Access denied. Admin credentials required.', 'error')
                 next_url = (request.full_path if request.query_string else request.path).rstrip('?')
                 return redirect(url_for('auth.login', next=next_url))
@@ -324,11 +324,11 @@ def update_user_last_active():
     
     # Only update for regular user routes
     try:
-        from admin.models.user import AdminUser
+        from instructor.models.user import InstructorUser
         from user.models.user import User
         
         # Check if it's a regular user (not admin)
-        if isinstance(current_user, (AdminUser, User)) and hasattr(current_user, 'last_active'):
+        if isinstance(current_user, (InstructorUser, User)) and hasattr(current_user, 'last_active'):
             from datetime import datetime
             # Only update every 5 minutes to reduce DB writes
             should_update = (
@@ -344,7 +344,7 @@ def update_user_last_active():
 
 # Initialize database setup
 try:
-    from admin.utils.database_setup import setup_database, migrate_existing_tables
+    from instructor.utils.database_setup import setup_database, migrate_existing_tables
     migrate_existing_tables()
     setup_database()
 except Exception as e:

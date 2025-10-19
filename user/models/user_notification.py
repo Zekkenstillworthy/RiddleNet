@@ -5,6 +5,7 @@ Stores individual notifications for each user with read/unread status
 
 from datetime import datetime
 from __init__ import db
+from instructor.models.notification_history import NotificationHistory
 
 class UserNotification(db.Model):
     """

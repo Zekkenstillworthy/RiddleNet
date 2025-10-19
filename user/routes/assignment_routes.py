@@ -7,9 +7,9 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 
 from __init__ import db
-from admin.models.class_content import ClassAssignment
-from admin.models.assignment_submission import AssignmentSubmission
-from admin.models.class_model import Class, class_students
+from instructor.models.class_content import ClassAssignment
+from instructor.models.assignment_submission import AssignmentSubmission
+from instructor.models.class_model import Class, class_students
 from user.models.user import User
 from utils.auth_utils import flexible_login_required, get_current_user_context
 from services.deadline_service import DeadlineService
@@ -126,7 +126,7 @@ def view_assignment(assignment_id):
         late_policy_name = None
         try:
             # If there's an availability window with a policy, expose its name
-            from admin.models.deadline_policy import AssignmentAvailabilityWindow, DeadlinePolicy
+            from instructor.models.deadline_policy import AssignmentAvailabilityWindow, DeadlinePolicy
             availability = AssignmentAvailabilityWindow.query.filter_by(assignment_id=assignment.id).first()
             policy = None
             if availability and availability.deadline_policy_id:
@@ -140,7 +140,7 @@ def view_assignment(assignment_id):
                 effective_due = assignment.due_date
                 # If a student extension exists and active, prefer its due date
                 try:
-                    from admin.models.deadline_policy import StudentDeadlineExtension
+                    from instructor.models.deadline_policy import StudentDeadlineExtension
                     ext = StudentDeadlineExtension.query.filter_by(assignment_id=assignment.id, student_id=user_id, is_active=True).first()
                 except Exception:
                     ext = None

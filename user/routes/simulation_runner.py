@@ -5,13 +5,13 @@ Connects to admin-created simulations in the database
 
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session, current_app, flash
 from flask_login import login_required, current_user
-from admin.models.simulation import Simulation, SimulationAttempt
-from admin.models.class_model import Class
-from admin.models.class_content import ClassAssignment
-from admin.models.assignment_submission import AssignmentSubmission, AssignmentSubmissionHistory
-from admin.models.rubric import Rubric, RubricCriterion, RubricAssessment
-from admin.models.module import Module, Lesson
-from admin import db
+from instructor.models.simulation import Simulation, SimulationAttempt
+from instructor.models.class_model import Class
+from instructor.models.class_content import ClassAssignment
+from instructor.models.assignment_submission import AssignmentSubmission, AssignmentSubmissionHistory
+from instructor.models.rubric import Rubric, RubricCriterion, RubricAssessment
+from instructor.models.module import Module, Lesson
+from __init__ import db
 from datetime import datetime
 import json
 from services.deadline_service import DeadlineService
@@ -579,7 +579,7 @@ def complete_simulation(simulation_id):
                     old_status='submitted' if not is_resub else 'resubmitted',
                     new_status='graded',
                     changed_by=current_user.id,
-                    changed_by_type='admin' if getattr(current_user, 'role', '') == 'admin' else 'student',
+                    changed_by_type='instructor' if getattr(current_user, 'role', '') == 'instructor' else 'student',
                     notes='Auto-graded from simulation completion'
                 ))
                 db.session.commit()
@@ -634,7 +634,7 @@ def restart_simulation(simulation_id):
 def get_user_task_assignment(simulation_id):
     """Get user's task assignment for a simulation"""
     try:
-        from admin.models.task_assignment import TaskAssignment
+        from instructor.models.task_assignment import TaskAssignment
         
         assignment = TaskAssignment.query.filter_by(
             simulation_id=simulation_id,
@@ -663,7 +663,7 @@ def get_user_task_assignment(simulation_id):
 def validate_task_progress(simulation_id):
     """Validate student's current progress against task requirements"""
     try:
-        from admin.models.task_assignment import TaskAssignment
+        from instructor.models.task_assignment import TaskAssignment
         
         data = request.json
         if not data:
@@ -705,6 +705,24 @@ def validate_task_progress(simulation_id):
         
         db.session.commit()
         
+        # ===== REAL-TIME SYNC: Emit progress update to admin dashboard =====
+        try:
+            from socket_manager import socketio
+            socketio.emit('task_progress_updated', {
+                'simulation_id': simulation_id,
+                'user_id': current_user.id,
+                'username': current_user.username,
+                'assignment_id': assignment.id,
+                'completion_percentage': validation_result['completion_percentage'],
+                'auto_grade_score': validation_result['auto_grade_score'],
+                'validation': validation_result['validation'],
+                'status': assignment.status,
+                'timestamp': datetime.utcnow().isoformat()
+            }, room=f'instructor_simulation_{simulation_id}')
+            current_app.logger.info(f"📡 Progress update emitted: {current_user.username} - {validation_result['completion_percentage']}%")
+        except Exception as socket_error:
+            current_app.logger.warning(f"Socket emit failed: {socket_error}")
+        
         return jsonify({
             'success': True,
             'validation': validation_result['validation'],
@@ -724,7 +742,7 @@ def validate_task_progress(simulation_id):
 def submit_task_assignment(simulation_id):
     """Submit task assignment for grading"""
     try:
-        from admin.models.task_assignment import TaskAssignment
+        from instructor.models.task_assignment import TaskAssignment
         
         data = request.json or {}
         
@@ -746,6 +764,23 @@ def submit_task_assignment(simulation_id):
         assignment.submit_assignment(auto_grade_score=validation_result['auto_grade_score'])
         
         db.session.commit()
+        
+        # ===== REAL-TIME SYNC: Emit submission notification to admin =====
+        try:
+            from socket_manager import socketio
+            socketio.emit('task_submitted', {
+                'simulation_id': simulation_id,
+                'user_id': current_user.id,
+                'username': current_user.username,
+                'assignment_id': assignment.id,
+                'auto_grade_score': validation_result['auto_grade_score'],
+                'completion_percentage': validation_result['completion_percentage'],
+                'submitted_at': assignment.submitted_at.isoformat() if assignment.submitted_at else None,
+                'timestamp': datetime.utcnow().isoformat()
+            }, room=f'instructor_simulation_{simulation_id}')
+            current_app.logger.info(f"📡 Task submission emitted: {current_user.username}")
+        except Exception as socket_error:
+            current_app.logger.warning(f"Socket emit failed: {socket_error}")
         
         return jsonify({
             'success': True,

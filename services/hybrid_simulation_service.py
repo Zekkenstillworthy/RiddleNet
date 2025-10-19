@@ -6,9 +6,9 @@ This service provides access to database simulations created via Simulation Buil
 All static content has been removed - simulations are now fully database-driven.
 """
 
-from admin.models.simulation import Simulation
-from admin.models.module import Module, Lesson
-from admin.models.class_model import Class
+from instructor.models.simulation import Simulation
+from instructor.models.module import Module, Lesson
+from instructor.models.class_model import Class
 from flask import current_app
 import json
 

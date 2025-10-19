@@ -14,7 +14,7 @@ import json
 import time
 from flask import current_app
 from user.models.user import User
-from admin.models.user import Admin
+from instructor.models.user import Instructor
 from __init__ import db
 
 class NotificationType(Enum):
@@ -189,8 +189,8 @@ class NotificationService:
                     'type': notification_data.get('type', 'admin_notice'),
                     'priority': notification_data.get('priority', 'normal'),
                     'timestamp': notification_data.get('timestamp'),
-                    'from_admin': True,
-                    'admin_name': notification_data.get('sender_username', 'Admin'),
+                    'from_instructor': True,
+                    'instructor_name': notification_data.get('sender_username', 'Admin'),
                     'content': notification_data.get('message', ''),  # Alternative field for message
                     'source': 'admin_notification'
                 }
@@ -523,13 +523,13 @@ class NotificationService:
                               priority: NotificationPriority = NotificationPriority.NORMAL,
                               additional_data: Optional[Dict] = None,
                               sender_info: Optional[Dict] = None) -> Dict[str, Any]:
-        """Send notification to all admin users"""
+        """Send notification to all instructor users"""
         
-        # Get all admin users
-        admins = Admin.query.all()
+        # Get all instructor users
+        admins = Instructor.query.all()
         
-        # Also get users with is_admin=True
-        admin_users = User.query.filter_by(is_admin=True).all()
+        # Also get users with is_instructor=True
+        admin_users = User.query.filter_by(is_instructor=True).all()
         
         all_admins = admins + admin_users
         
@@ -680,8 +680,8 @@ class NotificationService:
                             'type': 'system_announcement',
                             'priority': priority.value,
                             'timestamp': datetime.utcnow().isoformat(),
-                            'from_admin': True,
-                            'admin_name': sender_name,
+                            'from_instructor': True,
+                            'instructor_name': sender_name,
                             'source': 'system_announcement'
                         }
                         self.socketio.emit('new_announcement', announcement_data, room=room)
@@ -738,7 +738,7 @@ class NotificationService:
         delivery_time = time.time() - start_time
         if sender_info:
             try:
-                from admin.models.notification_history import NotificationHistory
+                from instructor.models.notification_history import NotificationHistory
                 
                 # Create single record for system announcement
                 db_notification_data = {
@@ -773,7 +773,7 @@ class NotificationService:
         """Record notification in database for audit trail"""
         try:
             # Import here to avoid circular imports
-            from admin.models.notification_history import NotificationHistory
+            from instructor.models.notification_history import NotificationHistory
             
             # Prepare notification data for database
             db_notification_data = {
@@ -923,8 +923,8 @@ class NotificationService:
         
         # Get all users and admins
         all_users = User.query.all()
-        all_admins = Admin.query.all()
-        admin_users = User.query.filter_by(is_admin=True).all()
+        all_admins = Instructor.query.all()
+        admin_users = User.query.filter_by(is_instructor=True).all()
         
         all_recipients = all_users + all_admins + admin_users
         

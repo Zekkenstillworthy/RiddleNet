@@ -1,11 +1,11 @@
 from flask import Blueprint, jsonify, request, session
-from admin.models.question import Question
-from admin.models.question_group import QuestionGroup
-from admin.controllers.question_controller import QuestionController
-from admin.controllers.question_group_controller import QuestionGroupController
-from admin.models.topology import Topology
-from admin.controllers.topology_controller import TopologyController
-from admin.models.class_model import Class, class_students  # Import class_students from class_model
+from instructor.models.question import Question
+from instructor.models.question_group import QuestionGroup
+from instructor.controllers.question_controller import QuestionController
+from instructor.controllers.question_group_controller import QuestionGroupController
+from instructor.models.topology import Topology
+from instructor.controllers.topology_controller import TopologyController
+from instructor.models.class_model import Class, class_students  # Import class_students from class_model
 from __init__ import db  # Import db from main app
 from user.models.user import User as UserModel  # Import User model directly
 from user.models.score import Score as UserScore  # Use the regular Score model for all scoring
@@ -122,7 +122,7 @@ def save_essay():
         return jsonify({"status": "error", "message": "Missing question or response"}), 400
     
     try:
-        from admin.models.essay_response import EssayResponse
+        from instructor.models.essay_response import EssayResponse
         
         new_response = EssayResponse(
             user_id=session['user_id'],
@@ -243,8 +243,8 @@ def get_questions_by_lesson(lesson_id):
 def get_questions_by_module(module_id):
     """Get questions assigned to a specific module via Quiz"""
     try:
-        from admin.models.module import Module
-        from admin.models.question_group import QuestionGroup
+        from instructor.models.module import Module
+        from instructor.models.question_group import QuestionGroup
         
         # Get the module
         module = Module.query.get(module_id)

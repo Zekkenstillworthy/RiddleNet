@@ -24,7 +24,13 @@ class Config:
         '/admin/static/',
         '/admin/topology/',
         '/admin/troubleshooting/',
-        '/admin/health'
+        '/admin/health',
+        # Instructor routes share the admin auth system, so they must stay open too
+        '/instructor/login',
+        '/instructor/signup',
+        '/instructor/forgot-password',
+        '/instructor/reset-password/',
+        '/instructor/logout'
     ]
     
     # Debug routes (only enabled when FLASK_DEBUG=true)

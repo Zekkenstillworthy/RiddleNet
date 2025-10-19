@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Instructor Labs Dashboard</title>
+  <style>
+    .tooltip { border-bottom: 1px dotted #333; cursor: help; }
+  </style>
+  <script>
+    function showTip(id, text) { const el = document.getElementById(id); if (el) el.title = text; }
+    window.onload = function() {
+      showTip('create-lab', 'Create a new networking lab.');
+      showTip('export-lab', 'Export lab with SHA-256 integrity.');
+      showTip('deadline', 'Set due date and late policy.');
+    };
+  </script>
+  </head>
+  <body>
+    <h1>Instructor Labs Dashboard</h1>
+    <div>
+      <button id="create-lab" class="tooltip">New Lab</button>
+    </div>
+    <table border="1" cellpadding="6" cellspacing="0">
+      <thead>
+        <tr><th>Title</th><th>Class</th><th>Rubric</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+      {% for lab in labs %}
+        <tr>
+          <td>{{ lab.title }}</td>
+          <td>{{ lab.class_id or '-' }}</td>
+          <td>{{ lab.rubric_id or '-' }}</td>
+          <td>
+            <a id="export-lab" class="tooltip" href="/instructor/labs/{{ lab.id }}/export">Export</a>
+            |
+            <a id="deadline" class="tooltip" href="#">Deadline</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4">No labs yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </body>
+  </html>

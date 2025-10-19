@@ -1,0 +1,837 @@
+{% extends "instructor/base.html" %}
+
+{% block head %}
+<title>Troubleshooting Simulation Editor | RiddleNet Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    :root {
+        --primary-color: #0F172A;
+        --secondary-color: #1E293B;
+        --accent-color: #3B82F6;
+        --success-color: #10B981;
+        --warning-color: #F59E0B;
+        --danger-color: #EF4444;
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+
+        --background: #020617;
+        --surface: #0F172A;
+        --glass-bg: rgba(15, 23, 42, 0.8);
+        --glass-bg-light: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-muted: #64748B;
+        
+        --border-radius: 16px;
+        --border-radius-lg: 20px;
+        --border-radius-xl: 24px;
+        --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+        --transition-speed: 0.3s;
+        
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+        --gradient-card: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+    }
+
+    .editor-dashboard {
+        background: var(--background);
+        min-height: 100vh;
+        padding: 20px;
+        color: var(--text-primary);
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+    }
+
+    .page-title {
+        color: var(--cyber-glow);
+        font-size: 28px;
+        font-weight: 700;
+        font-family: 'Orbitron', sans-serif;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .page-actions {
+        display: flex;
+        gap: 15px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+        background: var(--gradient-primary);
+        color: var(--text-primary);
+        box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(0, 217, 255, 0.4);
+        color: var(--text-primary);
+    }
+
+    .btn-secondary {
+        background: var(--glass-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--glass-border);
+    }
+
+    .btn-secondary:hover {
+        background: var(--glass-bg-light);
+        border-color: var(--cyber-glow);
+        color: var(--text-primary);
+    }
+
+    .btn-small {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.2);
+        border-color: var(--cyber-glow);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+    }
+
+    .stat-icon {
+        font-size: 32px;
+        color: var(--cyber-glow);
+        margin-bottom: 10px;
+    }
+
+    .stat-number {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 5px;
+        font-family: 'Orbitron', monospace;
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .simulations-container {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .simulations-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--glass-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--glass-bg-light);
+    }
+
+    .simulations-title {
+        color: var(--cyber-glow);
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .search-box {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .search-input {
+        padding: 10px 15px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        font-size: 14px;
+        width: 250px;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .filter-select {
+        padding: 10px 15px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .simulations-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .simulation-card {
+        background: var(--glass-bg-light);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        transition: all var(--transition-speed) ease;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 300px;
+    }
+
+    .simulation-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+        border-color: var(--cyber-glow);
+    }
+
+    .simulation-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity var(--transition-speed) ease;
+    }
+
+    .simulation-card:hover::before {
+        opacity: 1;
+    }
+
+    .simulation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .simulation-title {
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0;
+        line-height: 1.3;
+        flex: 1;
+        padding-right: 10px;
+    }
+
+    .difficulty-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .difficulty-badge.easy {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--success-color);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .difficulty-badge.medium {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--warning-color);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .difficulty-badge.hard {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger-color);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .simulation-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+
+    .simulation-description {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 20px;
+        flex: 1;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+    }
+
+    .simulation-stats {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        padding: 12px;
+        background: var(--glass-bg);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--glass-border);
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+
+    .stat-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', monospace;
+    }
+
+    .stat-label-small {
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+    }
+
+    .simulation-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: auto;
+    }
+
+    .action-btn {
+        flex: 1;
+        padding: 10px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        font-size: 12px;
+        font-weight: 500;
+        text-align: center;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .action-btn.edit:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+    }
+
+    .action-btn.duplicate:hover {
+        background: rgba(245, 158, 11, 0.1);
+        border-color: var(--warning-color);
+        color: var(--warning-color);
+    }
+
+    .action-btn.delete:hover {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: var(--danger-color);
+        color: var(--danger-color);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        color: var(--text-secondary);
+        margin-bottom: 10px;
+    }
+
+    .empty-state p {
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    /* Loading state */
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 40px;
+        color: var(--text-muted);
+    }
+
+    .loading.show {
+        display: block;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--glass-border);
+        border-top: 4px solid var(--cyber-glow);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+
+        .page-actions {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .simulations-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .search-box {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+        }
+    }
+
+    /* Toast notifications */
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 15px 20px;
+        color: var(--text-primary);
+        z-index: 10000;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+        max-width: 350px;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+    }
+
+    .toast.success {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .toast.error {
+        border-left: 4px solid var(--danger-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="editor-dashboard">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-tools"></i>
+            Troubleshooting Simulation Editor
+        </h1>
+        <div class="page-actions">
+            <a href="{{ url_for('admin_troubleshooting.new_simulation_editor') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Create New Simulation
+            </a>
+            <a href="{{ url_for('user.troubleshoot') }}" class="btn btn-secondary" target="_blank">
+                <i class="fas fa-eye"></i>
+                Preview Interface
+            </a>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-puzzle-piece"></i>
+            </div>
+            <div class="stat-number">{{ simulations|length }}</div>
+            <div class="stat-label">Total Simulations</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-number">{{ simulations|selectattr('difficulty', 'equalto', 'easy')|list|length }}</div>
+            <div class="stat-label">Easy Simulations</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-fire"></i>
+            </div>
+            <div class="stat-number">{{ simulations|selectattr('difficulty', 'equalto', 'medium')|list|length }}</div>
+            <div class="stat-label">Medium Simulations</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-skull"></i>
+            </div>
+            <div class="stat-number">{{ simulations|selectattr('difficulty', 'equalto', 'hard')|list|length }}</div>
+            <div class="stat-label">Hard Simulations</div>
+        </div>
+    </div>
+
+    <div class="simulations-container">
+        <div class="simulations-header">
+            <h2 class="simulations-title">Manage Simulations</h2>
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Search simulations..." id="search-input">
+                <select class="filter-select" id="difficulty-filter">
+                    <option value="">All Difficulties</option>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+                <select class="filter-select" id="type-filter">
+                    <option value="">All Types</option>
+                    <option value="network">Network</option>
+                    <option value="passive">Passive</option>
+                    <option value="version">Version</option>
+                    <option value="configuration">Configuration</option>
+                    <option value="connectivity">Connectivity</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading simulations...</p>
+        </div>
+
+        {% if simulations %}
+        <div class="simulations-grid" id="simulations-grid">
+            {% for simulation in simulations %}
+            <div class="simulation-card" data-difficulty="{{ simulation.difficulty }}" data-type="{{ simulation.problem_type }}" data-title="{{ simulation.title|lower }}">
+                <div class="simulation-header">
+                    <h3 class="simulation-title">{{ simulation.title }}</h3>
+                    <span class="difficulty-badge {{ simulation.difficulty }}">{{ simulation.difficulty }}</span>
+                </div>
+
+                <div class="simulation-meta">
+                    <span><i class="fas fa-clock"></i> {{ simulation.time_limit }} min</span>
+                    <span><i class="fas fa-cog"></i> {{ simulation.problem_type }}</span>
+                    <span><i class="fas fa-calendar"></i> {{ simulation.created_at.strftime('%m/%d/%Y') if simulation.created_at }}</span>
+                </div>
+
+                <div class="simulation-description">
+                    {{ simulation.description[:150] }}{% if simulation.description|length > 150 %}...{% endif %}
+                </div>
+
+                <div class="simulation-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ simulation.base_score }}</div>
+                        <div class="stat-label-small">Base Score</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ simulation.hints|length if simulation.hints else 0 }}</div>
+                        <div class="stat-label-small">Hints</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ simulation.initial_topology.devices|length if simulation.initial_topology and simulation.initial_topology.devices else 0 }}</div>
+                        <div class="stat-label-small">Devices</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ simulation.required_steps|length if simulation.required_steps else 0 }}</div>
+                        <div class="stat-label-small">Steps</div>
+                    </div>
+                </div>
+
+                <div class="simulation-actions">
+                    <a href="{{ url_for('admin_troubleshooting.edit_simulation_editor', simulation_id=simulation.id) }}" class="action-btn edit">
+                        <i class="fas fa-edit"></i>
+                        Edit
+                    </a>
+                    <button class="action-btn duplicate" onclick="duplicateSimulation({{ simulation.id }})">
+                        <i class="fas fa-copy"></i>
+                        Duplicate
+                    </button>
+                    <button class="action-btn delete" onclick="deleteSimulation({{ simulation.id }})">
+                        <i class="fas fa-trash"></i>
+                        Delete
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-puzzle-piece"></i>
+            <h3>No Simulations Found</h3>
+            <p>Get started by creating your first troubleshooting simulation. Use our visual editor to build engaging network troubleshooting scenarios.</p>
+            <a href="{{ url_for('admin_troubleshooting.new_simulation_editor') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Create First Simulation
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Search and filter functionality
+class SimulationManager {
+    constructor() {
+        this.init();
+    }
+
+    init() {
+        this.setupSearch();
+        this.setupFilters();
+    }
+
+    setupSearch() {
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => this.filterSimulations());
+        }
+    }
+
+    setupFilters() {
+        const difficultyFilter = document.getElementById('difficulty-filter');
+        const typeFilter = document.getElementById('type-filter');
+
+        if (difficultyFilter) {
+            difficultyFilter.addEventListener('change', () => this.filterSimulations());
+        }
+
+        if (typeFilter) {
+            typeFilter.addEventListener('change', () => this.filterSimulations());
+        }
+    }
+
+    filterSimulations() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        const difficultyFilter = document.getElementById('difficulty-filter').value;
+        const typeFilter = document.getElementById('type-filter').value;
+        
+        const cards = document.querySelectorAll('.simulation-card');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const title = card.dataset.title;
+            const difficulty = card.dataset.difficulty;
+            const type = card.dataset.type;
+
+            const matchesSearch = !searchTerm || title.includes(searchTerm);
+            const matchesDifficulty = !difficultyFilter || difficulty === difficultyFilter;
+            const matchesType = !typeFilter || type === typeFilter;
+
+            const isVisible = matchesSearch && matchesDifficulty && matchesType;
+            
+            card.style.display = isVisible ? 'flex' : 'none';
+            if (isVisible) visibleCount++;
+        });
+
+        // Show empty state if no results
+        const grid = document.getElementById('simulations-grid');
+        const emptyState = document.querySelector('.empty-state');
+        
+        if (visibleCount === 0 && (searchTerm || difficultyFilter || typeFilter)) {
+            if (grid) grid.style.display = 'none';
+            if (!document.querySelector('.filter-empty-state')) {
+                const filterEmptyState = document.createElement('div');
+                filterEmptyState.className = 'empty-state filter-empty-state';
+                filterEmptyState.innerHTML = `
+                    <i class="fas fa-search"></i>
+                    <h3>No Matching Simulations</h3>
+                    <p>No simulations match your current filters. Try adjusting your search criteria.</p>
+                    <button class="btn btn-secondary" onclick="manager.clearFilters()">
+                        <i class="fas fa-refresh"></i>
+                        Clear Filters
+                    </button>
+                `;
+                document.querySelector('.simulations-container').appendChild(filterEmptyState);
+            }
+        } else {
+            if (grid) grid.style.display = 'grid';
+            const filterEmptyState = document.querySelector('.filter-empty-state');
+            if (filterEmptyState) {
+                filterEmptyState.remove();
+            }
+        }
+    }
+
+    clearFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('difficulty-filter').value = '';
+        document.getElementById('type-filter').value = '';
+        this.filterSimulations();
+    }
+
+    showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}"></i>
+            ${message}
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 100);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+    }
+}
+
+// Initialize manager
+const manager = new SimulationManager();
+
+// Global functions
+function duplicateSimulation(simulationId) {
+    if (confirm('Create a copy of this simulation?')) {
+        fetch(`/instructor/troubleshooting/editor/${simulationId}/duplicate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                manager.showToast('Simulation duplicated successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = `/instructor/troubleshooting/editor/${data.simulation_id}`;
+                }, 1000);
+            } else {
+                manager.showToast('Error duplicating simulation: ' + (data.message || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            manager.showToast('Error duplicating simulation: ' + error.message, 'error');
+        });
+    }
+}
+
+function deleteSimulation(simulationId) {
+    if (confirm('Are you sure you want to delete this simulation? This action cannot be undone.')) {
+        fetch(`/instructor/troubleshooting/${simulationId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                manager.showToast('Simulation deleted successfully!', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                manager.showToast('Error deleting simulation: ' + (data.message || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            manager.showToast('Error deleting simulation: ' + error.message, 'error');
+        });
+    }
+}
+</script>
+{% endblock %}

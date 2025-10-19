@@ -7,8 +7,8 @@ from __init__ import db
 def get_models():
     """Get models lazily to avoid circular imports"""
     from user.models import Score, User
-    from admin.models.question import Question
-    from admin.models.essay_response import EssayResponse
+    from instructor.models.question import Question
+    from instructor.models.essay_response import EssayResponse
     return Score, Question, EssayResponse, User
 
 class QuizController:

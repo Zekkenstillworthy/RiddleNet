@@ -7,9 +7,9 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from __init__ import create_app, db
-from admin.services.assignment_service import assignment_service
-from admin.models.simulation import Simulation
-from admin.models.class_model import Class
+from instructor.services.assignment_service import assignment_service
+from instructor.models.simulation import Simulation
+from instructor.models.class_model import Class
 
 from datetime import datetime, timedelta
 

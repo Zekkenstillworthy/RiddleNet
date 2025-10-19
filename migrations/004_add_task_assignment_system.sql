@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS task_assignments (
   id SERIAL PRIMARY KEY,
   simulation_id INTEGER NOT NULL REFERENCES simulations(id) ON DELETE CASCADE,
   user_id INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  class_id INTEGER REFERENCES class(id) ON DELETE SET NULL,
+  class_id INTEGER REFERENCES classes(id) ON DELETE SET NULL,
   
   -- Assignment Metadata
   assigned_at TIMESTAMP DEFAULT NOW(),

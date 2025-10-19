@@ -4,7 +4,7 @@ Prevents duplicate key violations when sequences fall behind.
 """
 
 from sqlalchemy import text
-from admin import db
+from __init__ import db
 
 
 def sync_sequence(table_name: str, id_column: str = 'id') -> bool:

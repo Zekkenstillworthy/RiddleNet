@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to RiddleNet | Network Learning Hub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+        @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
+        
+        :root {
+            --primary-color: #0B1426;
+            --secondary-color: #1A2B47;
+            --accent-color: #00D4FF;
+            --success-color: #00FF88;
+            --warning-color: #FF8C42;
+            --danger-color: #FF4757;
+            --cyber-glow: #00D4FF;
+            --neon-green: #39FF14;
+            --network-purple: #8B5CF6;
+            --background: #0B1426;
+            --surface: #1A2B47;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B3E5FC;
+            --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+            --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+            --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.6);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background);
+            background-image: radial-gradient(circle at 25% 25%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                              radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Network Grid Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: -1;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(11, 20, 38, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            z-index: 1000;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--cyber-glow);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--cyber-glow);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--cyber-glow);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .logo-img {
+            width: 50px;
+            height: 50px;
+            filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.5));
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 28px;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .cta-button {
+            padding: 12px 30px;
+            border: 2px solid var(--cyber-glow);
+            background: transparent;
+            color: var(--cyber-glow);
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            background: var(--cyber-glow);
+            color: var(--background);
+            box-shadow: var(--shadow-glow);
+            transform: scale(1.05);
+        }
+
+        /* Hero Section - Compact for MVP */
+        .hero {
+            min-height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 50px 80px;
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 64px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: var(--gradient-primary);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .hero-subtitle {
+            font-size: 22px;
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            animation: fadeInUp 0.8s ease 0.2s backwards;
+        }
+
+        .hero-description {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 650px;
+            margin: 0 auto 35px;
+            line-height: 1.7;
+            animation: fadeInUp 0.8s ease 0.3s backwards;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            animation: fadeInUp 0.8s ease 0.4s backwards;
+        }
+
+        /* MVP Explanation Section - Above The Fold Priority */
+        .mvp-explanation {
+            padding: 80px 50px;
+            background: rgba(26, 43, 71, 0.5);
+            border-top: 2px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .explanation-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .explanation-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 48px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 15px;
+            background: var(--gradient-primary);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .explanation-intro {
+            text-align: center;
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 60px;
+        }
+
+        /* System Overview - Two Panel Layout */
+        .system-overview {
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+            margin-bottom: 80px;
+        }
+
+        .panel-explanation {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .panel-explanation.reverse {
+            direction: rtl;
+        }
+
+        .panel-explanation.reverse > * {
+            direction: ltr;
+        }
+
+        /* Visual Cards - Matching Screenshots */
+        .panel-visual {
+            position: relative;
+        }
+
+        .visual-card {
+            background: linear-gradient(135deg, rgba(11, 20, 38, 0.95), rgba(26, 43, 71, 0.95));
+            border: 2px solid rgba(0, 212, 255, 0.4);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .visual-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+        }
+
+        .signin-visual {
+            background: linear-gradient(135deg, rgba(26, 43, 71, 0.95), rgba(11, 20, 38, 0.95));
+        }
+
+        .signup-visual {
+            background: linear-gradient(135deg, rgba(11, 20, 38, 0.95), rgba(59, 130, 246, 0.3));
+        }
+
+        .visual-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .visual-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+            color: white;
+        }
+
+        .visual-header h3 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .visual-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .visual-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .visual-input {
+            background: rgba(26, 43, 71, 0.7);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--text-secondary);
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .visual-input:hover {
+            border-color: var(--cyber-glow);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .visual-input.highlight {
+            border-color: var(--neon-green);
+            background: rgba(57, 255, 20, 0.05);
+            position: relative;
+        }
+
+        .visual-input i {
+            color: var(--cyber-glow);
+            font-size: 18px;
+            min-width: 20px;
+        }
+
+        .visual-input.highlight i {
+            color: var(--neon-green);
+        }
+
+        .badge-otp {
+            margin-left: auto;
+            padding: 4px 12px;
+            background: var(--gradient-secondary);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .visual-button {
+            background: var(--gradient-primary);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 18px;
+            border-radius: 50px;
+            text-align: center;
+            margin-top: 10px;
+            box-shadow: 0 8px 30px rgba(0, 212, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* Panel Description */
+        .panel-description {
+            padding: 20px;
+        }
+
+        .feature-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            color: var(--cyber-glow);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .panel-description h3 {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+
+        .panel-description p {
+            font-size: 17px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 25px;
+        }
+
+        .feature-points {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .feature-points li {
+            padding: 12px 0;
+            font-size: 16px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .feature-points li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-points li i {
+            color: var(--success-color);
+            font-size: 18px;
+        }
+
+        /* What You Get Section - Enhanced Visual Design */
+        .what-you-get {
+            background: linear-gradient(135deg, rgba(11, 20, 38, 0.8) 0%, rgba(26, 43, 71, 0.6) 100%);
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            border-radius: 30px;
+            padding: 60px 50px;
+            margin-bottom: 60px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Animated border gradient effect */
+        .what-you-get::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 30px;
+            padding: 2px;
+            background: linear-gradient(45deg, 
+                var(--cyber-glow) 0%, 
+                var(--accent-purple) 25%,
+                var(--cyber-glow) 50%,
+                var(--accent-purple) 75%,
+                var(--cyber-glow) 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: borderGlow 3s linear infinite;
+            background-size: 200% 200%;
+            z-index: -1;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Decorative background particles */
+        .what-you-get::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.6; }
+        }
+
+        .get-title {
+            font-size: 42px;
+            font-weight: 900;
+            text-align: center;
+            color: #FFFFFF;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            text-shadow: 
+                0 0 20px rgba(0, 212, 255, 0.5),
+                0 0 40px rgba(0, 212, 255, 0.3),
+                0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Emoji styling within title */
+        .get-title::before {
+            content: '🎓';
+            font-size: 48px;
+            animation: emojiPulse 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.5));
+        }
+
+        @keyframes emojiPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(-10deg); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .get-subtitle {
+            text-align: center;
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 50px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .get-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .get-item {
+            text-align: center;
+            padding: 35px 25px;
+            background: rgba(26, 43, 71, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 20px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        /* Hover glow effect behind card */
+        .get-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease;
+            z-index: -1;
+        }
+
+        .get-item:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .get-item:hover {
+            transform: translateY(-12px) scale(1.02);
+            border-color: var(--cyber-glow);
+            box-shadow: 
+                0 20px 50px rgba(0, 212, 255, 0.4),
+                0 0 40px rgba(0, 212, 255, 0.2),
+                inset 0 0 20px rgba(0, 212, 255, 0.1);
+            background: rgba(26, 43, 71, 0.9);
+        }
+
+        /* Animated icon container */
+        .get-icon {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, var(--cyber-glow), var(--accent-purple));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            margin: 0 auto 25px;
+            color: white;
+            box-shadow: 
+                0 0 30px rgba(0, 212, 255, 0.6),
+                0 10px 25px rgba(0, 0, 0, 0.3);
+            position: relative;
+            transition: all 0.4s ease;
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        /* Individual animation delays for each icon */
+        .get-item:nth-child(1) .get-icon { animation-delay: 0s; }
+        .get-item:nth-child(2) .get-icon { animation-delay: 0.2s; }
+        .get-item:nth-child(3) .get-icon { animation-delay: 0.4s; }
+        .get-item:nth-child(4) .get-icon { animation-delay: 0.6s; }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-8px) rotate(-5deg); }
+            75% { transform: translateY(8px) rotate(5deg); }
+        }
+
+        /* Icon ring effect */
+        .get-icon::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border: 2px solid var(--cyber-glow);
+            border-radius: 50%;
+            opacity: 0;
+            animation: ringPulse 2s ease-out infinite;
+        }
+
+        @keyframes ringPulse {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.3);
+                opacity: 0;
+            }
+        }
+
+        .get-item:hover .get-icon {
+            transform: scale(1.15) rotate(360deg);
+            box-shadow: 
+                0 0 50px rgba(0, 212, 255, 0.8),
+                0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        .get-item h4 {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .get-item:hover h4 {
+            color: var(--cyber-glow);
+            transform: scale(1.05);
+        }
+
+        .get-item p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+
+        .get-item:hover p {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Numbered badge for each item */
+        .get-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--cyber-glow));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 900;
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+        }
+
+        .get-item:hover .get-badge {
+            opacity: 1;
+            transform: scale(1) rotate(360deg);
+        }
+
+        /* Feature Tips Below Cards */
+        .feature-tip {
+            margin-top: 15px;
+            padding: 10px 15px;
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--cyber-glow);
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .feature-tip i {
+            font-size: 14px;
+            color: var(--neon-green);
+        }
+
+        .get-item:hover .feature-tip {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Tools Showcase Section */
+        .tools-showcase {
+            margin-top: 60px;
+            padding: 40px;
+            background: rgba(11, 20, 38, 0.6);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tools-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .tools-title i {
+            color: var(--network-purple);
+            font-size: 30px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 25px;
+        }
+
+        .tool-badge {
+            background: rgba(26, 43, 71, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 15px;
+            padding: 25px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .tool-badge:hover {
+            transform: translateY(-8px);
+            border-color: var(--cyber-glow);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .tool-badge:hover::before {
+            transform: scaleX(1);
+        }
+
+        .badge-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 15px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        /* Color-coded badge icons */
+        .badge-icon.dashboard {
+            background: linear-gradient(135deg, #3B82F6, #1E40AF);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .badge-icon.simulation {
+            background: linear-gradient(135deg, #00D4FF, #0096C7);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        }
+
+        .badge-icon.quiz {
+            background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .badge-icon.troubleshoot {
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .badge-icon.leaderboard {
+            background: linear-gradient(135deg, #39FF14, #22C55E);
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+        }
+
+        .badge-icon.resources {
+            background: linear-gradient(135deg, #EC4899, #DB2777);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+        }
+
+        .tool-badge:hover .badge-icon {
+            transform: scale(1.1) rotate(360deg);
+        }
+
+        .badge-name {
+            display: block;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .badge-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Quick Start Guide Section */
+        .quick-start-guide {
+            margin-top: 50px;
+            padding: 35px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(139, 92, 246, 0.05));
+            border: 2px dashed rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .guide-title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .guide-title i {
+            color: var(--neon-green);
+            font-size: 28px;
+            animation: rocketBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes rocketBounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(15deg); }
+        }
+
+        .guide-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .guide-step {
+            background: rgba(26, 43, 71, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+
+        .guide-step:hover {
+            transform: scale(1.05);
+            border-color: var(--cyber-glow);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .step-marker {
+            width: 45px;
+            height: 45px;
+            min-width: 45px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 900;
+            color: white;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .step-content-mini {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .step-content-mini strong {
+            font-size: 16px;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .step-content-mini span {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .guide-arrow {
+            font-size: 24px;
+            color: var(--cyber-glow);
+            font-weight: 700;
+            animation: arrowPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes arrowPulse {
+            0%, 100% { opacity: 0.4; transform: translateX(0); }
+            50% { opacity: 1; transform: translateX(5px); }
+        }
+
+        /* Explanation CTA */
+        .explanation-cta {
+            text-align: center;
+            padding: 50px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(139, 92, 246, 0.1));
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+        }
+
+        .explanation-cta h3 {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+        }
+
+        .explanation-cta p {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .btn-primary.large {
+            font-size: 20px;
+            padding: 20px 50px;
+        }
+
+        .btn-primary {
+            padding: 16px 40px;
+            background: var(--gradient-primary);
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-secondary {
+            padding: 16px 40px;
+            background: transparent;
+            color: var(--cyber-glow);
+            font-size: 18px;
+            font-weight: 700;
+            border: 2px solid var(--cyber-glow);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 212, 255, 0.1);
+            transform: translateY(-3px);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 100px 50px;
+            background: rgba(26, 43, 71, 0.3);
+        }
+
+        .section-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 48px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 60px;
+            background: var(--gradient-primary);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: rgba(26, 43, 71, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--cyber-glow);
+            box-shadow: 0 20px 60px rgba(0, 212, 255, 0.3);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-primary);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        }
+
+        .feature-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        .feature-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Challenges Section */
+        .challenges {
+            padding: 100px 50px;
+        }
+
+        .challenges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .challenge-card {
+            background: rgba(26, 43, 71, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .challenge-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-secondary);
+        }
+
+        .challenge-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(57, 255, 20, 0.3);
+            border-color: var(--neon-green);
+        }
+
+        .challenge-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: var(--gradient-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.5);
+        }
+
+        .challenge-name {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .challenge-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Community Section */
+        .stats {
+            padding: 100px 50px;
+            background: rgba(26, 43, 71, 0.3);
+        }
+
+        .community-container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .community-logo {
+            width: 150px;
+            height: 150px;
+            filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.6));
+            animation: logoFloat 3s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg);
+            }
+            50% { 
+                transform: translateY(-15px) rotate(5deg);
+            }
+        }
+
+        .community-description {
+            font-size: 18px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+
+        .btn-facebook {
+            padding: 18px 40px;
+            background: linear-gradient(135deg, #1877F2, #0C63D4);
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 30px rgba(24, 119, 242, 0.4);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-facebook:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(24, 119, 242, 0.6);
+            background: linear-gradient(135deg, #2488FF, #1877F2);
+        }
+
+        .btn-facebook i {
+            font-size: 28px;
+        }
+
+        /* How to Start Section */
+        .how-to-start {
+            padding: 100px 50px;
+            background: rgba(26, 43, 71, 0.3);
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-top: -40px;
+            margin-bottom: 60px;
+        }
+
+        .steps-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+        }
+
+        .step-card {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+            background: rgba(26, 43, 71, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+            transform: translateX(10px);
+            border-color: var(--cyber-glow);
+            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.3);
+        }
+
+        .step-number {
+            width: 80px;
+            height: 80px;
+            min-width: 80px;
+            background: var(--gradient-primary);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 900;
+            font-family: 'Orbitron', monospace;
+            color: white;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        .step-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .step-description strong {
+            color: var(--cyber-glow);
+            font-weight: 600;
+        }
+
+        .step-list {
+            list-style: none;
+            margin: 20px 0;
+            padding: 0;
+        }
+
+        .step-list li {
+            padding: 10px 0;
+            font-size: 16px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-list li i {
+            color: var(--success-color);
+            font-size: 18px;
+        }
+
+        .step-image-container {
+            margin-top: 30px;
+        }
+
+        /* Mock Screenshots */
+        .mock-screenshot {
+            background: rgba(11, 20, 38, 0.9);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .mock-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            padding-bottom: 20px;
+        }
+
+        .mock-logo {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 0 auto 15px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .mock-header h4 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .mock-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .mock-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .mock-input {
+            background: rgba(26, 43, 71, 0.6);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .mock-input i {
+            color: var(--cyber-glow);
+            font-size: 16px;
+        }
+
+        .mock-input.otp-input {
+            position: relative;
+        }
+
+        .mock-otp-btn {
+            margin-left: auto;
+            padding: 6px 12px;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .mock-button {
+            background: var(--gradient-primary);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 16px;
+            border-radius: 50px;
+            text-align: center;
+            margin-top: 10px;
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Dashboard Preview */
+        .dashboard-preview {
+            background: rgba(11, 20, 38, 0.9);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .mock-dashboard-header {
+            text-align: center;
+            padding: 20px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .mock-dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .mock-card {
+            background: rgba(26, 43, 71, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mock-card i {
+            font-size: 32px;
+            color: var(--cyber-glow);
+        }
+
+        .mock-card span {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Quick Tips */
+        .quick-tips {
+            max-width: 1200px;
+            margin: 80px auto 0;
+            padding: 40px;
+            background: rgba(26, 43, 71, 0.6);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            border-radius: 20px;
+        }
+
+        .tips-title {
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .tips-title i {
+            color: var(--neon-green);
+            font-size: 32px;
+        }
+
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .tip-item {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .tip-item i {
+            font-size: 40px;
+            color: var(--neon-green);
+            margin-bottom: 15px;
+        }
+
+        .tip-item h4 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .tip-item p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 100px 50px;
+            text-align: center;
+        }
+
+        .cta-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .cta-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: var(--gradient-primary);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .cta-text {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            line-height: 1.8;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 40px 50px;
+            background: rgba(11, 20, 38, 0.8);
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+            text-align: center;
+        }
+
+        .footer-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .logo-text {
+                font-size: 20px;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(11, 20, 38, 0.98);
+                flex-direction: column;
+                padding: 20px;
+                gap: 20px;
+                border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .nav-menu {
+                gap: 15px;
+            }
+
+            .hero {
+                padding: 80px 20px 40px;
+                min-height: 60vh;
+            }
+
+            .hero-title {
+                font-size: 38px;
+            }
+
+            .hero-subtitle {
+                font-size: 18px;
+            }
+
+            .hero-description {
+                font-size: 16px;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .section-title {
+                font-size: 36px;
+            }
+
+            .section-subtitle {
+                font-size: 16px;
+            }
+
+            .features, .challenges, .stats, .cta-section, .how-to-start {
+                padding: 60px 20px;
+            }
+
+            /* Community Section Mobile */
+            .community-logo {
+                width: 100px;
+                height: 100px;
+                margin-bottom: 10px;
+            }
+
+            .community-description {
+                font-size: 16px;
+                padding: 0 10px;
+            }
+
+            .btn-facebook {
+                font-size: 16px;
+                padding: 16px 30px;
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+
+            .btn-facebook i {
+                font-size: 24px;
+            }
+
+            .features-grid, .challenges-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* MVP Explanation Mobile */
+            .mvp-explanation {
+                padding: 60px 20px;
+            }
+
+            .explanation-title {
+                font-size: 32px;
+            }
+
+            .explanation-intro {
+                font-size: 16px;
+                margin-bottom: 40px;
+            }
+
+            .panel-explanation,
+            .panel-explanation.reverse {
+                grid-template-columns: 1fr;
+                gap: 30px;
+                direction: ltr;
+            }
+
+            .panel-description {
+                padding: 0;
+            }
+
+            .panel-description h3 {
+                font-size: 24px;
+            }
+
+            .panel-description p {
+                font-size: 15px;
+            }
+
+            .visual-card {
+                padding: 30px 20px;
+            }
+
+            .visual-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 30px;
+            }
+
+            .visual-header h3 {
+                font-size: 20px;
+            }
+
+            .what-you-get {
+                padding: 30px 20px;
+            }
+
+            .get-title {
+                font-size: 24px;
+                margin-bottom: 30px;
+            }
+
+            .get-subtitle {
+                font-size: 16px;
+                margin-bottom: 30px;
+            }
+
+            .get-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .get-item {
+                padding: 20px;
+            }
+
+            .tools-showcase {
+                padding: 25px 20px;
+                margin-top: 40px;
+            }
+
+            .tools-title {
+                font-size: 22px;
+                margin-bottom: 25px;
+            }
+
+            .tools-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .badge-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+            }
+
+            .quick-start-guide {
+                padding: 25px 20px;
+                margin-top: 35px;
+            }
+
+            .guide-title {
+                font-size: 20px;
+                margin-bottom: 25px;
+            }
+
+            .guide-steps {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .guide-step {
+                min-width: auto;
+                width: 100%;
+            }
+
+            .guide-arrow {
+                transform: rotate(90deg);
+                font-size: 20px;
+            }
+
+            .explanation-cta {
+                padding: 30px 20px;
+            }
+
+            .explanation-cta h3 {
+                font-size: 26px;
+            }
+
+            .explanation-cta p {
+                font-size: 16px;
+            }
+
+            .btn-primary.large {
+                font-size: 18px;
+                padding: 18px 40px;
+                width: 100%;
+            }
+
+            /* How to Start Mobile */
+            .step-card {
+                flex-direction: column;
+                padding: 30px 20px;
+            }
+
+            .step-number {
+                width: 60px;
+                height: 60px;
+                min-width: 60px;
+                font-size: 28px;
+                margin: 0 auto 20px;
+            }
+
+            .step-title {
+                font-size: 24px;
+            }
+
+            .step-description {
+                font-size: 15px;
+            }
+
+            .mock-screenshot {
+                padding: 20px;
+            }
+
+            .mock-logo {
+                width: 60px;
+                height: 60px;
+                font-size: 30px;
+            }
+
+            .mock-header h4 {
+                font-size: 20px;
+            }
+
+            .quick-tips {
+                padding: 30px 20px;
+                margin-top: 40px;
+            }
+
+            .tips-title {
+                font-size: 22px;
+                flex-direction: column;
+            }
+
+            .tips-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scroll Animations */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease;
+        }
+
+        .scroll-reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-section">
+            <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="RiddleNet Logo" class="logo-img">
+            <div class="logo-text">RiddleNet</div>
+        </div>
+        <nav class="nav-menu">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#community">Community</a></li>
+            </ul>
+            <a href="{{ url_for('user.login') }}" class="cta-button">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </a>
+        </nav>
+    </header>
+
+    <!-- Hero Section with Immediate Explanation -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1 class="hero-title">Master Networking Through Play</h1>
+            <p class="hero-subtitle">Interactive • Gamified • Engaging</p>
+            <p class="hero-description">
+                RiddleNet is your interactive network learning hub where you master real-world 
+                networking skills through gamified challenges, simulations, and hands-on practice.
+            </p>
+            <div class="hero-buttons">
+                <a href="{{ url_for('user.login') }}?signup=true" class="btn-primary">
+                    <i class="fas fa-rocket"></i> Sign Up Free
+                </a>
+                <a href="#how-it-works" class="btn-secondary">
+                    <i class="fas fa-info-circle"></i> See How It Works
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Immediate Visual Explanation - Above The Fold -->
+    <section class="mvp-explanation" id="how-it-works">
+        <div class="explanation-container">
+            <h2 class="explanation-title">How RiddleNet Works</h2>
+            <p class="explanation-intro">
+                A complete platform for learning networking through interactive experiences
+            </p>
+
+            <!-- Two-Panel System Explanation -->
+            <div class="system-overview">
+                <div class="panel-explanation">
+                    <div class="panel-visual">
+                        <div class="visual-card signin-visual">
+                            <div class="visual-header">
+                                <div class="visual-icon">
+                                    <i class="fas fa-gamepad"></i>
+                                </div>
+                                <h3>Welcome Back</h3>
+                                <p>Connect to your network learning hub</p>
+                            </div>
+                            <div class="visual-inputs">
+                                <div class="visual-input">
+                                    <i class="fas fa-envelope"></i>
+                                    <span>Email Address</span>
+                                </div>
+                                <div class="visual-input">
+                                    <i class="fas fa-lock"></i>
+                                    <span>Password</span>
+                                </div>
+                                <div class="visual-input highlight">
+                                    <i class="fas fa-key"></i>
+                                    <span>OTP Code (Optional)</span>
+                                    <span class="badge-otp">Secure Login</span>
+                                </div>
+                                <div class="visual-button">
+                                    <i class="fas fa-sign-in-alt"></i> SIGN IN
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-description">
+                        <div class="feature-badge">
+                            <i class="fas fa-shield-alt"></i>
+                            Secure Access
+                        </div>
+                        <h3>Sign In with OTP Security</h3>
+                        <p>
+                            Access your personalized learning dashboard with email-based authentication. 
+                            Enable OTP (One-Time Password) for enhanced account security.
+                        </p>
+                        <ul class="feature-points">
+                            <li><i class="fas fa-check"></i> Email-based authentication</li>
+                            <li><i class="fas fa-check"></i> OTP security via email</li>
+                            <li><i class="fas fa-check"></i> Password visibility toggle</li>
+                            <li><i class="fas fa-check"></i> Secure session management</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="panel-explanation reverse">
+                    <div class="panel-visual">
+                        <div class="visual-card signup-visual">
+                            <div class="visual-header">
+                                <div class="visual-icon">
+                                    <i class="fas fa-gamepad"></i>
+                                </div>
+                                <h3>Join the Network</h3>
+                                <p>Start your networking journey today</p>
+                            </div>
+                            <div class="visual-inputs">
+                                <div class="visual-input">
+                                    <i class="fas fa-user"></i>
+                                    <span>Username</span>
+                                </div>
+                                <div class="visual-input">
+                                    <i class="fas fa-envelope"></i>
+                                    <span>Email</span>
+                                </div>
+                                <div class="visual-input">
+                                    <i class="fas fa-lock"></i>
+                                    <span>Password</span>
+                                </div>
+                                <div class="visual-button">
+                                    <i class="fas fa-user-plus"></i> CREATE ACCOUNT
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-description">
+                        <div class="feature-badge">
+                            <i class="fas fa-user-plus"></i>
+                            Quick Setup
+                        </div>
+                        <h3>Create Your Account in Seconds</h3>
+                        <p>
+                            Join thousands of students learning networking through our gamified platform. 
+                            Registration is quick, simple, and gets you learning immediately.
+                        </p>
+                        <ul class="feature-points">
+                            <li><i class="fas fa-check"></i> Simple 3-field registration</li>
+                            <li><i class="fas fa-check"></i> Instant account activation</li>
+                            <li><i class="fas fa-check"></i> No credit card required</li>
+                            <li><i class="fas fa-check"></i> Start learning right away</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- What You Get Section - Enhanced Visual with Instructions -->
+            <div class="what-you-get">
+                <h3 class="get-title" style="color: #fff;">What You Get After Signing Up</h3>
+                <p class="get-subtitle">Unlock a complete learning ecosystem designed for networking success</p>
+                
+                <!-- Primary Features Grid -->
+                <div class="get-grid">
+                    <div class="get-item">
+                        <span class="get-badge">1</span>
+                        <div class="get-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h4>Interactive Classes</h4>
+                        <p>Access structured networking courses with hands-on lessons and real-world scenarios</p>
+                        <div class="feature-tip">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Start with beginner courses</span>
+                        </div>
+                    </div>
+                    <div class="get-item">
+                        <span class="get-badge">2</span>
+                        <div class="get-icon">
+                            <i class="fas fa-gamepad"></i>
+                        </div>
+                        <h4>Gaming Challenges</h4>
+                        <p>Practice skills through Link Up, Cable Crimping, OSI Model & 50+ interactive games</p>
+                        <div class="feature-tip">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Play daily to build skills</span>
+                        </div>
+                    </div>
+                    <div class="get-item">
+                        <span class="get-badge">3</span>
+                        <div class="get-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h4>Earn Badges & Rewards</h4>
+                        <p>Unlock achievements, collect badges, and climb the global leaderboard</p>
+                        <div class="feature-tip">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Complete challenges for XP</span>
+                        </div>
+                    </div>
+                    <div class="get-item">
+                        <span class="get-badge">4</span>
+                        <div class="get-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h4>Track Progress</h4>
+                        <p>Monitor your learning journey with detailed analytics and performance insights</p>
+                        <div class="feature-tip">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Review weekly reports</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Core Tools & Features Badge Section -->
+                <div class="tools-showcase">
+                    <h4 class="tools-title">
+                        <i class="fas fa-toolbox"></i>
+                        Your Complete Learning Toolkit
+                    </h4>
+                    <div class="tools-grid">
+                        
+                        <div class="tool-badge">
+                            <div class="badge-icon simulation">
+                                <i class="fas fa-network-wired"></i>
+                            </div>
+                            <span class="badge-name">Simulation</span>
+                            <p class="badge-desc">Practice network setup live</p>
+                        </div>
+                        <div class="tool-badge">
+                            <div class="badge-icon quiz">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <span class="badge-name">Quiz Zone</span>
+                            <p class="badge-desc">Test knowledge instantly</p>
+                        </div>
+                        <div class="tool-badge">
+                            <div class="badge-icon troubleshoot">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                            <span class="badge-name">Troubleshooting</span>
+                            <p class="badge-desc">Fix real network issues</p>
+                        </div>
+                        <div class="tool-badge">
+                            <div class="badge-icon leaderboard">
+                                <i class="fas fa-ranking-star"></i>
+                            </div>
+                            <span class="badge-name">Leaderboard</span>
+                            <p class="badge-desc">Compete globally</p>
+                        </div>
+                        <div class="tool-badge">
+                            <div class="badge-icon resources">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <span class="badge-name">Resources</span>
+                            <p class="badge-desc">Study materials & guides</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Start Instructions -->
+                <div class="quick-start-guide">
+                    <h4 class="guide-title">
+                        <i class="fas fa-rocket"></i>
+                        Quick Start Guide
+                    </h4>
+                    <div class="guide-steps">
+                        <div class="guide-step">
+                            <div class="step-marker">1</div>
+                            <div class="step-content-mini">
+                                <strong>Sign Up</strong>
+                                <span>Create your account in 30 seconds</span>
+                            </div>
+                        </div>
+                        <div class="guide-arrow">→</div>
+                        <div class="guide-step">
+                            <div class="step-marker">2</div>
+                            <div class="step-content-mini">
+                                <strong>Choose Class</strong>
+                                <span>Select your learning path</span>
+                            </div>
+                        </div>
+                        <div class="guide-arrow">→</div>
+                        <div class="guide-step">
+                            <div class="step-marker">3</div>
+                            <div class="step-content-mini">
+                                <strong>Start Learning</strong>
+                                <span>Begin with interactive lessons</span>
+                            </div>
+                        </div>
+                        <div class="guide-arrow">→</div>
+                        <div class="guide-step">
+                            <div class="step-marker">4</div>
+                            <div class="step-content-mini">
+                                <strong>Earn Rewards</strong>
+                                <span>Collect badges & climb ranks</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA in Explanation -->
+            <div class="explanation-cta">
+                <h3>Ready to Start Learning?</h3>
+                <p>Join 10,000+ students mastering networking through interactive gameplay</p>
+                <a href="{{ url_for('user.login') }}?signup=true" class="btn-primary large">
+                    <i class="fas fa-rocket"></i> Create Free Account
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community Section -->
+    <section class="stats scroll-reveal" id="community">
+        <div class="community-container">
+            <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="RiddleNet Logo" class="community-logo">
+            <h2 class="section-title">Join Our Community</h2>
+            <p class="community-description">
+                Connect with fellow network enthusiasts, share your progress, get help, and stay updated with the latest challenges and features!
+            </p>
+            <a href="https://www.facebook.com/groups/riddlenet" target="_blank" rel="noopener noreferrer" class="btn-facebook">
+                <i class='bx bxl-facebook-circle'></i>
+                Join Our Facebook Community
+            </a>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section scroll-reveal">
+        <div class="cta-content">
+            <h2 class="cta-title">Ready to Level Up?</h2>
+            <p class="cta-text">
+                Join thousands of students who are already mastering networking through 
+                our gamified learning platform. Start your journey today!
+            </p>
+            <a href="{{ url_for('user.login') }}?signup=true" class="btn-primary" style="font-size: 20px; padding: 20px 50px;">
+                <i class="fas fa-rocket"></i> Start Learning Now
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p class="footer-text">© 2024 RiddleNet. Empowering the next generation of network professionals.</p>
+    </footer>
+
+    <!-- Scroll Animation Script -->
+    <script>
+        // Scroll reveal animation
+        const revealElements = document.querySelectorAll('.scroll-reveal');
+        
+        const revealOnScroll = () => {
+            revealElements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const windowHeight = window.innerHeight;
+                
+                if (elementTop < windowHeight - 100) {
+                    element.classList.add('active');
+                }
+            });
+        };
+
+        window.addEventListener('scroll', revealOnScroll);
+        revealOnScroll(); // Initial check
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    // Close mobile menu if open
+                    document.getElementById('navLinks').classList.remove('active');
+                }
+            });
+        });
+
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const navLinks = document.getElementById('navLinks');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            const icon = mobileMenuBtn.querySelector('i');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+        });
+    </script>
+</body>
+</html>

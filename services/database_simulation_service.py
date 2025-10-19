@@ -6,8 +6,8 @@ This service provides access to database simulations created via Simulation Buil
 All static content has been removed - simulations are now fully database-driven.
 """
 
-from admin.models.simulation import Simulation
-from admin.models.class_model import Class
+from instructor.models.simulation import Simulation
+from instructor.models.class_model import Class
 from flask import current_app
 import json
 
@@ -79,7 +79,7 @@ class DatabaseSimulationService:
     def _get_database_simulations_for_class(class_id):
         """Get database simulations assigned to this class"""
         try:
-            from admin.models.simulation_assignment import SimulationAssignment
+            from instructor.models.simulation_assignment import SimulationAssignment
             
             assignments = SimulationAssignment.query.filter_by(class_id=class_id).all()
             simulations = []

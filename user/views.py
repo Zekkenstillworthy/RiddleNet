@@ -13,9 +13,9 @@ from .models import db
 from .models import User as UserModel  # Rename to avoid conflicts
 from .models import Score as UserScore  # Rename to avoid conflicts
 from user.models.challenge_score import ChallengeScore
-from admin.models.topology import Topology
+from instructor.models.topology import Topology
 from user.models.topology_progress import TopologyProgress
-from admin.models.class_model import Class
+from instructor.models.class_model import Class
 from flask_login import login_user, logout_user, current_user
 from .utils import user_login_required
 # Import media utilities
@@ -43,7 +43,7 @@ def serve_audio(filename):
 
 @user_bp.route('/')
 def index():
-    # For login page, check if user is already logged in
+    # Landing page - check if user is already logged in
     user = None
     if 'user_id' in session:
         user = UserModel.query.get(session['user_id'])
@@ -51,7 +51,8 @@ def index():
         if user:
             return redirect(url_for('user.dashboard'))
     
-    return render_template('user/index.html', user=user)
+    # Show gamified landing page
+    return render_template('user/landing.html', user=user)
 
 @user_bp.route('/overview')
 def overview():
@@ -75,7 +76,7 @@ def classes():
 @user_bp.route('/learning/networking-1')
 def networking_1():
     # Redirect directly to first lesson of first module of class 7
-    from admin.models.module import Module, Lesson
+    from instructor.models.module import Module, Lesson
     try:
         first_module = Module.query.filter_by(class_id=7, is_active=True, is_published=True).order_by(Module.order_index.asc()).first()
         if first_module:
@@ -509,7 +510,7 @@ def troubleshoot():
     if scenario_id:
         # If scenario ID is provided, load the scenario for the troubleshooting interface
         try:
-            from admin.models.troubleshooting import Troubleshooting
+            from instructor.models.troubleshooting import Troubleshooting
             scenario = Troubleshooting.query.get(scenario_id)
             if scenario and scenario.is_active:
                 scenario_data = scenario.to_dict()
@@ -844,14 +845,14 @@ def logout():
     try:
         socketio = get_socketio()
         if socketio and user_id:
-            # Notify admin of user logout
+            # Notify Instructor of user logout
             socketio.emit('user_login_activity', {
                 'user_id': user_id,
                 'username': username,
                 'action': 'logout',
                 'timestamp': datetime.utcnow().isoformat(),
                 'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
-            }, room='admin_room')
+            }, room='instructor_room')
             
             # Send logout notification to user's personal room
             socketio.emit('logout_complete', {
@@ -877,6 +878,12 @@ def logout():
 def login():
     # If it's a GET request, render the login page
     if request.method == 'GET':
+        # Check if user is already logged in
+        if 'user_id' in session:
+            user = UserModel.query.get(session['user_id'])
+            if user:
+                return redirect(url_for('user.dashboard'))
+        
         next_url = request.args.get('next', '')
         return render_template('user/index.html', next=next_url)
     
@@ -899,7 +906,7 @@ def login():
                 'timestamp': datetime.utcnow().isoformat(),
                 'ip_address': request.environ.get('REMOTE_ADDR', 'unknown'),
                 'user_agent': request.headers.get('User-Agent', 'unknown')
-            }, room='admin_room')
+            }, room='instructor_room')
     except Exception as ws_error:
         print(f"WebSocket login attempt notification failed: {str(ws_error)}")
     
@@ -919,7 +926,7 @@ def login():
                     'reason': 'user_not_found',
                     'timestamp': datetime.utcnow().isoformat(),
                     'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
-                }, room='admin_room')
+                }, room='instructor_room')
         except Exception as ws_error:
             print(f"WebSocket login failure notification failed: {str(ws_error)}")
         
@@ -943,7 +950,7 @@ def login():
                     'reason': 'invalid_password',
                     'timestamp': datetime.utcnow().isoformat(),
                     'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
-                }, room='admin_room')
+                }, room='instructor_room')
         except Exception as ws_error:
             print(f"WebSocket login failure notification failed: {str(ws_error)}")
         
@@ -964,7 +971,7 @@ def login():
                         'reason': 'otp_required_but_not_provided',
                         'timestamp': datetime.utcnow().isoformat(),
                         'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
-                    }, room='admin_room')
+                    }, room='instructor_room')
             except Exception as ws_error:
                 print(f"WebSocket OTP missing notification failed: {str(ws_error)}")
             
@@ -987,7 +994,7 @@ def login():
                             'reason': 'invalid_otp',
                             'timestamp': datetime.utcnow().isoformat(),
                             'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
-                        }, room='admin_room')
+                        }, room='instructor_room')
                 except Exception as ws_error:
                     print(f"WebSocket invalid OTP notification failed: {str(ws_error)}")
                 
@@ -1013,7 +1020,7 @@ def login():
                                 'otp_age_minutes': round(otp_age.total_seconds() / 60, 2),
                                 'timestamp': datetime.utcnow().isoformat(),
                                 'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
-                            }, room='admin_room')
+                            }, room='instructor_room')
                     except Exception as ws_error:
                         print(f"WebSocket expired OTP notification failed: {str(ws_error)}")
                     
@@ -1033,7 +1040,7 @@ def login():
                             'reason': 'otp_timestamp_missing',
                             'timestamp': datetime.utcnow().isoformat(),
                             'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
-                        }, room='admin_room')
+                        }, room='instructor_room')
                 except Exception as ws_error:
                     print(f"WebSocket OTP timestamp missing notification failed: {str(ws_error)}")
                 
@@ -1060,7 +1067,7 @@ def login():
                         'error': str(e),
                         'timestamp': datetime.utcnow().isoformat(),
                         'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
-                    }, room='admin_room')
+                    }, room='instructor_room')
             except Exception as ws_error:
                 print(f"WebSocket OTP validation error notification failed: {str(ws_error)}")
             
@@ -1094,19 +1101,19 @@ def login():
                     priority=NotificationPriority.LOW
                 )
                 
-                # Send admin notification for high-value accounts or security alerts
-                if hasattr(user, 'is_admin') and user.is_admin:
+                # Send Instructor notification for high-value accounts or security alerts
+                if hasattr(user, 'is_instructor') and user.is_instructor:
                     notification_service.send_admin_notification(
                         notification_type=NotificationType.SECURITY_ALERT,
-                        title="Admin Login Detected",
-                        message=f"Admin user {user.username} (email: {email}) logged in from {request.environ.get('REMOTE_ADDR', 'unknown')}",
+                        title="Instructor Login Detected",
+                        message=f"Instructor user {user.username} (email: {email}) logged in from {request.environ.get('REMOTE_ADDR', 'unknown')}",
                         priority=NotificationPriority.HIGH
                     )
             except Exception as enhanced_error:
                 print(f"Enhanced notification failed, using legacy: {enhanced_error}")
                 
                 # Fallback to legacy notifications
-                # Notify admin of successful login
+                # Notify Instructor of successful login
                 socketio.emit('user_login_activity', {
                     'user_id': user.id,
                     'username': user.username,
@@ -1115,7 +1122,7 @@ def login():
                     'timestamp': datetime.utcnow().isoformat(),
                     'ip_address': request.environ.get('REMOTE_ADDR', 'unknown'),
                     'user_agent': request.headers.get('User-Agent', 'unknown')
-                }, room='admin_room')
+                }, room='instructor_room')
                 
                 # Send welcome notification to user's personal room
                 socketio.emit('login_success', {
@@ -1230,11 +1237,11 @@ def send_otp():
             user.totp_enabled = True  # Keep this flag for consistency
             db.session.commit()
             
-            # Send WebSocket notification to admin for real-time monitoring
+            # Send WebSocket notification to Instructor for real-time monitoring
             try:
                 socketio = get_socketio()
                 if socketio:
-                    # Notify admin room about OTP request
+                    # Notify Instructor room about OTP request
                     socketio.emit('user_otp_activity', {
                         'user_id': user.id,
                         'username': user.username,
@@ -1242,7 +1249,7 @@ def send_otp():
                         'action': 'otp_requested',
                         'timestamp': datetime.utcnow().isoformat(),
                         'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
-                    }, room='admin_room')
+                    }, room='instructor_room')
                     
                     # Send real-time notification to user's personal room
                     socketio.emit('otp_request_received', {
@@ -1263,14 +1270,14 @@ def send_otp():
                 try:
                     socketio = get_socketio()
                     if socketio:
-                        # Notify admin of successful OTP delivery
+                        # Notify Instructor of successful OTP delivery
                         socketio.emit('user_otp_activity', {
                             'user_id': user.id,
                             'username': user.username,
                             'email': email,
                             'action': 'otp_sent_successfully',
                             'timestamp': datetime.utcnow().isoformat()
-                        }, room='admin_room')
+                        }, room='instructor_room')
                         
                         # Notify user of successful email delivery
                         socketio.emit('otp_email_sent', {
@@ -1287,7 +1294,7 @@ def send_otp():
                 try:
                     socketio = get_socketio()
                     if socketio:
-                        # Notify admin of failed OTP delivery
+                        # Notify Instructor of failed OTP delivery
                         socketio.emit('user_otp_activity', {
                             'user_id': user.id,
                             'username': user.username,
@@ -1295,7 +1302,7 @@ def send_otp():
                             'action': 'otp_failed',
                             'error': 'SMTP delivery failed',
                             'timestamp': datetime.utcnow().isoformat()
-                        }, room='admin_room')
+                        }, room='instructor_room')
                         
                         # Notify user of failed email delivery
                         socketio.emit('otp_email_failed', {
@@ -1325,7 +1332,7 @@ def send_otp():
                         'action': 'otp_error',
                         'error': str(e),
                         'timestamp': datetime.utcnow().isoformat()
-                    }, room='admin_room')
+                    }, room='instructor_room')
             except Exception as ws_error:
                 print(f"WebSocket error notification failed: {str(ws_error)}")
             
@@ -1737,7 +1744,7 @@ def register_user_websocket_events():
             page = data.get('page', 'unknown')
             details = data.get('details', {})
             
-            # Emit to admin room for monitoring
+            # Emit to Instructor room for monitoring
             socketio.emit('user_activity', {
                 'user_id': current_user.id,
                 'username': current_user.username,
@@ -1745,7 +1752,7 @@ def register_user_websocket_events():
                 'page': page,
                 'details': details,
                 'timestamp': datetime.utcnow().isoformat()
-            }, room='admin_room')
+            }, room='instructor_room')
             
             print(f"User {current_user.username} activity: {activity_type} on {page}")
         except Exception as e:
@@ -1763,14 +1770,14 @@ def register_user_websocket_events():
             room_name = f"topology_{topology_type}"
             join_room(room_name)
             
-            # Notify admin of user joining topology
+            # Notify Instructor of user joining topology
             socketio.emit('user_topology_activity', {
                 'user_id': current_user.id,
                 'username': current_user.username,
                 'action': 'joined',
                 'topology_type': topology_type,
                 'timestamp': datetime.utcnow().isoformat()
-            }, room='admin_room')
+            }, room='instructor_room')
             
             emit('topology_joined', {'topology_type': topology_type})
             print(f"User {current_user.username} joined topology {topology_type}")
@@ -1818,7 +1825,7 @@ def register_user_websocket_events():
                 print(f"Database error in topology progress: {str(db_error)}")
                 db.session.rollback()
             
-            # Emit progress to admin room for monitoring
+            # Emit progress to Instructor room for monitoring
             socketio.emit('user_topology_progress', {
                 'user_id': current_user.id,
                 'username': current_user.username,
@@ -1827,7 +1834,7 @@ def register_user_websocket_events():
                 'score': score,
                 'completed': completed,
                 'timestamp': datetime.utcnow().isoformat()
-            }, room='admin_room')
+            }, room='instructor_room')
             
             # Emit to topology room
             room_name = f"topology_{topology_type}"
@@ -1859,14 +1866,14 @@ def register_user_websocket_events():
                 db.session.add(new_score)
                 db.session.commit()
                 
-                # Emit to admin room for monitoring
+                # Emit to Instructor room for monitoring
                 socketio.emit('user_score_achieved', {
                     'user_id': current_user.id,
                     'username': current_user.username,
                     'category': category,
                     'score': score,
                     'timestamp': datetime.utcnow().isoformat()
-                }, room='admin_room')
+                }, room='instructor_room')
                 
                 emit('score_saved', {
                     'status': 'success',
@@ -1886,17 +1893,17 @@ def register_user_websocket_events():
     @socketio.on('user_otp_requested')
     @authenticated_only
     def handle_user_otp_requested(data):
-        """Handle OTP request notifications for admin monitoring"""
+        """Handle OTP request notifications for Instructor monitoring"""
         try:
             username = data.get('username', current_user.username)
             
-            # Notify admin of OTP request
+            # Notify Instructor of OTP request
             socketio.emit('user_otp_activity', {
                 'user_id': current_user.id,
                 'username': username,
                 'action': 'otp_requested',
                 'timestamp': datetime.utcnow().isoformat()
-            }, room='admin_room')
+            }, room='instructor_room')
             
             print(f"OTP requested for user: {username}")
         except Exception as e:
@@ -1910,14 +1917,14 @@ def register_user_websocket_events():
             success = data.get('success', False)
             method = data.get('method', 'password')  # 'password', 'otp'
             
-            # Notify admin of login attempt
+            # Notify Instructor of login attempt
             socketio.emit('user_login_activity', {
                 'username': username,
                 'success': success,
                 'method': method,
                 'timestamp': datetime.utcnow().isoformat(),
                 'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
-            }, room='admin_room')
+            }, room='instructor_room')
             
             print(f"Login attempt: {username} - {'Success' if success else 'Failed'} ({method})")
         except Exception as e:
@@ -2051,7 +2058,7 @@ def networking2_simulations_redirect():
 def networking1_simulation_redirect(simulation_name):
     """Redirect networking1 simulations to dynamic system"""
     # Find simulation by name
-    from admin.models.simulation import Simulation
+    from instructor.models.simulation import Simulation
     sim = Simulation.query.filter(
         Simulation.title.contains(simulation_name.replace('-', ' ').title()),
         Simulation.simulation_type == 'Networking 1'
@@ -2066,7 +2073,7 @@ def networking1_simulation_redirect(simulation_name):
 def networking2_simulation_redirect(simulation_name):
     """Redirect networking2 simulations to dynamic system"""
     # Find simulation by name
-    from admin.models.simulation import Simulation
+    from instructor.models.simulation import Simulation
     sim = Simulation.query.filter(
         Simulation.title.contains(simulation_name.replace('-', ' ').title()),
         Simulation.simulation_type == 'Networking 2'

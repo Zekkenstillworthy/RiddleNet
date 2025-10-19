@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
-from admin.models.troubleshooting import Troubleshooting
-from admin.models.troubleshooting_progress import TroubleshootingProgress
+from instructor.models.troubleshooting import Troubleshooting
+from instructor.models.troubleshooting_progress import TroubleshootingProgress
 from __init__ import db
 from datetime import datetime
 import json

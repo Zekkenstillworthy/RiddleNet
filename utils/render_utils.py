@@ -28,9 +28,9 @@ def render_safe_template(template_name, **context):
         print(f"ERROR rendering template {template_name}: {str(e)}")
         
         # Special handling for admin templates
-        if template_name.startswith('admin/'):
+        if template_name.startswith('instructor/'):
             try:
-                # Try extracting just the filename without the admin/ prefix
+                # Try extracting just the filename without the instructor/ prefix
                 base_name = os.path.basename(template_name)
                 print(f"Trying alternate template name: {base_name}")
                 return flask_render_template(base_name, **context)

@@ -13,7 +13,7 @@
         @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
         
         :root {
-            /* Modern Gaming Network Theme - Matching Admin Dashboard */
+            /* Modern Gaming Network Theme - Matching instructor Dashboard */
             --primary-color: #0F172A;
             --secondary-color: #1E293B;
             --accent-color: #3B82F6;
@@ -66,7 +66,7 @@
             overflow: hidden;
         }
 
-        /* Network Grid Background Animation - Matching Admin Dashboard */
+        /* Network Grid Background Animation - Matching instructor Dashboard */
         body::before {
             content: '';
             position: fixed;
@@ -101,7 +101,7 @@
                 radial-gradient(circle at 40% 60%, rgba(57, 255, 20, 0.05) 0%, transparent 30%);
             pointer-events: none;
             z-index: -2;
-        }        /* Main Container - Gamified Design Matching Admin Dashboard */
+        }        /* Main Container - Gamified Design Matching instructor Dashboard */
         .auth-container {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -215,7 +215,7 @@
             transform: scale(1.05);
             border-color: var(--cyber-glow);
             box-shadow: var(--shadow-glow);
-        }        /* Typography - Matching Admin Dashboard */
+        }        /* Typography - Matching instructor Dashboard */
         .form-title {
             font-family: 'Orbitron', monospace;
             font-size: 28px;
@@ -235,7 +235,7 @@
             text-align: center;
         }
 
-        /* Input Styling - Matching Admin Dashboard */
+        /* Input Styling - Matching instructor Dashboard */
         .input-group {
             width: 100%;
             max-width: 320px;
@@ -325,7 +325,7 @@
             color: var(--cyber-glow);
             text-align: center;
             display: none;
-        }        /* Primary Button - Matching Admin Dashboard */
+        }        /* Primary Button - Matching instructor Dashboard */
         .btn-primary {
             width: 100%;
             max-width: 320px;
@@ -523,12 +523,34 @@
             .input-group {
                 max-width: 280px;
             }
+            
+            .back-to-landing {
+                top: 15px;
+                left: 15px;
+                padding: 10px 16px;
+                font-size: 13px;
+            }
         }
         
         /* Mobile Devices (max-width: 768px) */
         @media (max-width: 768px) {
             body {
                 padding: 10px;
+            }
+            
+            .back-to-landing {
+                top: 10px;
+                left: 10px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .back-to-landing span {
+                display: none;
+            }
+            
+            .back-to-landing i {
+                font-size: 18px;
             }
             
             .auth-container {
@@ -747,6 +769,44 @@
             border-top-color: transparent;
             animation: spin 1s linear infinite;
             margin-right: 8px;
+        }
+
+        /* Back to Landing Page Button */
+        .back-to-landing {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 25px;
+            color: var(--cyber-glow);
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-to-landing:hover {
+            background: rgba(0, 217, 255, 0.1);
+            border-color: var(--cyber-glow);
+            transform: translateX(-5px);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .back-to-landing i {
+            font-size: 20px;
+        }
+
+        .back-to-landing span {
+            display: inline;
         }        /* Enhanced WebSocket Connection Status Indicator */
         .websocket-status {
             position: fixed;
@@ -1443,25 +1503,6 @@
     </style>
 </head>
 <body>
-    <!-- WebSocket Connection Status Indicator -->
-    <div class="websocket-status" id="websocket-status">
-        <div class="connection-indicator"></div>
-        <span id="connection-text" style="display: none;">Initializing...</span>
-    </div>
-
-    <!-- WebSocket Real-time Notification -->
-    <div class="websocket-notification" id="websocket-notification">
-        <div class="notification-header">
-            <div class="notification-icon">
-                <i class="fas fa-wifi"></i>
-            </div>
-            <span id="notification-title">Network Status</span>
-        </div>
-        <div class="notification-body" id="notification-message">
-            Establishing secure connection...
-        </div>
-    </div>
-
     <!-- Network Nodes Background -->
     <div class="network-nodes" id="network-nodes">
         <!-- Dynamic nodes will be generated by JavaScript -->
@@ -1471,6 +1512,12 @@
     <div class="data-flow-container" id="data-flow-container">
         <!-- Dynamic data packets will be generated by JavaScript -->
     </div>
+
+    <!-- Back to Landing Page Button -->
+    <a href="/" class="back-to-landing" title="Back to Home">
+        <i class='bx bx-home'></i>
+        <span>Home</span>
+    </a>
 
     <!-- Main Container -->
     <div class="auth-container" id="authContainer">
@@ -1601,6 +1648,16 @@
         const authContainer = document.getElementById('authContainer');
         const toggleBtn = document.getElementById('toggleBtn');
         let isSignupMode = false;
+
+        // Check URL parameters for signup mode
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('signup') === 'true') {
+            isSignupMode = true;
+            authContainer.classList.add('signup-mode');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = '<i class="bx bx-log-in"></i> Sign In';
+            }
+        }
 
         // Toggle between signin and signup
         if (toggleBtn) {
@@ -1770,11 +1827,8 @@
         // Enhanced WebSocket Management and Visual Feedback System
         class WebSocketVisualManager {
             constructor() {
-                this.statusElement = document.getElementById('websocket-status');
-                this.notificationElement = document.getElementById('websocket-notification');
-                this.connectionText = document.getElementById('connection-text');
-                this.notificationTitle = document.getElementById('notification-title');
-                this.notificationMessage = document.getElementById('notification-message');
+                this.statusElement = null; // Removed - no longer needed on login page
+                this.connectionText = null;
                 this.networkNodes = document.getElementById('network-nodes');
                 this.dataFlowContainer = document.getElementById('data-flow-container');
                 
@@ -1803,20 +1857,18 @@
                 
                 if (isLoggedIn) {
                     this.isAuthenticated = true;
-                    this.showStatusIndicator();
                     this.updateConnectionStatus('connecting');
                 } else {
                     this.isAuthenticated = false;
-                    this.hideStatusIndicator();
                 }
             }
 
             showStatusIndicator() {
-                this.statusElement.classList.add('show');
+                // No longer needed - status indicator removed from login page
             }
 
             hideStatusIndicator() {
-                this.statusElement.classList.remove('show');
+                // No longer needed - status indicator removed from login page
             }
 
             createNetworkNodes() {
@@ -1837,86 +1889,41 @@
             }
 
             updateConnectionStatus(status) {
-                // Remove all status classes and add new ones
-                this.statusElement.className = 'websocket-status';
-                this.statusElement.classList.add(status);
+                // Simplified - just log connection status
+                console.log(`WebSocket connection status: ${status}`);
                 
-                // Check if we're on a login page first
-                const isLoginPage = window.location.pathname === '/user/login' || 
-                                  window.location.pathname === '/' || 
-                                  window.location.pathname === '/user/';
-                
-                // Update connection text and state with improved messaging
+                // Update connection state with improved messaging
                 switch (status) {
                     case 'authenticated':
-                        this.connectionText.textContent = 'Authenticated & Connected';
                         this.isConnected = true;
                         this.isAuthenticated = true;
                         this.activateNetworkNodes();
                         this.startDataFlow();
                         break;
                     case 'network-connected':
-                        // Don't show basic connection text on login page
-                        if (!isLoginPage) {
-                            this.connectionText.textContent = 'Network Connected';
-                        }
                         this.isConnected = true;
                         this.isAuthenticated = false;
                         this.deactivateNetworkNodes();
                         this.stopDataFlow();
                         break;
                     case 'awaiting-auth':
-                        // Don't show auth waiting text on login page
-                        if (!isLoginPage) {
-                            this.connectionText.textContent = 'Please Log In';
-                        }
                         this.isConnected = true;
                         this.isAuthenticated = false;
                         this.deactivateNetworkNodes();
                         this.stopDataFlow();
                         break;
                     case 'connecting':
-                        // Don't show connecting text on login page
-                        if (!isLoginPage) {
-                            this.connectionText.textContent = 'Connecting...';
-                        }
                         this.isConnected = false;
                         this.isAuthenticated = false;
                         this.deactivateNetworkNodes();
                         this.stopDataFlow();
                         break;
                     case 'disconnected':
-                        this.connectionText.textContent = 'Connection Lost';
                         this.isConnected = false;
                         this.isAuthenticated = false;
                         this.deactivateNetworkNodes();
                         this.stopDataFlow();
                         break;
-                }
-                
-                // Enhanced visibility logic to reduce confusion
-                if (isLoginPage) {
-                    // On login page: completely hide WebSocket status text
-                    this.connectionText.style.display = 'none';
-                    this.statusElement.classList.add('login-page-hidden');
-                    
-                    // Only show for critical issues
-                    if (status === 'disconnected') {
-                        this.showStatusIndicator();
-                    } else {
-                        this.hideStatusIndicator();
-                    }
-                } else {
-                    // On authenticated pages: show connection text normally
-                    this.connectionText.style.display = 'inline';
-                    this.statusElement.classList.remove('login-page-hidden');
-                    
-                    // Show when connected or when issues occur
-                    if (this.isAuthenticated || status === 'disconnected' || status === 'awaiting-auth') {
-                        this.showStatusIndicator();
-                    } else {
-                        this.hideStatusIndicator();
-                    }
                 }
             }
 
@@ -1970,18 +1977,26 @@
             }
 
             showNotification(title, message, type = 'success') {
-                this.notificationTitle.textContent = title;
-                this.notificationMessage.textContent = message;
-                this.notificationElement.className = `websocket-notification ${type} show`;
+                // Simplified - just log to console since we removed the notification UI
+                console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
                 
-                // Auto-hide after 4 seconds
-                setTimeout(() => {
-                    this.hideNotification();
-                }, 4000);
+                // Show message in the form's message container if available
+                const messageElement = document.getElementById('message') || document.getElementById('signup-message');
+                if (messageElement) {
+                    messageElement.textContent = message;
+                    messageElement.className = `message-container ${type === 'error' ? 'error-message' : type === 'warning' ? 'warning-message' : 'success-message'} show`;
+                    
+                    // Auto-hide after 4 seconds
+                    setTimeout(() => {
+                        messageElement.className = 'message-container';
+                        messageElement.style.display = 'none';
+                    }, 4000);
+                }
             }
 
             hideNotification() {
-                this.notificationElement.classList.remove('show');
+                // No longer needed - notifications removed
+                console.log('Notification hidden');
             }
 
             activateFormWebSocket(formElement) {
@@ -2106,32 +2121,13 @@
                     if (window.socketClient) {
                         this.bindSocketEvents();
                         
-                        // Enhanced authentication-aware status logic
+                        // Simplified authentication-aware status logic
                         if (this.isAuthenticated) {
                             this.updateConnectionStatus('authenticated');
-                            this.showNotification(
-                                'Connected & Authenticated',
-                                'All real-time features are active',
-                                'success'
-                            );
+                            console.log('WebSocket: Connected & Authenticated');
                         } else {
-                            // On login page: don't confuse users with connection status
-                            const isLoginPage = window.location.pathname === '/user/login' || 
-                                              window.location.pathname === '/' || 
-                                              window.location.pathname === '/user/';
-                            
-                            if (isLoginPage) {
-                                // Hide status on login page - let them focus on logging in
-                                this.hideStatusIndicator();
-                            } else {
-                                // On other pages: show that login is required
-                                this.updateConnectionStatus('awaiting-auth');
-                                this.showNotification(
-                                    'Authentication Required',
-                                    'Please log in to access real-time features',
-                                    'warning'
-                                );
-                            }
+                            this.updateConnectionStatus('awaiting-auth');
+                            console.log('WebSocket: Awaiting authentication');
                         }
                     } else {
                         setTimeout(checkSocketClient, 500);

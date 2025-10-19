@@ -3,8 +3,8 @@ Template Helper Functions for Dynamic Content
 Provides access to database simulations and learning paths in templates
 """
 
-from admin.models.simulation import Simulation
-from admin.models.class_model import Class
+from instructor.models.simulation import Simulation
+from instructor.models.class_model import Class
 
 def get_class_simulations(class_id):
     """Get simulations assigned to a specific class"""

@@ -1,0 +1,77 @@
+{% extends "instructor/base.html" %}
+
+{% block title %}Deadline Extensions - RiddleNet Instructor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-user-clock"></i> Deadline Extensions</h1>
+                <a href="{{ url_for('deadline_controller.deadline_management_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            {% if extensions %}
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Student</th>
+                            <th scope="col">Assignment</th>
+                            <th scope="col">Original Due</th>
+                            <th scope="col">Extended Due</th>
+                            <th scope="col">Hours</th>
+                            <th scope="col">Penalty Waived</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for extension in extensions %}
+                        <tr>
+                            <td>
+                                {% if extension.student %}
+                                    {{ extension.student.first_name }} {{ extension.student.last_name }}
+                                    <div class="text-muted small">{{ extension.student.username }}</div>
+                                {% else %}
+                                    <span class="text-muted">Unknown student</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if extension.assignment %}
+                                    {{ extension.assignment.title or 'Untitled assignment' }}
+                                {% else %}
+                                    <span class="text-muted">Assignment removed</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ extension.original_due_date|strftime('%m/%d/%Y %H:%M') if extension.original_due_date else 'N/A' }}</td>
+                            <td>{{ extension.extended_due_date|strftime('%m/%d/%Y %H:%M') if extension.extended_due_date else 'N/A' }}</td>
+                            <td>{{ extension.extension_hours }}</td>
+                            <td>{{ 'Yes' if extension.waive_late_penalty else 'No' }}</td>
+                            <td>
+                                {% if extension.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                                {% if extension.used %}
+                                    <span class="badge bg-info ms-1">Used</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No deadline extensions found</h4>
+                <p class="text-muted">Extensions will appear here once they are granted.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
