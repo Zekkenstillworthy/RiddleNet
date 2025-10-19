@@ -225,7 +225,7 @@ class CollaborationManager {
         if (!classSelect) return;
         
         // Add error handling and fail-fast
-        fetch('/admin/api/collaboration/classes')
+        fetch('/instructor/api/collaboration/classes')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -253,7 +253,7 @@ class CollaborationManager {
 
     // Method to create a collaboration session for a specific simulation
     createSimulationCollaboration(simulationId, collaborationSettings) {
-        return fetch('/admin/api/collaboration/simulation-session', {
+        return fetch('/instructor/api/collaboration/simulation-session', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -277,7 +277,7 @@ class CollaborationManager {
 
     // Method to join a student to a simulation collaboration team
     assignStudentToSimulationTeam(sessionId, studentId, teamId) {
-        return fetch(`/admin/api/collaboration/session/${sessionId}/assign`, {
+        return fetch(`/instructor/api/collaboration/session/${sessionId}/assign`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -292,7 +292,7 @@ class CollaborationManager {
 
     // Method to get collaboration settings for a simulation
     getSimulationCollaborationSettings(simulationId) {
-        return fetch(`/admin/api/collaboration/simulation/${simulationId}/collaboration`)
+        return fetch(`/instructor/api/collaboration/simulation/${simulationId}/collaboration`)
             .then(async response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
@@ -316,7 +316,7 @@ class CollaborationManager {
 
     // Method to save collaboration settings for a simulation
     saveSimulationCollaborationSettings(simulationId, settings) {
-        return fetch(`/admin/api/collaboration/simulation/${simulationId}/collaboration`, {
+        return fetch(`/instructor/api/collaboration/simulation/${simulationId}/collaboration`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -632,7 +632,7 @@ class CollaborationManager {
 
     updateCollaborationStats() {
         // Fetch real-time collaboration statistics from API
-        fetch('/admin/api/collaboration/stats')
+        fetch('/instructor/api/collaboration/stats')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
@@ -677,7 +677,7 @@ class CollaborationManager {
         if (!list) return;
         
         // Fetch active collaboration sessions from API
-        fetch('/admin/api/collaboration/active')
+        fetch('/instructor/api/collaboration/active')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
@@ -742,7 +742,7 @@ class CollaborationManager {
     joinCollaboration(id) {
         // Allow admin to join collaboration session
         console.log(`Joining collaboration ${id}`);
-        fetch(`/admin/api/collaboration/${id}/join`, {
+        fetch(`/instructor/api/collaboration/${id}/join`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ admin_join: true })
@@ -769,7 +769,7 @@ class CollaborationManager {
         // End collaboration session
         if (confirm('Are you sure you want to end this collaboration session?')) {
             console.log(`Ending collaboration ${id}`);
-            fetch(`/admin/api/collaboration/${id}/end`, {
+            fetch(`/instructor/api/collaboration/${id}/end`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             })
@@ -798,7 +798,7 @@ class CollaborationManager {
 
     showCollaborationViewer(id) {
         // Fetch collaboration session details from API
-        fetch(`/admin/api/collaboration/${id}/details`)
+        fetch(`/instructor/api/collaboration/${id}/details`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
@@ -891,7 +891,7 @@ class CollaborationManager {
     }
     
     loadChatHistory(id) {
-        fetch(`/admin/api/collaboration/${id}/chat`)
+        fetch(`/instructor/api/collaboration/${id}/chat`)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
@@ -921,7 +921,7 @@ class CollaborationManager {
     }
     
     loadScreenShare(id) {
-        fetch(`/admin/api/collaboration/${id}/screen`)
+        fetch(`/instructor/api/collaboration/${id}/screen`)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
@@ -954,7 +954,7 @@ class CollaborationManager {
     }
     
     loadSharedFiles(id) {
-        fetch(`/admin/api/collaboration/${id}/files`)
+        fetch(`/instructor/api/collaboration/${id}/files`)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
@@ -989,7 +989,7 @@ class CollaborationManager {
     }
     
     loadProgressTracking(id) {
-        fetch(`/admin/api/collaboration/${id}/progress`)
+        fetch(`/instructor/api/collaboration/${id}/progress`)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
@@ -1039,7 +1039,7 @@ class CollaborationManager {
     }
     
     downloadFile(fileId) {
-        window.open(`/admin/api/collaboration/files/${fileId}/download`, '_blank');
+        window.open(`/instructor/api/collaboration/files/${fileId}/download`, '_blank');
     }
     
     showErrorModal(message) {
@@ -1106,7 +1106,7 @@ class CollaborationManager {
         this.collaborationSettings.set(activityId, settings);
         
         // Save to backend
-        fetch('/admin/api/collaboration/settings', {
+        fetch('/instructor/api/collaboration/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ activityId, settings })
@@ -1115,7 +1115,7 @@ class CollaborationManager {
 
     loadExistingSettings() {
         // Load existing collaboration settings from backend
-        fetch('/admin/api/collaboration/settings')
+        fetch('/instructor/api/collaboration/settings')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);

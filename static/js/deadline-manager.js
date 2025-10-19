@@ -18,7 +18,7 @@ class DeadlineManager {
     // Load existing deadlines from the system
     loadDeadlines() {
         // This would typically fetch from the backend
-        fetch('/admin/api/deadlines')
+        fetch('/instructor/api/deadlines')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
@@ -380,7 +380,7 @@ class DeadlineManager {
 
     saveDeadline(deadline) {
         // Save to backend
-        fetch('/admin/api/deadlines', {
+        fetch('/instructor/api/deadlines', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(deadline)
