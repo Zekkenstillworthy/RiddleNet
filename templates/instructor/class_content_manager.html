@@ -5465,9 +5465,9 @@ select::-webkit-scrollbar-thumb {
                         User Management
                     </h2>
                     <div class="header-actions">
-                        <button class="action-btn secondary" onclick="bulkUserActions()">
-                            <i class="fas fa-tasks"></i>
-                            Bulk Actions
+                        <button class="action-btn secondary" onclick="exportStudentProgressReport()">
+                            <i class="fas fa-file-export"></i>
+                            Export Student Progress
                         </button>
                         <button class="action-btn primary" onclick="showInviteUserModal()">
                             <i class="fas fa-user-plus"></i>
@@ -5496,15 +5496,7 @@ select::-webkit-scrollbar-thumb {
                             <p>Active This Week</p>
                         </div>
                     </div>
-                    <div class="deadline-stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-chalkboard-teacher"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="totalInstructors">1</h3>
-                            <p>Instructors</p>
-                        </div>
-                    </div>
+                    
                     <div class="deadline-stat-card">
                         <div class="stat-icon">
                             <i class="fas fa-user-clock"></i>
@@ -8060,6 +8052,38 @@ function closeBulkActionsModal() {
     }
 }
 
+function exportStudentProgressReport() {
+    // Get class ID
+    let classId = null;
+    if (moduleBuilder && moduleBuilder.currentClass) {
+        classId = moduleBuilder.currentClass.id;
+    } else {
+        const pathMatch = window.location.pathname.match(/\/class-content-manager\/(\d+)/);
+        if (pathMatch) {
+            classId = pathMatch[1];
+        }
+    }
+    
+    if (!classId) {
+        moduleBuilder.showToast('Error: Class context not available', 'error');
+        return;
+    }
+    
+    moduleBuilder.showToast('Generating student progress report...', 'info');
+    
+    // Download the comprehensive progress report with student list and progress
+    const link = document.createElement('a');
+    link.href = `/instructor/api/classes/${classId}/students/progress-export`;
+    link.download = `student-progress-report-class-${classId}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => {
+        moduleBuilder.showToast('Student progress report downloaded!', 'success');
+    }, 500);
+}
+
 function exportStudentList() {
     // Get class ID
     let classId = null;
@@ -8087,17 +8111,237 @@ function exportStudentList() {
 
 function sendBulkMessage() {
     closeBulkActionsModal();
-    moduleBuilder.showToast('Bulk message feature coming soon!', 'info');
+    
+    // Create a modal for sending bulk messages
+    const messageModal = `
+        <div class="modal-overlay" id="bulkMessageModal" style="display: flex;">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <i class="fas fa-envelope"></i> Send Message to All Students
+                    </h3>
+                    <button class="modal-close" onclick="closeBulkMessageModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Subject</label>
+                        <input type="text" id="bulkMessageSubject" class="form-control" placeholder="Enter message subject...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Message</label>
+                        <textarea id="bulkMessageContent" class="form-control" rows="8" placeholder="Type your message here..."></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="bulkMessageUrgent" class="form-check-input">
+                        <label class="form-check-label" for="bulkMessageUrgent">Mark as urgent</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="action-btn secondary" onclick="closeBulkMessageModal()">Cancel</button>
+                    <button class="action-btn primary" onclick="sendBulkMessageNow()">
+                        <i class="fas fa-paper-plane"></i> Send to All Students
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', messageModal);
+}
+
+function closeBulkMessageModal() {
+    const modal = document.getElementById('bulkMessageModal');
+    if (modal) {
+        modal.style.display = 'none';
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function sendBulkMessageNow() {
+    const subject = document.getElementById('bulkMessageSubject').value;
+    const content = document.getElementById('bulkMessageContent').value;
+    const urgent = document.getElementById('bulkMessageUrgent').checked;
+    
+    if (!subject || !content) {
+        moduleBuilder.showToast('Please enter both subject and message', 'error');
+        return;
+    }
+    
+    if (!moduleBuilder.currentClass) {
+        moduleBuilder.showToast('No class selected', 'error');
+        return;
+    }
+    
+    // Send the bulk message
+    fetch(`/instructor/api/classes/${moduleBuilder.currentClass.id}/send-bulk-message`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            subject: subject,
+            message: content,
+            urgent: urgent
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            moduleBuilder.showToast(`Message sent to ${data.student_count} students!`, 'success');
+            closeBulkMessageModal();
+        } else {
+            moduleBuilder.showToast(data.message || 'Failed to send message', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending bulk message:', error);
+        moduleBuilder.showToast('Error sending message', 'error');
+    });
 }
 
 function bulkGradeExtension() {
     closeBulkActionsModal();
-    moduleBuilder.showToast('Bulk extension feature coming soon!', 'info');
+    
+    // Create a modal for bulk deadline extensions
+    const extensionModal = `
+        <div class="modal-overlay" id="bulkExtensionModal" style="display: flex;">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <i class="fas fa-clock"></i> Grant Bulk Deadline Extensions
+                    </h3>
+                    <button class="modal-close" onclick="closeBulkExtensionModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Select Assignment</label>
+                        <select id="bulkExtensionAssignment" class="form-control">
+                            <option value="">-- Select Assignment --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Extension Days</label>
+                        <input type="number" id="bulkExtensionDays" class="form-control" min="1" max="30" value="7" placeholder="Number of days">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reason (Optional)</label>
+                        <textarea id="bulkExtensionReason" class="form-control" rows="3" placeholder="Enter reason for extension..."></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="bulkExtensionNotify" class="form-check-input" checked>
+                        <label class="form-check-label" for="bulkExtensionNotify">Notify all students via email</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="action-btn secondary" onclick="closeBulkExtensionModal()">Cancel</button>
+                    <button class="action-btn primary" onclick="grantBulkExtensionNow()">
+                        <i class="fas fa-check"></i> Grant Extension
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', extensionModal);
+    
+    // Load assignments for the current class
+    if (moduleBuilder.currentClass) {
+        loadAssignmentsForExtension();
+    }
+}
+
+function closeBulkExtensionModal() {
+    const modal = document.getElementById('bulkExtensionModal');
+    if (modal) {
+        modal.style.display = 'none';
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function loadAssignmentsForExtension() {
+    fetch(`/instructor/api/classes/${moduleBuilder.currentClass.id}/assignments`)
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('bulkExtensionAssignment');
+            if (select && data.assignments) {
+                data.assignments.forEach(assignment => {
+                    const option = document.createElement('option');
+                    option.value = assignment.id;
+                    option.textContent = assignment.title;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading assignments:', error);
+        });
+}
+
+function grantBulkExtensionNow() {
+    const assignmentId = document.getElementById('bulkExtensionAssignment').value;
+    const days = document.getElementById('bulkExtensionDays').value;
+    const reason = document.getElementById('bulkExtensionReason').value;
+    const notify = document.getElementById('bulkExtensionNotify').checked;
+    
+    if (!assignmentId) {
+        moduleBuilder.showToast('Please select an assignment', 'error');
+        return;
+    }
+    
+    if (!days || days < 1) {
+        moduleBuilder.showToast('Please enter valid extension days', 'error');
+        return;
+    }
+    
+    // Grant the bulk extension
+    fetch(`/instructor/api/classes/${moduleBuilder.currentClass.id}/grant-bulk-extension`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            assignment_id: assignmentId,
+            extension_days: parseInt(days),
+            reason: reason,
+            notify: notify
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            moduleBuilder.showToast(`Extension granted to ${data.student_count} students!`, 'success');
+            closeBulkExtensionModal();
+        } else {
+            moduleBuilder.showToast(data.message || 'Failed to grant extension', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error granting bulk extension:', error);
+        moduleBuilder.showToast('Error granting extension', 'error');
+    });
 }
 
 function generateProgressReport() {
     closeBulkActionsModal();
+    
+    if (!moduleBuilder.currentClass) {
+        moduleBuilder.showToast('No class selected', 'error');
+        return;
+    }
+    
     moduleBuilder.showToast('Generating progress report...', 'info');
+    
+    // Download the progress report
+    const link = document.createElement('a');
+    link.href = `/instructor/class/${moduleBuilder.currentClass.id}/progress-report`;
+    link.download = `progress-report-class-${moduleBuilder.currentClass.id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => {
+        moduleBuilder.showToast('Progress report downloaded!', 'success');
+    }, 500);
 }
 
 function filterStudentList() {
@@ -10709,12 +10953,26 @@ function formatDeadline(dateString) {
 
 // Deadline action functions
 function createDeadlinePolicy() {
-    window.open('/instructor/deadline-policies/create', '_blank');
+    // Open the create deadline policy modal
+    const modal = document.getElementById('createDeadlinePolicyModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+    }
 }
 
 function exportDeadlineReport() {
     if (!moduleBuilder.currentClass) return;
-    window.open(`/instructor/class/${moduleBuilder.currentClass.id}/deadline-report`, '_blank');
+    
+    // Download the report file
+    const link = document.createElement('a');
+    link.href = `/instructor/class/${moduleBuilder.currentClass.id}/deadline-report`;
+    link.download = `deadline-report-class-${moduleBuilder.currentClass.id}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    moduleBuilder.showToast('Downloading deadline report...', 'success');
 }
 
 function grantExtension() {
@@ -12208,6 +12466,235 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Export Essays Report Function
+function exportEssaysReport() {
+    if (!moduleBuilder.currentClass) {
+        alert('Please select a class first.');
+        return;
+    }
+    
+    // Download the report file
+    const link = document.createElement('a');
+    link.href = `/instructor/class/${moduleBuilder.currentClass.id}/essays-report`;
+    link.download = `essays-report-class-${moduleBuilder.currentClass.id}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    moduleBuilder.showToast('Downloading essays report...', 'success');
+}
+
+// Refresh Essays Function
+function refreshEssays() {
+    console.log('🔄 Refreshing essays...');
+    loadEssayData();
+}
+
+// Bulk Grade Modal Function
+function bulkGradeModal() {
+    // Create a modal for bulk grading
+    const bulkGradeModalHtml = `
+        <div class="modal-overlay" id="bulkGradeModalOverlay" style="display: flex;">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <i class="fas fa-graduation-cap"></i> Bulk Grading
+                    </h3>
+                    <button class="modal-close" onclick="closeBulkGradeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Select Assignment</label>
+                        <select id="bulkGradeAssignment" class="form-control">
+                            <option value="">-- Select Assignment --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Grading Method</label>
+                        <select id="bulkGradeMethod" class="form-control" onchange="toggleBulkGradeOptions()">
+                            <option value="uniform">Uniform Grade (Same grade for all)</option>
+                            <option value="percentage">Percentage Adjustment (e.g., +5% or -3%)</option>
+                            <option value="csv">Upload CSV File</option>
+                        </select>
+                    </div>
+                    
+                    <div id="uniformGradeOptions" class="form-group">
+                        <label class="form-label">Grade (0-100)</label>
+                        <input type="number" id="uniformGradeValue" class="form-control" min="0" max="100" placeholder="Enter grade">
+                    </div>
+                    
+                    <div id="percentageGradeOptions" class="form-group" style="display: none;">
+                        <label class="form-label">Percentage Adjustment</label>
+                        <input type="number" id="percentageGradeValue" class="form-control" min="-100" max="100" placeholder="e.g., +5 or -3">
+                        <small class="form-text">Positive values increase grades, negative values decrease them</small>
+                    </div>
+                    
+                    <div id="csvGradeOptions" class="form-group" style="display: none;">
+                        <label class="form-label">Upload CSV File</label>
+                        <input type="file" id="csvGradeFile" class="form-control" accept=".csv">
+                        <small class="form-text">CSV format: student_id,grade</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Feedback (Optional)</label>
+                        <textarea id="bulkGradeFeedback" class="form-control" rows="3" placeholder="Enter feedback for all students..."></textarea>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input type="checkbox" id="bulkGradeNotify" class="form-check-input" checked>
+                        <label class="form-check-label" for="bulkGradeNotify">Notify students of their grades</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="action-btn secondary" onclick="closeBulkGradeModal()">Cancel</button>
+                    <button class="action-btn primary" onclick="applyBulkGrades()">
+                        <i class="fas fa-check"></i> Apply Grades
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', bulkGradeModalHtml);
+    
+    // Load assignments for the current class
+    if (moduleBuilder.currentClass) {
+        loadAssignmentsForBulkGrade();
+    }
+}
+
+function closeBulkGradeModal() {
+    const modal = document.getElementById('bulkGradeModalOverlay');
+    if (modal) {
+        modal.style.display = 'none';
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function loadAssignmentsForBulkGrade() {
+    fetch(`/instructor/api/classes/${moduleBuilder.currentClass.id}/assignments`)
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('bulkGradeAssignment');
+            if (select && data.assignments) {
+                data.assignments.forEach(assignment => {
+                    const option = document.createElement('option');
+                    option.value = assignment.id;
+                    option.textContent = assignment.title;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading assignments:', error);
+        });
+}
+
+function toggleBulkGradeOptions() {
+    const method = document.getElementById('bulkGradeMethod').value;
+    
+    document.getElementById('uniformGradeOptions').style.display = method === 'uniform' ? 'block' : 'none';
+    document.getElementById('percentageGradeOptions').style.display = method === 'percentage' ? 'block' : 'none';
+    document.getElementById('csvGradeOptions').style.display = method === 'csv' ? 'block' : 'none';
+}
+
+function applyBulkGrades() {
+    const assignmentId = document.getElementById('bulkGradeAssignment').value;
+    const method = document.getElementById('bulkGradeMethod').value;
+    const feedback = document.getElementById('bulkGradeFeedback').value;
+    const notify = document.getElementById('bulkGradeNotify').checked;
+    
+    if (!assignmentId) {
+        moduleBuilder.showToast('Please select an assignment', 'error');
+        return;
+    }
+    
+    let gradeData = {
+        assignment_id: assignmentId,
+        method: method,
+        feedback: feedback,
+        notify: notify
+    };
+    
+    if (method === 'uniform') {
+        const grade = document.getElementById('uniformGradeValue').value;
+        if (!grade || grade < 0 || grade > 100) {
+            moduleBuilder.showToast('Please enter a valid grade (0-100)', 'error');
+            return;
+        }
+        gradeData.value = parseFloat(grade);
+    } else if (method === 'percentage') {
+        const adjustment = document.getElementById('percentageGradeValue').value;
+        if (!adjustment) {
+            moduleBuilder.showToast('Please enter a percentage adjustment', 'error');
+            return;
+        }
+        gradeData.value = parseFloat(adjustment);
+    } else if (method === 'csv') {
+        const fileInput = document.getElementById('csvGradeFile');
+        if (!fileInput.files || !fileInput.files[0]) {
+            moduleBuilder.showToast('Please select a CSV file', 'error');
+            return;
+        }
+        
+        // Handle CSV upload
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('assignment_id', assignmentId);
+        formData.append('feedback', feedback);
+        formData.append('notify', notify);
+        
+        fetch(`/instructor/api/classes/${moduleBuilder.currentClass.id}/bulk-grade-csv`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                moduleBuilder.showToast(`Grades applied to ${data.graded_count} students!`, 'success');
+                closeBulkGradeModal();
+                // Refresh grades display if on grades tab
+                if (document.querySelector('.tab-link[data-tab="grades"]').classList.contains('active')) {
+                    loadGrades();
+                }
+            } else {
+                moduleBuilder.showToast(data.message || 'Failed to apply grades', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error applying bulk grades:', error);
+            moduleBuilder.showToast('Error applying grades', 'error');
+        });
+        return;
+    }
+    
+    // Apply bulk grades
+    fetch(`/instructor/api/classes/${moduleBuilder.currentClass.id}/bulk-grade`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(gradeData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            moduleBuilder.showToast(`Grades applied to ${data.graded_count} students!`, 'success');
+            closeBulkGradeModal();
+            // Refresh grades display if on grades tab
+            if (document.querySelector('.tab-link[data-tab="grades"]').classList.contains('active')) {
+                loadGrades();
+            }
+        } else {
+            moduleBuilder.showToast(data.message || 'Failed to apply grades', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error applying bulk grades:', error);
+        moduleBuilder.showToast('Error applying grades', 'error');
+    });
+}
 
 // ========================================
 // END QUESTION MANAGEMENT FUNCTIONS
