@@ -172,10 +172,10 @@ class ChallengeScore(db.Model):
     @staticmethod
     def get_user_stats(user_id):
         """Get aggregated stats for a user across all challenges"""
-        # Define the 4 main challenge types for dashboard statistics
-        MAIN_CHALLENGE_TYPES = ['crimping', 'osi', 'troubleshooting', 'quiz']
+        # ✅ FIX: Define the 5 main challenge types for dashboard statistics (including linkup)
+        MAIN_CHALLENGE_TYPES = ['crimping', 'osi', 'troubleshooting', 'quiz', 'linkup']
         
-        # Only query the 4 main challenge types
+        # Only query the 5 main challenge types
         challenges = ChallengeScore.query.filter_by(user_id=user_id).filter(
             ChallengeScore.challenge_type.in_(MAIN_CHALLENGE_TYPES)
         ).all()
@@ -183,18 +183,18 @@ class ChallengeScore(db.Model):
         if not challenges:
             return {
                 'total_challenges_completed': 0,
-                'total_challenges': 4,
+                'total_challenges': 5,  # ✅ FIX: Updated to 5 challenges
                 'average_score': 0.0,
                 'total_attempts': 0,
                 'completion_rate': 0.0
             }
         
-        # Count only completed challenges from the main 4 types
+        # Count only completed challenges from the main 5 types
         completed = sum(1 for c in challenges if c.is_completed)
         
-        # Calculate average score correctly: sum of best scores / 4 (max possible)
+        # Calculate average score correctly: sum of best scores / 5 (max possible)
         total_score = sum(c.best_score for c in challenges)
-        average_score = total_score / 4  # Always divide by 4 (total challenges)
+        average_score = total_score / 5  # ✅ FIX: Always divide by 5 (total challenges)
         
         # Cap display average at 100% for cleaner UI (individual scores can still exceed 100%)
         display_average = min(average_score, 100.0)
@@ -203,8 +203,8 @@ class ChallengeScore(db.Model):
         
         return {
             'total_challenges_completed': completed,
-            'total_challenges': 4,  # crimping, osi, troubleshooting, quiz
+            'total_challenges': 5,  # ✅ FIX: crimping, osi, troubleshooting, quiz, linkup
             'average_score': display_average,  # Capped at 100% for display
             'total_attempts': total_attempts,
-            'completion_rate': (completed / 4) * 100
+            'completion_rate': (completed / 5) * 100  # ✅ FIX: Updated to 5
         }

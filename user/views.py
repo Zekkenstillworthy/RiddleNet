@@ -126,17 +126,19 @@ def dashboard():
     from user.models.challenge_score import ChallengeScore
     from user.models.user_badge import UserBadge
     
-    # Get challenge stats
+    # ✅ FIX: Get all 5 challenge types including linkup
     crimping_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='crimping').first()
     osi_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='osi').first()
     troubleshooting_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='troubleshooting').first()
     quiz_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='quiz').first()
+    linkup_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='linkup').first()
     
     # Extract best scores (for backward compatibility and template)
     crimping_score = crimping_challenge.best_score if crimping_challenge else 0
     osi_score = osi_challenge.best_score if osi_challenge else 0
     topology_score = troubleshooting_challenge.best_score if troubleshooting_challenge else 0  # Keep legacy name
     quiz_score = quiz_challenge.best_score if quiz_challenge else 0
+    linkup_score = linkup_challenge.best_score if linkup_challenge else 0
     
     # Calculate dashboard stats (MVP)
     challenge_stats = ChallengeScore.get_user_stats(user.id)
@@ -147,7 +149,7 @@ def dashboard():
     
     # Get challenge data for display
     challenge_data = []
-    for challenge in [crimping_challenge, osi_challenge, troubleshooting_challenge, quiz_challenge]:
+    for challenge in [crimping_challenge, osi_challenge, troubleshooting_challenge, quiz_challenge, linkup_challenge]:
         if challenge:
             challenge_data.append(challenge.to_dict())
 
@@ -240,6 +242,7 @@ def dashboard():
         crimping_score=crimping_score,
         osi_score=osi_score,
         quiz_score=quiz_score,
+        linkup_score=linkup_score,  # ✅ FIX: Include linkup score
         # MVP: New challenge-based stats
         completed_challenges=challenge_stats['total_challenges_completed'],
         total_challenges=challenge_stats['total_challenges'],
@@ -1483,8 +1486,10 @@ def save_topology_score():
     try:
         score_value = float(data['score'])
         category = data['category']
+        # ✅ FIX: Use challenge_type from request, default to 'linkup' for Link Up challenges
+        challenge_type = data.get('challenge_type', 'linkup')
         
-        print(f"💾 Saving score: user_id={user_id}, score={score_value}, category={category}")
+        print(f"💾 Saving score: user_id={user_id}, score={score_value}, category={category}, challenge_type={challenge_type}")
         
         # Save to legacy UserScore table for backward compatibility
         try:
@@ -1511,7 +1516,7 @@ def save_topology_score():
             from user.models.challenge_score import ChallengeScore
             challenge_score = ChallengeScore.save_score(
                 user_id=user_id,
-                challenge_type='troubleshooting',  # Link Up = troubleshooting challenges
+                challenge_type=challenge_type,  # ✅ FIX: Use dynamic challenge_type
                 score=score_value,
                 metadata={
                     'category': category,
@@ -1530,7 +1535,7 @@ def save_topology_score():
             from user.services.badge_service import BadgeService
             newly_earned_badges = BadgeService.check_and_award_badges(
                 user_id=user_id,
-                challenge_type='troubleshooting',
+                challenge_type=challenge_type,  # ✅ FIX: Use dynamic challenge_type
                 score=score_value,
                 metadata={
                     'category': category,
@@ -1545,7 +1550,7 @@ def save_topology_score():
         
         db.session.commit()
         
-        print(f"[Link Up MVP] ✅ Score saved (Category: {category}, Badges: {len(newly_earned_badges)})")
+        print(f"[Link Up MVP] ✅ Score saved (Type: {challenge_type}, Category: {category}, Badges: {len(newly_earned_badges)})")
         
         return jsonify({
             'status': 'success', 
