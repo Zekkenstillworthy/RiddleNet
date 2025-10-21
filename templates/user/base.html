@@ -8,6 +8,21 @@
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- CRITICAL: Set CSS variables before any styles to prevent FOUC -->
+    <script>
+        (function() {
+            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            const root = document.documentElement;
+            
+            // Set immediately to prevent layout shift
+            if (sidebarCollapsed) {
+                document.documentElement.classList.add('sidebar-collapsed-init');
+                root.style.setProperty('--current-sidebar-width', '115px');
+            } else {
+                root.style.setProperty('--current-sidebar-width', '220px');
+            }
+        })();
+    </script>
     
     {% block head %}{% endblock %}
 </head>
@@ -43,9 +58,9 @@
 
         /* Layout - Optimized for game content */
         /* Dynamic sidebar width variable (updated via body classes & media queries) */
-        --current-sidebar-width: var(--sidebar-width);
         --sidebar-width: 220px; /* Reduced from 280px to prevent game content cutoff */
         --sidebar-collapsed-width: 115px; /* Increased to 85px for better icon spacing and touch targets */
+        --current-sidebar-width: 220px; /* Default to expanded, will be overridden by script if collapsed */
         --transition-speed: 0.3s;
         --transition-fast: 0.15s;
         --border-radius: 16px;
@@ -1151,11 +1166,23 @@
                 sidebarToggle.addEventListener('click', function () {
                     sidebar.classList.toggle('collapsed');
                     document.body.classList.toggle('sidebar-collapsed');
+                    
+                    // Save state to localStorage to prevent FOUC on refresh
+                    const isCollapsed = sidebar.classList.contains('collapsed');
+                    localStorage.setItem('sidebarCollapsed', isCollapsed);
+                    
                     // Variable auto-sync handled by MutationObserver; just schedule integrity log.
                     requestAnimationFrame(()=>requestAnimationFrame(()=>{
                         window.logSidebarIntegrity && window.logSidebarIntegrity('main-sidebar-toggle');
                     }));
                 });
+            }
+            
+            // Restore sidebar state from localStorage on page load
+            const savedSidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (savedSidebarState && sidebar) {
+                sidebar.classList.add('collapsed');
+                document.body.classList.add('sidebar-collapsed');
             }
 
             // Mobile toggle functionality
@@ -1461,6 +1488,32 @@
     </script>
     
     <!-- Enhanced Landscape Optimizations -->
+    
+    <!-- CRITICAL: Prevent FOUC - Set CSS variables before first paint -->
+    <script>
+        (function() {
+            // Check localStorage for sidebar state BEFORE first paint
+            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            
+            // Set CSS variable immediately
+            const root = document.documentElement;
+            const rootStyles = getComputedStyle(root);
+            
+            if (sidebarCollapsed) {
+                document.body.classList.add('sidebar-collapsed');
+                const collapsedWidth = rootStyles.getPropertyValue('--sidebar-collapsed-width').trim();
+                root.style.setProperty('--current-sidebar-width', collapsedWidth);
+            } else {
+                const sidebarWidth = rootStyles.getPropertyValue('--sidebar-width').trim();
+                root.style.setProperty('--current-sidebar-width', sidebarWidth);
+            }
+            
+            // Remove preload class after a short delay to allow CSS to settle
+            setTimeout(function() {
+                document.body.classList.remove('preload');
+            }, 100);
+        })();
+    </script>
     {% endblock %}
 </body>
 

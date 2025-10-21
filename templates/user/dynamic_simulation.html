@@ -6380,32 +6380,6 @@
                 </div>
                 <!-- End Task Assignment Tab Content -->
 
-
-                <!-- Team Chat -->
-                <div class="feedback-section" id="chat-section">
-                    <h4><i class="fas fa-comments"></i> Team Chat</h4>
-                    <div class="chat-container" id="team-chat">
-                        <div class="chat-messages-container" id="chat-messages">
-                            <div class="chat-message system">
-                                <div class="message-content">
-                                    <i class="fas fa-info-circle"></i>
-                                    Welcome to team collaboration! Start a session to chat with team members.
-                                </div>
-                                <div class="message-time">Just now</div>
-                            </div>
-                        </div>
-                        <div class="chat-input-container">
-                            
-                            <div class="chat-input-wrapper">
-                                <input type="text" id="collaboration-chat-input" class="chat-input" placeholder="Type your message..." maxlength="500">
-                                <button id="collaboration-send-chat-btn" class="chat-send-btn" title="Send Message">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Collaboration Tab Content -->
                 <div class="tab-content" id="collaboration-content">
                 <!-- Connection Status Card -->
@@ -10849,34 +10823,58 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     }
     
     selectDevice(device) {
+        console.log('🎯 selectDevice() called with:', device ? `${device.label} (${device.id})` : 'null');
+        
         // Deselect all devices first
-        this.networkDevices.forEach(d => d.selected = false);
+        this.networkDevices.forEach(d => {
+            if (d.selected) {
+                console.log(`   ↳ Deselecting: ${d.label}`);
+            }
+            d.selected = false;
+        });
         
         // Select target device
         if (device) {
             device.selected = true;
             this.selectedDevice = device;
+            console.log(`✅ Device selected: ${device.label} (selected=${device.selected})`);
+            console.log(`📊 Device object:`, device);
+            console.log(`📊 All devices:`, this.networkDevices.map(d => ({ label: d.label, selected: d.selected })));
+            
             // Use the unified configurator-backed panel
             this.openDeviceConfigPanel(device);
             // NEW: Notify CLI manager of active device
             try { window.deviceCLI?.setActiveDevice(device); } catch (e) { console.warn('Device CLI setActiveDevice failed', e); }
         } else {
             this.selectedDevice = null;
+            console.log('❌ No device selected (cleared selection)');
             this.hideDeviceConfiguration();
             // NEW: Clear active device in CLI manager
             try { window.deviceCLI?.clearActiveDevice(); } catch (e) { /* noop */ }
         }
         
+        console.log('🔄 Calling renderCanvas...');
         this.renderCanvas();
+        console.log('✅ renderCanvas complete');
     }
     
     deleteDevice(device) {
-        if (!device) return;
+        console.log('🗑️ deleteDevice() called with:', device);
+        
+        if (!device) {
+            console.error('❌ No device provided to deleteDevice()');
+            return;
+        }
+        
+        console.log(`🔔 Asking for confirmation to delete: ${device.label} (${device.id})`);
         
         // Confirmation dialog for destructive action (like troubleshoot.html)
         if (!confirm(`Delete ${device.label}?`)) {
+            console.log('❌ User cancelled deletion');
             return;
         }
+        
+        console.log('✅ User confirmed deletion, proceeding...');
         
         // Save history state before deletion
         this.saveHistoryState?.('device_deleted', {
@@ -10885,14 +10883,20 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         
         // Remove device
         const index = this.networkDevices.findIndex(d => d.id === device.id);
+        console.log(`📊 Device index in array: ${index}`);
+        
         if (index !== -1) {
             this.networkDevices.splice(index, 1);
+            console.log(`✅ Device removed from networkDevices array at index ${index}`);
+        } else {
+            console.error('❌ Device not found in networkDevices array');
         }
         
         // Clear selection if this device was selected
         if (this.selectedDevice === device) {
             this.selectedDevice = null;
             this.hideDeviceConfiguration();
+            console.log('🧹 Cleared selected device and hid configuration panel');
         }
         
         // Enhanced performance tracking and feedback
@@ -10902,13 +10906,14 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             timestamp: Date.now()
         });
         
+        console.log('🔄 Updating network status and rendering canvas...');
         this.updateNetworkStatus();
         this.renderCanvas();
         
         // User feedback
         this.showToast(`Deleted ${device.label}`, 'info');
         
-        console.log(`🗑️ Deleted device: ${device.id}`);
+        console.log(`✅ Successfully deleted device: ${device.label} (${device.id})`);
     }
     
     getDeviceById(id) {
@@ -11048,12 +11053,17 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         switch (e.key) {
             case 'Delete':
             case 'Backspace':
+                console.log(`⌨️ ${e.key} key pressed, selectedDevice:`, this.selectedDevice);
                 if (this.selectedDevice) {
                     e.preventDefault();
+                    console.log('🗑️ Calling deleteDevice() from keyboard shortcut');
                     this.deleteDevice(this.selectedDevice);
+                } else {
+                    console.log('⚠️ No device selected, ignoring delete key');
                 }
                 break;
             case 'Escape':
+                console.log('⌨️ Escape key pressed, switching to select tool');
                 this.setTool('select');
                 break;
         }
@@ -11278,19 +11288,27 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
 
     // Enhanced device selection with troubleshoot.html style highlighting
     selectDevice(device) {
+        console.log('🎯 [METHOD 2] selectDevice() called with:', device ? `${device.label} (${device.id})` : 'null');
+        
         // Clear previous selection
         if (this.selectedDevice) {
             this.selectedDevice.selected = false;
+            console.log(`   ↳ [METHOD 2] Deselecting previous: ${this.selectedDevice.label}`);
         }
         
         this.selectedDevice = device;
         
         if (device) {
             device.selected = true;
-            console.log(`🎯 Selected device: ${device.label} (${device.type})`);
+            console.log(`✅ [METHOD 2] Selected device: ${device.label} (type: ${device.type}, selected: ${device.selected})`);
+            console.log(`📊 [METHOD 2] Device object:`, device);
+        } else {
+            console.log('❌ [METHOD 2] No device selected (cleared selection)');
         }
         
+        console.log('🔄 [METHOD 2] Calling renderCanvas...');
         this.renderCanvas();
+        console.log('✅ [METHOD 2] renderCanvas complete');
     }
 
     // Enhanced device drawing (from troubleshoot.html)
@@ -17220,40 +17238,121 @@ function clearCanvas() {
 }
 
 function deleteSelected() {
-    if (!window.simulation) return;
+    console.log('🗑️ ========================================');
+    console.log('🗑️ DELETE BUTTON CLICKED!');
+    console.log('🗑️ ========================================');
+    console.log('📊 [DELETE DEBUG] window.simulation:', window.simulation ? 'EXISTS' : 'MISSING');
+    console.log('📊 [DELETE DEBUG] window.networkEngine:', window.networkEngine ? 'EXISTS' : 'MISSING');
+    
+    // Determine which system to use
+    const useNetworkEngine = window.networkEngine && window.networkEngine.devices;
+    const devices = useNetworkEngine ? window.networkEngine.devices : (window.simulation ? window.simulation.networkDevices : []);
+    const connections = useNetworkEngine ? window.networkEngine.connections : (window.simulation ? window.simulation.connections : []);
+    
+    console.log('📊 [DELETE DEBUG] Using system:', useNetworkEngine ? 'networkEngine' : 'simulation');
+    console.log('📊 Current devices:', devices);
+    console.log('📊 Current connections:', connections);
+    console.log('📊 [DELETE DEBUG] selectedDevice:', window.simulation?.selectedDevice || window.networkEngine?.selectedDevice);
 
-    const selectedDevices = window.simulation.networkDevices.filter(d => d.selected);
-    const selectedConnections = window.simulation.connections?.filter(c => c.selected) || [];
+    const selectedDevices = devices.filter(d => d.selected);
+    const selectedConnections = connections?.filter(c => c.selected) || [];
+
+    console.log('✅ Selected devices:', selectedDevices);
+    console.log('✅ Selected connections:', selectedConnections);
+    
+    // DIAGNOSTIC: Show all devices and their selection state
+    console.log('🔍 [DELETE DEBUG] All device selection states:');
+    devices.forEach((d, idx) => {
+        console.log(`   ${idx + 1}. ${d.label || d.name || d.id} - selected: ${d.selected}, id: ${d.id}`);
+    });
 
     if (selectedDevices.length === 0 && selectedConnections.length === 0) {
-        window.simulation.showToast('No devices or connections selected', 'info');
+        console.warn('⚠️ No devices or connections selected');
+        console.log('💡 TIP: Click on a device to select it first');
+        console.log('💡 TIP: Check selectDevice() logs to verify selection works');
+        alert('Please select at least one device or connection to delete');
         return;
     }
 
     const confirmMsg = `Delete ${selectedDevices.length} device(s) and ${selectedConnections.length} connection(s)?`;
-    if (!confirm(confirmMsg)) return;
+    console.log('🔔 Confirmation prompt:', confirmMsg);
+    
+    if (!confirm(confirmMsg)) {
+        console.log('❌ User cancelled deletion');
+        return;
+    }
+
+    console.log('🚀 Starting deletion process...');
 
     // Delete selected devices
     selectedDevices.forEach(device => {
+        console.log(`🗑️ Deleting device: ${device.label || device.name} (${device.id})`);
+        
         // Remove connections attached to this device
-        if (window.simulation.connections) {
-            window.simulation.connections = window.simulation.connections.filter(conn => 
-                conn.from !== device.id && conn.to !== device.id
-            );
+        const connectionsBeforeDelete = connections.length;
+        const updatedConnections = connections.filter(conn => 
+            conn.from !== device.id && conn.to !== device.id
+        );
+        const connectionsDeleted = connectionsBeforeDelete - updatedConnections.length;
+        console.log(`   ↳ Removed ${connectionsDeleted} connection(s) attached to ${device.label || device.name}`);
+        
+        // Update connections array
+        if (useNetworkEngine) {
+            window.networkEngine.connections = updatedConnections;
+        } else {
+            window.simulation.connections = updatedConnections;
         }
     });
 
     // Remove devices from array
-    window.simulation.networkDevices = window.simulation.networkDevices.filter(d => !d.selected);
-
-    // Delete selected connections
-    if (window.simulation.connections) {
-        window.simulation.connections = window.simulation.connections.filter(c => !c.selected);
+    const devicesBeforeDelete = devices.length;
+    const updatedDevices = devices.filter(d => !d.selected);
+    console.log(`✅ Removed ${devicesBeforeDelete - updatedDevices.length} device(s) from array`);
+    
+    // Update devices array
+    if (useNetworkEngine) {
+        window.networkEngine.devices = updatedDevices;
+    } else {
+        window.simulation.networkDevices = updatedDevices;
     }
 
-    window.simulation.selectedDevice = null;
-    window.simulation.redrawCanvas();
-    window.simulation.showToast(`Deleted ${selectedDevices.length} device(s) and ${selectedConnections.length} connection(s)`, 'success');
+    // Delete selected connections
+    const connectionsBeforeDelete = connections.length;
+    const updatedConnections = connections.filter(c => !c.selected);
+    console.log(`✅ Removed ${connectionsBeforeDelete - updatedConnections.length} connection(s) from array`);
+    
+    // Update connections array
+    if (useNetworkEngine) {
+        window.networkEngine.connections = updatedConnections;
+    } else {
+        window.simulation.connections = updatedConnections;
+    }
+
+    // Clear selection and redraw
+    if (window.simulation) {
+        window.simulation.selectedDevice = null;
+    }
+    if (window.networkEngine) {
+        window.networkEngine.selectedDevice = null;
+        console.log('🎨 Calling networkEngine.render()...');
+        window.networkEngine.render();
+    }
+    if (window.simulation) {
+        console.log('🎨 Calling simulation.redrawCanvas()...');
+        window.simulation.redrawCanvas();
+    }
+    
+    const totalDeleted = selectedDevices.length + selectedConnections.length;
+    const successMsg = `Deleted ${selectedDevices.length} device(s) and ${selectedConnections.length} connection(s)`;
+    console.log(`✅ ${successMsg}`);
+    console.log('🗑️ ========================================');
+    
+    if (window.simulation && window.simulation.showToast) {
+        window.simulation.showToast(successMsg, 'success');
+    } else {
+        alert(successMsg);
+    }
+
 
     // Track deletion action
     window.trackPerformanceAction?.('delete_selected', {
@@ -17261,6 +17360,8 @@ function deleteSelected() {
         connectionsDeleted: selectedConnections.length,
         timestamp: Date.now()
     });
+    
+    console.log('🎉 Deletion complete!');
 }
 
 function autoArrangeDevices() {

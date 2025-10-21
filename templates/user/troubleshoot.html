@@ -8,6 +8,22 @@
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/auto-landscape-orientation.css') }}">
 
+<!-- CRITICAL: Initialize CSS variables BEFORE any styles load to prevent FOUC -->
+<script>
+    (function() {
+        // This script runs IMMEDIATELY in <head> before any CSS is parsed
+        const root = document.documentElement;
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        
+        // Set the CSS variable before first paint
+        if (sidebarCollapsed) {
+            root.style.setProperty('--current-sidebar-width', '115px'); // Match --sidebar-collapsed-width
+        } else {
+            root.style.setProperty('--current-sidebar-width', '220px'); // Match --sidebar-width
+        }
+    })();
+</script>
+
 <style>
     :root {
         /* Troubleshoot-specific theme overrides - Critical for preventing FOUC */
