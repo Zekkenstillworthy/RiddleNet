@@ -12734,9 +12734,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     visible: el.offsetParent !== null
                 });
                 
-                // Add drag event listeners
+                // Add drag event listeners (for desktop)
                 el.addEventListener("dragstart", handleDragStart);
                 el.addEventListener("dragend", handleDragEnd);
+                
+                // Add touch event listeners (for mobile)
+                el.addEventListener("touchstart", handleTouchStart, { passive: false });
+                el.addEventListener("touchmove", handleTouchMove, { passive: false });
+                el.addEventListener("touchend", handleTouchEnd, { passive: false });
                 
                 // Add additional debug listeners
                 el.addEventListener("mousedown", (e) => {
@@ -12862,6 +12867,113 @@ document.addEventListener('DOMContentLoaded', () => {
             deviceElement.style.opacity = "";
             deviceElement.style.transform = "";
             console.log('🔄 Visual feedback reset');
+        }
+
+        // ===== MOBILE TOUCH EVENT HANDLERS =====
+        let touchedDevice = null;
+        let touchStartPos = { x: 0, y: 0 };
+        let isDragging = false;
+
+        function handleTouchStart(e) {
+            console.log('📱 Touch Start Event:', {
+                target: e.target,
+                touches: e.touches.length
+            });
+            
+            // Prevent default to avoid scrolling while dragging
+            e.preventDefault();
+            
+            touchedDevice = e.currentTarget;
+            const touch = e.touches[0];
+            touchStartPos = {
+                x: touch.clientX,
+                y: touch.clientY
+            };
+            
+            // Apply visual feedback
+            touchedDevice.style.opacity = "0.5";
+            touchedDevice.style.transform = "scale(0.95)";
+            
+            console.log('📱 Touch device captured:', {
+                type: touchedDevice.getAttribute('data-type'),
+                startPos: touchStartPos
+            });
+        }
+
+        function handleTouchMove(e) {
+            if (!touchedDevice) return;
+            
+            // Prevent default to avoid scrolling
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const moveDistance = Math.sqrt(
+                Math.pow(touch.clientX - touchStartPos.x, 2) + 
+                Math.pow(touch.clientY - touchStartPos.y, 2)
+            );
+            
+            // Start dragging if moved more than 10 pixels
+            if (moveDistance > 10) {
+                isDragging = true;
+            }
+            
+            if (isDragging) {
+                console.log('📱 Touch Move:', {
+                    x: touch.clientX,
+                    y: touch.clientY,
+                    distance: moveDistance
+                });
+            }
+        }
+
+        function handleTouchEnd(e) {
+            console.log('📱 Touch End Event');
+            
+            if (!touchedDevice) return;
+            
+            // Prevent default
+            e.preventDefault();
+            
+            const touch = e.changedTouches[0];
+            const deviceType = touchedDevice.getAttribute('data-type');
+            
+            // Reset visual feedback
+            touchedDevice.style.opacity = "";
+            touchedDevice.style.transform = "";
+            
+            if (isDragging) {
+                // Get canvas bounds
+                const canvasRect = canvas.getBoundingClientRect();
+                
+                // Check if touch ended over canvas
+                const touchX = touch.clientX;
+                const touchY = touch.clientY;
+                
+                if (touchX >= canvasRect.left && touchX <= canvasRect.right &&
+                    touchY >= canvasRect.top && touchY <= canvasRect.bottom) {
+                    
+                    // Calculate position relative to canvas
+                    const x = touchX - canvasRect.left;
+                    const y = touchY - canvasRect.top;
+                    
+                    console.log('✅ Touch dropped on canvas:', {
+                        deviceType: deviceType,
+                        x: x,
+                        y: y
+                    });
+                    
+                    // Add device to canvas
+                    addDevice(deviceType, x, y);
+                    redrawCanvas();
+                } else {
+                    console.log('❌ Touch ended outside canvas');
+                }
+            }
+            
+            // Reset state
+            touchedDevice = null;
+            isDragging = false;
+            touchStartPos = { x: 0, y: 0 };
         }
 
         // Handle drag over the canvas
