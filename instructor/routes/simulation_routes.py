@@ -182,6 +182,20 @@ def edit_simulation(simulation_id):
         except Exception:
             pass
 
+        # DEFENSIVE CHECK: Ensure sim_config is a dict before using .get()
+        if not isinstance(sim_config, dict):
+            print(f"⚠️ WARNING [INSTRUCTOR]: sim_config is type {type(sim_config)}, converting to dict")
+            if isinstance(sim_config, str):
+                try:
+                    import json
+                    sim_config = json.loads(sim_config)
+                    print(f"✅ Successfully parsed sim_config from string to dict")
+                except Exception as parse_error:
+                    print(f"❌ Failed to parse sim_config: {parse_error}")
+                    sim_config = {}
+            else:
+                sim_config = {}
+
         # Debug logging for device count investigation
         debug_file_path = r'c:\Users\gilbe\OneDrive\Desktop\RiddleNet\admin_debug.txt'
         try:
@@ -1447,6 +1461,10 @@ def export_simulation_rnetfile(simulation_id):
         learning_objectives = safe_json_parse(simulation.get('learning_objectives'), [])
         prerequisite_knowledge = safe_json_parse(simulation.get('prerequisite_knowledge'), [])
         
+        # Extract task configuration from simulation_config
+        task_config = simulation_config.get('task_config', {})
+        task_mode = simulation_config.get('task_mode', 'combined')
+        
         # Create rnetfile format export
         from datetime import datetime
         from services.qr_service import QRCodeService
@@ -1505,7 +1523,10 @@ def export_simulation_rnetfile(simulation_id):
                 'simulation_config': simulation_config,
                 'initial_state': initial_state,
                 'expected_outcomes': expected_outcomes,
-                'hints': hints
+                'hints': hints,
+                # Task configuration fields
+                'task_mode': task_mode,
+                'task_config': task_config
             }
         }
         
@@ -1699,16 +1720,9 @@ def get_task_configuration(simulation_id):
         from instructor.models.simulation import Simulation
         
         simulation = Simulation.query.get_or_404(simulation_id)
-        simulation_config = simulation.simulation_config or {}
         
-        # Parse simulation_config if it's a string
-        if isinstance(simulation_config, str):
-            try:
-                simulation_config = json.loads(simulation_config)
-            except (json.JSONDecodeError, ValueError):
-                simulation_config = {}
-        
-        task_config = simulation_config.get('task_config', {})
+        # 🔧 FIX: Read from dedicated task_config column (not from simulation_config)
+        task_config = simulation.task_config or {}
         
         return jsonify({
             'success': True,
@@ -1733,21 +1747,13 @@ def save_task_configuration(simulation_id):
             return jsonify({'error': 'No task configuration data provided'}), 400
         
         simulation = Simulation.query.get_or_404(simulation_id)
-        simulation_config = simulation.simulation_config or {}
         
-        # Parse simulation_config if it's a string
-        if isinstance(simulation_config, str):
-            try:
-                simulation_config = json.loads(simulation_config)
-            except (json.JSONDecodeError, ValueError):
-                simulation_config = {}
-        
-        # Update task configuration
-        simulation_config['task_config'] = data
-        
-        # Save back to simulation
-        simulation.simulation_config = json.dumps(simulation_config) if isinstance(simulation_config, dict) else simulation_config
+        # 🔧 FIX: Save task_config to dedicated task_config column (not inside simulation_config)
+        # The Simulation model has a separate task_config JSON column for this purpose
+        simulation.task_config = data
         db.session.commit()
+        
+        print(f"✅ [task-config POST] Successfully saved task config for simulation {simulation_id}")
         
         # ===== REAL-TIME SYNC: Emit task config update to all viewers =====
         try:

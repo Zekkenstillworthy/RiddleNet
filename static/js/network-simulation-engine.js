@@ -280,10 +280,19 @@ class NetworkSimulationEngine {
             });
         });
         
-        // Device palette drag setup
+        // Device palette drag setup AND click for wired/wireless tools
         document.querySelectorAll('.device-item[data-device-type]').forEach(item => {
             item.draggable = true;
             item.addEventListener('dragstart', (e) => this.handleDeviceDragStart(e));
+            
+            // Make wired/wireless clickable to activate tool mode
+            const deviceType = item.dataset.deviceType;
+            if (deviceType === 'wired' || deviceType === 'wireless') {
+                item.addEventListener('click', () => {
+                    console.log(`🔧 Activating ${deviceType} connection tool`);
+                    this.setTool(deviceType);
+                });
+            }
         });
     }
     
@@ -306,11 +315,19 @@ class NetworkSimulationEngine {
         // isConnecting should become true only after first device click.
         this.isConnecting = false;
         
-        // Update UI
+        // Update UI - highlight tool buttons and device palette items
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.classList.remove('active');
             if (btn.dataset.tool === tool) {
                 btn.classList.add('active');
+            }
+        });
+        
+        // Highlight wired/wireless palette items when active
+        document.querySelectorAll('.device-item[data-device-type]').forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.deviceType === tool) {
+                item.classList.add('active');
             }
         });
         
@@ -319,7 +336,7 @@ class NetworkSimulationEngine {
         
         // Update status
         this.updateCanvasMode(tool);
-        
+
         console.log('🔧 Tool changed to:', tool);
     }
     
@@ -405,21 +422,30 @@ class NetworkSimulationEngine {
         const typeInfo = this.deviceTypes[type];
         if (!typeInfo) return null;
         
+        // Generate standardized device ID based on type
+        // Router -> R1, R2, R3...
+        // Switch -> SW1, SW2, SW3...
+        // PC -> PC1, PC2, PC3...
+        // Server -> SRV1, SRV2, SRV3...
+        const devicePrefix = this.getDevicePrefix(type);
+        const deviceNumber = this.deviceIdCounter++;
+        const deviceId = `${devicePrefix}${deviceNumber}`;
+        
         const device = {
-            id: `${type}_${this.deviceIdCounter++}`,
+            id: deviceId,
             type: type,
             x: x,
             y: y,
             width: 60,
             height: 60,
-            label: `${type.charAt(0).toUpperCase() + type.slice(1)} ${this.deviceIdCounter - 1}`,
+            label: `${type.charAt(0).toUpperCase() + type.slice(1)} ${deviceNumber}`,
             // Provide a name alias for configurators expecting device.name
-            name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${this.deviceIdCounter - 1}`,
+            name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${deviceNumber}`,
             icon: typeInfo.icon,
             image: typeInfo.image || null,
             color: typeInfo.color,
             selected: false,
-            config: this.getDefaultDeviceConfig(type),
+            config: this.getDefaultDeviceConfig(type, deviceId),
             interfaces: this.generateInterfaces(typeInfo.defaultPorts, type),
             connections: []
         };
@@ -434,11 +460,30 @@ class NetworkSimulationEngine {
         return device;
     }
     
-    getDefaultDeviceConfig(type) {
+    getDevicePrefix(type) {
+        // Map device types to standard network naming conventions
+        const prefixMap = {
+            'router': 'R',
+            'switch': 'SW',
+            'pc': 'PC',
+            'server': 'SRV',
+            'hub': 'HUB',
+            'firewall': 'FW',
+            'access-point': 'AP',
+            'access_point': 'AP'
+        };
+        
+        return prefixMap[type.toLowerCase()] || type.toUpperCase().substring(0, 3);
+    }
+    
+    getDefaultDeviceConfig(type, deviceId = null) {
         const typeInfo = this.deviceTypes[type];
         
+        // Use the device ID as hostname if provided, otherwise fallback to old format
+        const hostname = deviceId || `${type}${this.deviceIdCounter - 1}`;
+        
         return {
-            hostname: `${type}${this.deviceIdCounter - 1}`,
+            hostname: hostname,
             ipAddress: this.generateIPAddress(),
             subnetMask: '255.255.255.0',
             gateway: '192.168.1.1',
@@ -1211,6 +1256,12 @@ class NetworkSimulationEngine {
             }
         });
         
+        // Remove popup-active class from main-content
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.classList.remove('popup-active');
+        }
+        
         // Reset Presenter state
         this.currentConfigDevice = null;
         
@@ -1344,8 +1395,20 @@ class NetworkSimulationEngine {
         // Create the new MVP Device Interfaces popup
         const modalHtml = this.createMVPDeviceInterfacesHTML(device);
         
-        // Add to DOM
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        // Find the main content container - try multiple selectors
+        const mainContainer = document.querySelector('.simulation-content') || 
+                            document.querySelector('.simulation-main') || 
+                            document.querySelector('.main-content') ||
+                            document.body;
+        
+        // Add to the main content container
+        mainContainer.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Add class to main-content to darken background
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.classList.add('popup-active');
+        }
         
         // Store current device reference in Presenter state
         this.currentConfigDevice = device;
@@ -1368,30 +1431,6 @@ class NetworkSimulationEngine {
      */
     createMVPDeviceInterfacesHTML(device) {
         const deviceIcon = this.getIconChar(device.type);
-        const interfaces = device.interfaces || {};
-        const interfaceKeys = Object.keys(interfaces);
-        const totalInterfaces = interfaceKeys.length;
-        const activeInterfaces = interfaceKeys.filter(key => 
-            interfaces[key].status === 'up' || (!interfaces[key].status && interfaces[key].connected)
-        ).length;
-        const connectedInterfaces = interfaceKeys.filter(key => interfaces[key].connected).length;
-        
-        // Calculate health status
-        let healthStatus = 'Excellent';
-        let healthColor = '#10B981';
-        const healthRatio = totalInterfaces > 0 ? activeInterfaces / totalInterfaces : 1;
-        if (healthRatio < 0.8) {
-            healthStatus = 'Good';
-            healthColor = '#F59E0B';
-        }
-        if (healthRatio < 0.6) {
-            healthStatus = 'Fair';
-            healthColor = '#F97316';
-        }
-        if (healthRatio < 0.3) {
-            healthStatus = 'Poor';
-            healthColor = '#EF4444';
-        }
         
         return `
         <div id="mvp-device-interfaces" class="mvp-device-interfaces-overlay">
@@ -1429,48 +1468,6 @@ class NetworkSimulationEngine {
                 <div class="mvp-interfaces-content">
                     <!-- Config Tab Content -->
                     <div id="mvp-config-tab" class="mvp-tab-content mvp-tab-active">
-                        <div class="mvp-device-overview">
-                            <h4><i class="fas fa-info-circle"></i> Device Overview</h4>
-                            <div class="mvp-overview-grid">
-                                <div class="mvp-stat-card">
-                                    <div class="mvp-stat-icon">
-                                        <i class="fas fa-ethernet"></i>
-                                    </div>
-                                    <div class="mvp-stat-content">
-                                        <div class="mvp-stat-value">${totalInterfaces}</div>
-                                        <div class="mvp-stat-label">Total Interfaces</div>
-                                    </div>
-                                </div>
-                                <div class="mvp-stat-card">
-                                    <div class="mvp-stat-icon mvp-stat-active">
-                                        <i class="fas fa-arrow-up"></i>
-                                    </div>
-                                    <div class="mvp-stat-content">
-                                        <div class="mvp-stat-value">${activeInterfaces}</div>
-                                        <div class="mvp-stat-label">Active</div>
-                                    </div>
-                                </div>
-                                <div class="mvp-stat-card">
-                                    <div class="mvp-stat-icon mvp-stat-connected">
-                                        <i class="fas fa-link"></i>
-                                    </div>
-                                    <div class="mvp-stat-content">
-                                        <div class="mvp-stat-value">${connectedInterfaces}</div>
-                                        <div class="mvp-stat-label">Connected</div>
-                                    </div>
-                                </div>
-                                <div class="mvp-stat-card">
-                                    <div class="mvp-stat-icon mvp-stat-health" style="color: ${healthColor}">
-                                        <i class="fas fa-heartbeat"></i>
-                                    </div>
-                                    <div class="mvp-stat-content">
-                                        <div class="mvp-stat-value" style="color: ${healthColor}">${healthStatus}</div>
-                                        <div class="mvp-stat-label">Health</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
                         <div class="mvp-device-config">
                             <h4><i class="fas fa-cog"></i> Device Configuration</h4>
                             <div class="mvp-config-form">
@@ -1681,6 +1678,13 @@ class NetworkSimulationEngine {
         if (modal) {
             modal.remove();
         }
+        
+        // Remove popup-active class from main-content
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.classList.remove('popup-active');
+        }
+        
         this.currentConfigDevice = null;
     }
     
@@ -2857,12 +2861,25 @@ class NetworkSimulationEngine {
                 }
             });
             
-            this.deviceIdCounter = Math.max(...this.devices.map(d => 
-                parseInt(d.id.split('_')[1]) || 0
-            )) + 1;
-            this.connectionIdCounter = Math.max(...this.connections.map(c => 
-                parseInt(c.id.split('_')[1]) || 0
-            )) + 1;
+            // Extract numeric counters from device IDs
+            // Supports both old format (router_1) and new format (R1, SW2, etc)
+            this.deviceIdCounter = Math.max(...this.devices.map(d => {
+                // Try old format first (router_1 -> 1)
+                if (d.id.includes('_')) {
+                    return parseInt(d.id.split('_')[1]) || 0;
+                }
+                // Try new format (R1 -> 1, SW2 -> 2, PC10 -> 10)
+                const match = d.id.match(/\d+$/);
+                return match ? parseInt(match[0]) : 0;
+            })) + 1;
+            
+            this.connectionIdCounter = Math.max(...this.connections.map(c => {
+                if (c.id.includes('_')) {
+                    return parseInt(c.id.split('_')[1]) || 0;
+                }
+                const match = c.id.match(/\d+$/);
+                return match ? parseInt(match[0]) : 0;
+            })) + 1;
             
             this.updateDeviceCount();
             this.updateConnectionCount();
@@ -3216,6 +3233,17 @@ class NetworkSimulationEngine {
             responseLine.innerHTML = response.replace(/\n/g, '<br>');
             outputDiv.appendChild(responseLine);
         }
+        
+        // ✅ TASK ASSIGNMENT: Dispatch event for CLI command tracking
+        console.log('📋 [CLI→TASK] MVP dispatching cli-command-executed event:', { device: device.id, command });
+        document.dispatchEvent(new CustomEvent('cli-command-executed', {
+            detail: {
+                device_id: device.id,
+                command: command,
+                output: response || '',
+                timestamp: new Date().toISOString()
+            }
+        }));
         
         // CRITICAL: Persist configuration changes to device configurator
         // Support multiple configurator implementations

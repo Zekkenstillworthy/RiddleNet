@@ -480,5 +480,5 @@ For issues or questions regarding the crimping feedback modal:
 
 ---
 
-**Last Updated**: December 2024  
+**Last Updated**: December 2025  
 **Maintained By**: RiddleNet Development Team

@@ -763,6 +763,17 @@ class CollaborationRealTime {
                 this.off('cli_result', handler);
                 
                 if (data.success) {
+                    // ✅ TASK ASSIGNMENT: Dispatch event for CLI command tracking in collaboration mode
+                    console.log('📋 [CLI→TASK] Collaboration dispatching cli-command-executed event:', { deviceId, command });
+                    document.dispatchEvent(new CustomEvent('cli-command-executed', {
+                        detail: {
+                            device_id: deviceId,
+                            command: command,
+                            output: data.output || data.result || '',
+                            timestamp: new Date().toISOString()
+                        }
+                    }));
+                    
                     resolve(data);
                 } else {
                     reject(data.error);

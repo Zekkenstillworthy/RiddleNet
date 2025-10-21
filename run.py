@@ -198,10 +198,15 @@ def load_user(user_id):
         return None
     
     # FALLBACK: Use path-based detection if no namespace in session (legacy support)
-    elif request_path.startswith('/instructor'):
+    elif request_path.startswith('/instructor') or request_path.startswith('/admin'):
+        # Try instructor table first for instructor/admin paths
         admin = db.session.get(Instructor, user_id_int)
         if admin:
             print(f"🔐 Admin path fallback: Loaded admin {admin.username} (ID: {user_id_int})")
+            # Auto-fix the session namespace if missing
+            if auth_namespace == 'unknown':
+                session['auth_namespace'] = 'instructor'
+                print(f"🔧 Auto-fixed instructor session namespace for {admin.username}")
             return admin
         print(f"❌ Admin path fallback: No admin found for ID {user_id_int}")
         return None
@@ -211,6 +216,10 @@ def load_user(user_id):
         user = db.session.get(User, user_id_int)
         if user:
             print(f"👤 User path fallback: Loaded user {user.username} (ID: {user_id_int})")
+            # Auto-fix the session namespace if missing
+            if auth_namespace == 'unknown':
+                session['auth_namespace'] = 'user'
+                print(f"🔧 Auto-fixed user session namespace for {user.username}")
             return user
         print(f"❌ No user found in any table for ID {user_id_int}")
         return None

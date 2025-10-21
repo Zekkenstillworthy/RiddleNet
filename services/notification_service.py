@@ -486,7 +486,7 @@ class NotificationService:
                         This is an automated notification from RiddleNet Platform
                     </div>
                     <div class="footer-text">
-                        © 2024 RiddleNet - Learning Platform
+                        © 2025 RiddleNet - Learning Platform
                     </div>
                 </div>
             </div>

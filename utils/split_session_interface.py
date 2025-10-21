@@ -65,15 +65,19 @@ class SplitSessionInterface(SecureCookieSessionInterface):
     def _select_cookie_for_request(self):
         path = (request.path or "").lower()
         print(f"🍪 SplitSession: _select_cookie_for_request called for path: {path}")
-        if path.startswith("/instructor"):
-            print(f"🍪 SplitSession: Instructor path detected, returning INSTRUCTOR_COOKIE ({INSTRUCTOR_COOKIE})")
+        
+        # INSTRUCTOR PATHS: /instructor* AND /admin* both use instructor_session
+        if path.startswith("/instructor") or path.startswith("/admin"):
+            print(f"🍪 SplitSession: Instructor/Admin path detected, returning INSTRUCTOR_COOKIE ({INSTRUCTOR_COOKIE})")
             return INSTRUCTOR_COOKIE
+        
         if path.startswith("/socket.io"):
             print(f"🍪 SplitSession: Socket.io path detected, returning None for later decision")
             # WebSocket handshake: we don't know original page path; we will
             # decide later in open_session by inspecting both cookies.
             return None
-        print(f"🍪 SplitSession: Non-instructor path, returning USER_COOKIE ({USER_COOKIE})")
+        
+        print(f"🍪 SplitSession: User path, returning USER_COOKIE ({USER_COOKIE})")
         return USER_COOKIE
 
     # ---------- OPEN SESSION ----------

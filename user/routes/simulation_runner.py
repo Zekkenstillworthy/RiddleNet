@@ -737,6 +737,86 @@ def validate_task_progress(simulation_id):
         return jsonify({'error': f'Failed to validate progress: {str(e)}'}), 500
 
 
+@user_simulation_bp.route('/api/<int:simulation_id>/task-progress', methods=['POST'])
+@login_required
+def update_task_progress(simulation_id):
+    """Update task assignment progress (auto-save)"""
+    try:
+        from instructor.models.task_assignment import TaskAssignment
+        
+        data = request.json or {}
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # Get or create task assignment
+        assignment = TaskAssignment.query.filter_by(
+            simulation_id=simulation_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not assignment:
+            # Check if task mode is enabled
+            task_config = simulation.task_config or {}
+            if isinstance(task_config, str):
+                import json
+                task_config = json.loads(task_config)
+            
+            if not task_config.get('enabled'):
+                return jsonify({'error': 'Task assignments not enabled for this simulation'}), 400
+            
+            # Create new assignment
+            assignment = TaskAssignment(
+                simulation_id=simulation_id,
+                user_id=current_user.id,
+                class_id=None,  # Can be set later
+                status='pending'
+            )
+            db.session.add(assignment)
+            current_app.logger.info(f"📋 Created new task assignment for user {current_user.id} on simulation {simulation_id}")
+        
+        # Update progress
+        assignment.update_progress(
+            devices_placed=data.get('devices_placed'),
+            devices_configured=data.get('devices_configured'),
+            connections_made=data.get('connections_made'),
+            cli_history=data.get('cli_history')
+        )
+        
+        # Store activity log if provided
+        if 'activity_log' in data:
+            if not hasattr(assignment, 'activity_log'):
+                assignment.activity_log = []
+            assignment.activity_log = data['activity_log']
+        
+        db.session.commit()
+        
+        # Emit real-time progress update to instructor
+        try:
+            from socket_manager import socketio
+            socketio.emit('task_progress_updated', {
+                'simulation_id': simulation_id,
+                'user_id': current_user.id,
+                'username': current_user.username,
+                'completion_percentage': assignment.completion_percentage,
+                'devices_placed': len(assignment.devices_placed or []),
+                'connections_made': len(assignment.connections_made or []),
+                'cli_executed': len(assignment.cli_history or []),
+                'timestamp': datetime.utcnow().isoformat()
+            }, room=f'instructor_simulation_{simulation_id}')
+        except Exception as socket_error:
+            current_app.logger.warning(f"Socket emit failed: {socket_error}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Progress updated successfully',
+            'completion_percentage': assignment.completion_percentage
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error updating task progress: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': f'Failed to update progress: {str(e)}'}), 500
+
+
 @user_simulation_bp.route('/api/<int:simulation_id>/submit-task', methods=['POST'])
 @login_required
 def submit_task_assignment(simulation_id):
@@ -754,8 +834,9 @@ def submit_task_assignment(simulation_id):
         if not assignment:
             return jsonify({'error': 'No task assignment found'}), 404
         
+        # Allow resubmission to recalculate score with updated validation logic
         if assignment.status == 'submitted':
-            return jsonify({'error': 'Assignment already submitted'}), 400
+            current_app.logger.info(f"🔄 Allowing resubmission for user {current_user.id} to recalculate score")
         
         # Final validation and score calculation
         validation_result = assignment.validate_progress()
@@ -787,7 +868,8 @@ def submit_task_assignment(simulation_id):
             'message': 'Task submitted successfully',
             'assignment': assignment.to_dict(include_validation=True),
             'validation': validation_result['validation'],
-            'auto_grade_score': validation_result['auto_grade_score']
+            'auto_grade_score': validation_result['auto_grade_score'],
+            'completion_percentage': validation_result['completion_percentage']
         })
         
     except Exception as e:
@@ -803,6 +885,16 @@ def get_simulation_task_config(simulation_id):
     try:
         simulation = Simulation.query.get_or_404(simulation_id)
         task_config = simulation.task_config or {}
+        
+        # 🔧 FIX: Handle case where task_config might be stored as JSON string
+        if isinstance(task_config, str):
+            import json
+            try:
+                task_config = json.loads(task_config)
+            except:
+                task_config = {}
+        
+        print(f"📋 [STUDENT TASK-CONFIG] Simulation {simulation_id}: enabled={task_config.get('enabled')}, devices={len(task_config.get('device_requirements', []))}, connections={len(task_config.get('connection_requirements', []))}")
         
         # Only return if task mode is enabled
         if not task_config.get('enabled'):

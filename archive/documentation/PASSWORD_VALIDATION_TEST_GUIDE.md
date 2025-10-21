@@ -6,7 +6,7 @@
 Try these passwords - they should be **accepted**:
 ```
 Password123!
-Admin@2024Pass
+Admin@2025Pass
 SecureP@ssw0rd
 MyStr0ng!Pass
 Test#Pass123

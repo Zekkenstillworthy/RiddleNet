@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/collaboration-manager.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/unified-chat.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/force-landscape.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mvp-device-interfaces.css') }}">
 <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
 
 <style>
@@ -567,6 +568,7 @@
         overflow: hidden;
         transition: all 0.3s ease;
         padding-bottom: 120px;
+        position: relative; /* Enable absolute positioning for popups */
     }
 
     /* Adjust simulation-content when device palette is minimized */
@@ -777,8 +779,8 @@
         flex-direction: column;
         transition: all var(--transition-speed) ease;
         box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.4);
-        overflow-x: auto;
-        overflow-y: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
         height: 140px;
         max-height: 140px;
         transform: none;
@@ -987,6 +989,42 @@
 
     .device-item:hover .device-label {
         color: var(--text-primary);
+    }
+
+    /* Device palette overflow and label sizing overrides */
+    #device-palette {
+        overflow: visible;
+    }
+
+    #device-palette .device-categories {
+        overflow: visible;
+    }
+
+    #device-palette .device-item {
+        width: auto;
+        min-width: 70px;
+    }
+
+    #device-palette .device-item[data-device-type='wired'],
+    #device-palette .device-item[data-device-type='wireless'],
+    #device-palette .action-btn.device-item {
+        width: auto;
+        min-width: 96px;
+        flex: 0 0 auto;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    #device-palette .device-item[data-device-type='wired'].active {
+        background: rgba(0, 217, 255, 0.2);
+        border-color: #00D9FF;
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.5);
+    }
+    
+    #device-palette .device-item[data-device-type='wireless'].active {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: #8B5CF6;
+        box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
     }
 
     .palette-section {
@@ -2673,8 +2711,19 @@
 
     /* Feedback section styles from troubleshoot.html */
     .feedback-section {
-        padding: 20px 24px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 28px 24px;
+        margin-bottom: 16px;
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .feedback-section:hover {
+        background: rgba(15, 23, 42, 0.6);
+        border-color: rgba(0, 217, 255, 0.15);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 217, 255, 0.1);
     }
 
     .feedback-section.flash {
@@ -2682,24 +2731,221 @@
     }
 
     .feedback-section:last-child {
-        border-bottom: none;
+        margin-bottom: 0;
     }
 
     .feedback-section h4 {
         color: var(--text-primary);
-        font-size: 14px;
-        font-weight: 600;
-        margin: 0 0 16px 0;
+        font-size: 15px;
+        font-weight: 700;
+        margin: 0 0 20px 0;
+        padding-bottom: 12px;
+        border-bottom: 2px solid rgba(0, 217, 255, 0.2);
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.8px;
     }
 
     .feedback-section h4 i {
         color: var(--cyber-glow);
-        font-size: 16px;
+        font-size: 18px;
+        text-shadow: 0 0 8px rgba(0, 217, 255, 0.6);
+    }
+
+    /* Requirements Lists */
+    .requirements-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .requirement-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .requirement-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(180deg, var(--cyber-glow), var(--neon-green));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .requirement-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(0, 217, 255, 0.3);
+        transform: translateX(4px);
+    }
+
+    .requirement-item:hover::before {
+        opacity: 1;
+    }
+
+    .requirement-item.completed {
+        background: rgba(57, 255, 20, 0.05);
+        border-color: rgba(57, 255, 20, 0.2);
+    }
+
+    .requirement-item.completed::before {
+        background: var(--neon-green);
+        opacity: 1;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 2.5rem 1.5rem;
+        color: var(--text-muted);
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px dashed rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    .empty-state i {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.4;
+        color: var(--cyber-glow);
+    }
+
+    .empty-state p {
+        margin: 0;
+        font-size: 0.9rem;
+        opacity: 0.7;
+    }
+
+    /* Badge Styling */
+    .badge {
+        margin-left: auto;
+        background: rgba(0, 217, 255, 0.15);
+        color: var(--cyber-glow);
+        padding: 0.35rem 0.9rem;
+        border-radius: 14px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border: 1px solid rgba(0, 217, 255, 0.3);
+        text-shadow: 0 0 6px rgba(0, 217, 255, 0.5);
+    }
+
+    /* CLI Commands Section */
+    .device-cli-section {
+        margin-bottom: 1.25rem;
+        background: rgba(15, 23, 42, 0.5);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 10px;
+        padding: 1.25rem;
+        transition: all 0.3s ease;
+    }
+
+    .device-cli-section:hover {
+        background: rgba(15, 23, 42, 0.7);
+        border-color: rgba(139, 92, 246, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
+    }
+
+    .device-cli-section h4 {
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .device-cli-section h4 i {
+        color: var(--network-purple);
+        font-size: 1.1rem;
+        text-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+    }
+
+    .command-list {
+        list-style: none;
+        counter-reset: command-counter;
+        padding-left: 0;
+        margin: 0;
+    }
+
+    .cli-command-item {
+        counter-increment: command-counter;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-left: 3px solid rgba(139, 92, 246, 0.3);
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        position: relative;
+        padding-left: 2.5rem;
+    }
+
+    .cli-command-item::before {
+        content: counter(command-counter) ".";
+        position: absolute;
+        left: 0.75rem;
+        font-weight: 700;
+        color: var(--network-purple);
+        font-size: 0.85rem;
+    }
+
+    .cli-command-item:hover {
+        background: rgba(139, 92, 246, 0.08);
+        border-left-color: var(--network-purple);
+        transform: translateX(4px);
+    }
+
+    .cli-command-item.completed {
+        border-left-color: var(--neon-green);
+        background: rgba(57, 255, 20, 0.05);
+    }
+
+    .cli-command-item.completed .status-icon {
+        opacity: 1 !important;
+    }
+
+    .cli-command-item code {
+        flex: 1;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 0.4rem 0.75rem;
+        border-radius: 6px;
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        color: var(--cyber-glow);
+        font-size: 0.85rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        letter-spacing: 0.3px;
+    }
+
+    .cli-command-item .status-icon {
+        opacity: 0;
+        color: var(--neon-green);
+        font-size: 1.1rem;
+        transition: opacity 0.3s ease;
+        text-shadow: 0 0 8px rgba(57, 255, 20, 0.8);
     }
 
     /* Score Display */
@@ -5013,6 +5259,569 @@
         color: var(--text-primary);
     }
     
+    /* ===== ENHANCED CONFIG TAB STYLES ===== */
+    
+    /* Config Tab Layout */
+    .mvp-config-tab {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    /* Device Configuration Form */
+    .device-config-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .config-section {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .config-section:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 217, 255, 0.3);
+    }
+    
+    .config-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--cyber-glow);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .config-section-title i {
+        font-size: 1.1rem;
+    }
+    
+    /* Form Groups */
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .form-label.required::after {
+        content: '*';
+        color: var(--danger-color);
+        margin-left: 0.25rem;
+    }
+    
+    /* Input Styles */
+    .mvp-input,
+    .form-input,
+    .form-select,
+    .form-textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-family: 'Courier New', monospace;
+        transition: all 0.2s ease;
+        outline: none;
+    }
+    
+    .mvp-input:focus,
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.1);
+    }
+    
+    .mvp-input:disabled,
+    .form-input:disabled,
+    .form-select:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .form-input::placeholder,
+    .form-textarea::placeholder {
+        color: var(--text-muted);
+    }
+    
+    /* Form Row (for side-by-side fields) */
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    /* Input Helper Text */
+    .input-helper {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .input-helper i {
+        font-size: 0.7rem;
+    }
+    
+    /* Input Error State */
+    .form-input.error,
+    .form-select.error,
+    .form-textarea.error {
+        border-color: var(--danger-color);
+        background: rgba(239, 68, 68, 0.1);
+    }
+    
+    .input-error {
+        font-size: 0.75rem;
+        color: var(--danger-color);
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    /* Input Success State */
+    .form-input.success {
+        border-color: var(--success-color);
+        background: rgba(16, 185, 129, 0.1);
+    }
+    
+    .input-success {
+        font-size: 0.75rem;
+        color: var(--success-color);
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    /* Enhanced Overview Section */
+    .device-overview {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+        border: 1px solid rgba(0, 217, 255, 0.2);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .overview-section h4 {
+        color: var(--cyber-glow);
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .overview-section h4::before {
+        content: '';
+        width: 3px;
+        height: 16px;
+        background: linear-gradient(180deg, var(--cyber-glow), var(--accent-color));
+        border-radius: 2px;
+    }
+    
+    /* Enhanced Stats Grid */
+    .overview-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+    
+    .stat-item {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 1.25rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .stat-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .stat-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(59, 130, 246, 0.3);
+        background: rgba(255, 255, 255, 0.08);
+    }
+    
+    .stat-item:hover::before {
+        opacity: 1;
+    }
+    
+    .stat-item.active {
+        border-color: var(--neon-green);
+        background: rgba(57, 255, 20, 0.08);
+    }
+    
+    .stat-item.active::before {
+        background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+        opacity: 1;
+    }
+    
+    .stat-item.excellent {
+        border-color: #8B5CF6;
+        background: rgba(139, 92, 246, 0.08);
+    }
+    
+    .stat-item.excellent::before {
+        background: linear-gradient(90deg, transparent, #8B5CF6, transparent);
+        opacity: 1;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 900;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+    
+    .stat-item.active .stat-value {
+        color: var(--neon-green);
+        text-shadow: 0 0 15px rgba(57, 255, 20, 0.5);
+    }
+    
+    .stat-item.excellent .stat-value {
+        color: #8B5CF6;
+        text-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 600;
+    }
+    
+    /* Interface Details Grid */
+    .interface-details-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .detail-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+    
+    .detail-value {
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        font-family: 'Courier New', monospace;
+        padding: 0.5rem 0.75rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        border-radius: 4px;
+    }
+    
+    .detail-value.editable {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .detail-value.editable:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+    }
+    
+    /* Interface Actions */
+    .interface-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .interface-action-btn {
+        padding: 0.5rem 1rem;
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid var(--accent-color);
+        border-radius: var(--border-radius);
+        color: var(--accent-color);
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .interface-action-btn:hover {
+        background: rgba(59, 130, 246, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    .interface-action-btn.danger {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: var(--danger-color);
+        color: var(--danger-color);
+    }
+    
+    .interface-action-btn.danger:hover {
+        background: rgba(239, 68, 68, 0.2);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    
+    /* Configuration Actions (Bottom Bar) */
+    .config-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding: 1.5rem 2rem;
+        background: linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.8));
+        border-top: 1px solid var(--glass-border);
+        position: sticky;
+        bottom: 0;
+        backdrop-filter: blur(10px);
+    }
+    
+    .config-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        outline: none;
+    }
+    
+    .config-btn-reset {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.5);
+        color: var(--danger-color);
+    }
+    
+    .config-btn-reset:hover {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: var(--danger-color);
+        box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+        transform: translateY(-2px);
+    }
+    
+    .config-btn-save {
+        background: linear-gradient(135deg, #10B981, #059669);
+        border: 1px solid var(--success-color);
+        color: #ffffff;
+    }
+    
+    .config-btn-save:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    .config-btn i {
+        font-size: 1rem;
+    }
+    
+    /* Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--glass-border);
+        transition: 0.3s;
+        border-radius: 26px;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 4px;
+        bottom: 3px;
+        background-color: var(--text-muted);
+        transition: 0.3s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+        background: var(--success-color);
+        border-color: var(--success-color);
+    }
+    
+    input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+        background-color: #ffffff;
+    }
+    
+    /* Checkbox Styles */
+    .checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+    }
+    
+    .checkbox-input {
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--glass-border);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+    
+    .checkbox-input:checked {
+        background: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+    
+    .checkbox-input:checked::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: bold;
+    }
+    
+    .checkbox-label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+    
+    /* Badge Styles */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-badge.success {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--success-color);
+        border: 1px solid var(--success-color);
+    }
+    
+    .status-badge.warning {
+        background: rgba(245, 158, 11, 0.2);
+        color: #F59E0B;
+        border: 1px solid #F59E0B;
+    }
+    
+    .status-badge.error {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger-color);
+        border: 1px solid var(--danger-color);
+    }
+    
+    .status-badge.info {
+        background: rgba(59, 130, 246, 0.2);
+        color: var(--accent-color);
+        border: 1px solid var(--accent-color);
+    }
+    
+    /* Loading Spinner */
+    .loading-spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-top-color: var(--cyber-glow);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* ===== END ENHANCED CONFIG TAB STYLES ===== */
+    
     /* CLI Tab Styles */
     .cli-container {
         height: 100%;
@@ -5170,6 +5979,130 @@
         .interface-metrics {
             text-align: left;
         }
+        
+        /* Config Tab Mobile Styles */
+        .overview-stats {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        
+        .stat-item {
+            padding: 1rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.7rem;
+        }
+        
+        .interface-details-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        
+        .config-actions {
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 1rem;
+        }
+        
+        .config-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .config-section {
+            padding: 1rem;
+        }
+    }
+    
+    /* Tablet Responsive */
+    @media (max-width: 1024px) {
+        .overview-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .interface-details-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    /* Landscape Mobile */
+    @media (max-width: 896px) and (orientation: landscape) {
+        .overview-stats {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .stat-item {
+            padding: 0.75rem;
+        }
+        
+        .stat-value {
+            font-size: 1.25rem;
+        }
+        
+        .device-interfaces-tab-content {
+            padding: 1rem;
+        }
+    }
+
+    /* Mobile Responsive for Task Assignment Sections */
+    @media (max-width: 768px) {
+        .feedback-section {
+            padding: 20px 16px;
+            margin-bottom: 12px;
+        }
+
+        .feedback-section h4 {
+            font-size: 13px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            gap: 8px;
+        }
+
+        .feedback-section h4 i {
+            font-size: 16px;
+        }
+
+        .requirement-item {
+            padding: 12px;
+            gap: 10px;
+        }
+
+        .device-cli-section {
+            padding: 1rem;
+        }
+
+        .device-cli-section h4 {
+            font-size: 0.85rem;
+        }
+
+        .cli-command-item {
+            padding: 0.6rem;
+            padding-left: 2rem;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .cli-command-item code {
+            width: 100%;
+            font-size: 0.75rem;
+            padding: 0.35rem 0.6rem;
+        }
+
+        .badge {
+            padding: 0.25rem 0.7rem;
+            font-size: 0.7rem;
+        }
     }
     
     .chat-message {
@@ -5289,20 +6222,20 @@
                         <div class="device-item" data-device-type="router" draggable="true">
                             <img src="{{ url_for('static', filename='img/Router.png') }}" alt="Router" class="device-icon device-image" style="width: 40px; height: 40px; object-fit: contain;">
                             <span class="device-label">Router</span>
-                            <div class="device-tooltip">Network Router - Routes traffic between networks</div>
+                            <div class="device-tooltip">Router: Connects different networks (Layer 3)</div>
                         </div>
                         <!-- MVP: Switch with custom image -->
                         <div class="device-item" data-device-type="switch" draggable="true">
                             <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Switch" class="device-icon device-image" style="width: 40px; height: 40px; object-fit: contain;">
                             <span class="device-label">Switch</span>
-                            <div class="device-tooltip">Network Switch - Connects devices in a network</div>
+                            <div class="device-tooltip">Switch: Intelligently forwards data (Layer 2)</div>
                         </div>
                        
                         <!-- MVP: Hub with custom image (uses Switch image) -->
                         <div class="device-item" data-device-type="hub" draggable="true">
                             <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Hub" class="device-icon device-image" style="width: 40px; height: 40px; object-fit: contain;">
                             <span class="device-label">Hub</span>
-                            <div class="device-tooltip">Network Hub - Basic connectivity device</div>
+                            <div class="device-tooltip">Hub: Broadcasts to all ports (Layer 1)</div>
                         </div>
                     </div>
                 </div>
@@ -5314,7 +6247,7 @@
                         <div class="device-item" data-device-type="laptop" draggable="true">
                             <img src="{{ url_for('static', filename='img/PC.png') }}" alt="Laptop" class="device-icon device-image" style="width: 40px; height: 40px; object-fit: contain;">
                             <span class="device-label">Laptop</span>
-                            <div class="device-tooltip">Laptop Computer - Portable end user device</div>
+                            <div class="device-tooltip">Laptop: End-user computing device</div>
                         </div>
                     </div>
                 </div>
@@ -5325,17 +6258,17 @@
                         <div class="device-item" data-device-type="wired" draggable="true">
                             <i class="fas fa-ethernet device-icon" style="font-size: 1.5rem;"></i>
                             <span class="device-label">Wired</span>
-                            <div class="device-tooltip">Wired Connection - Ethernet cable</div>
+                            <div class="device-tooltip">Wired: Connect devices with Ethernet cable</div>
                         </div>
                         <div class="device-item" data-device-type="wireless" draggable="true">
                             <i class="fas fa-wifi device-icon" style="font-size: 1.5rem;"></i>
                             <span class="device-label">Wireless</span>
-                            <div class="device-tooltip">Wireless Connection - Wi-Fi link</div>
+                            <div class="device-tooltip">Wireless: Connect devices via Wi-Fi</div>
                         </div>
                         <div class="action-btn device-item" onclick="deleteSelected()">
                             <i class="fas fa-trash-alt device-icon" style="font-size: 1.5rem;"></i>
                             <span class="device-label">Delete</span>
-                            <div class="device-tooltip">Delete selected devices and connections</div>
+                            <div class="device-tooltip">Delete: Remove selected devices or connections</div>
                         </div>
                     </div>
                 </div>
@@ -15019,6 +15952,46 @@ DynamicSimulation.prototype.openDeviceConfigPanel = function(device) {
 DynamicSimulation.prototype.showDeviceInterfacesPopup = function(device) {
     console.log(`🖥️ MVP: Showing Device Interfaces for ${device.label}`);
     
+    // Get device configuration and interfaces
+    const interfaces = device.interfaces || {};
+    const interfaceCount = Object.keys(interfaces).length;
+    const activeInterfaces = Object.values(interfaces)
+        .filter(i => (i.status ? i.status.toLowerCase() !== 'down' : true)).length;
+    const deviceConnections = device.connections || [];
+    const portConnectionMap = {};
+    deviceConnections.forEach(conn => {
+        if (conn.device1?.id === device.id && conn.port1) {
+            portConnectionMap[conn.port1] = {
+                connection: conn,
+                peerDevice: conn.device2,
+                peerPort: conn.port2
+            };
+        }
+        if (conn.device2?.id === device.id && conn.port2) {
+            portConnectionMap[conn.port2] = {
+                connection: conn,
+                peerDevice: conn.device1,
+                peerPort: conn.port1
+            };
+        }
+    });
+    const connectedInterfaces = Object.entries(interfaces)
+        .filter(([name, cfg]) => portConnectionMap[name] || cfg.connected === true).length;
+    const resolvedHostname = device.hostname || '';
+    const hostname = resolvedHostname || device.label || device.name || 'Device';
+    const resolvedIpAddress = device.config?.ipAddress || device.ipAddress || device.ip_address || '';
+    const ipAddress = resolvedIpAddress || 'Not configured';
+    const resolvedSubnetMask = device.config?.subnetMask || device.subnetMask || device.subnet_mask || '';
+    const subnetMask = resolvedSubnetMask || 'Not configured';
+    const resolvedGateway = device.config?.gateway || device.gateway || '';
+    const gateway = resolvedGateway || 'Not configured';
+    const initialConfig = {
+        hostname: resolvedHostname,
+        ipAddress: resolvedIpAddress,
+        subnetMask: resolvedSubnetMask,
+        gateway: resolvedGateway
+    };
+    
     // Create the MVP Device Interfaces popup
     const modalHtml = `
         <div id="device-interfaces-modal" class="device-interfaces-modal-overlay">
@@ -15027,7 +16000,7 @@ DynamicSimulation.prototype.showDeviceInterfacesPopup = function(device) {
                     <div class="device-interfaces-title">
                         <i class="fas fa-network-wired device-interfaces-icon"></i>
                         <span>Device Interfaces</span>
-                        <div class="device-interfaces-subtitle">${device.label} • ${device.type}</div>
+                        <div class="device-interfaces-subtitle">${device.label || hostname} • ${device.type}</div>
                     </div>
                     <div class="device-interfaces-controls">
                         <button class="device-interfaces-refresh-btn" onclick="window.simulation.refreshDeviceInterfaces('${device.id}')" title="Refresh">
@@ -15055,24 +16028,71 @@ DynamicSimulation.prototype.showDeviceInterfacesPopup = function(device) {
                     <!-- Config Tab Content -->
                     <div id="config-tab-content" class="device-interfaces-tab-content active">
                         <div class="device-overview">
-                            <div class="overview-section">
-                                <h4>Device Overview</h4>
-                                <div class="overview-stats">
-                                    <div class="stat-item">
-                                        <div class="stat-value">1</div>
-                                        <div class="stat-label">Total Interfaces</div>
+                            <div class="device-overview-grid">
+                                <div class="overview-section device-summary-card">
+                                    <div class="device-summary-header">
+                                        <div class="device-summary-title">
+                                            <h4>Device Overview</h4>
+                                            <span class="device-summary-subtext">${device.label || hostname} • ${device.type}</span>
+                                        </div>
+                                        <span class="device-health-pill ${connectedInterfaces > 0 ? 'healthy' : 'standby'}">
+                                            ${connectedInterfaces > 0 ? 'Operational' : 'Monitoring'}
+                                        </span>
                                     </div>
-                                    <div class="stat-item active">
-                                        <div class="stat-value">1</div>
-                                        <div class="stat-label">Active</div>
+                                    <div class="device-summary-meta">
+                                        <div class="meta-block">
+                                            <span class="meta-label">Hostname</span>
+                                            <span class="meta-value" id="device-summary-hostname-${device.id}">${hostname}</span>
+                                        </div>
+                                        <div class="meta-block">
+                                            <span class="meta-label">IP Address</span>
+                                            <span class="meta-value" id="device-summary-ip-${device.id}">${ipAddress}</span>
+                                        </div>
+                                        <div class="meta-block">
+                                            <span class="meta-label">Gateway</span>
+                                            <span class="meta-value" id="device-summary-gateway-${device.id}">${gateway}</span>
+                                        </div>
                                     </div>
-                                    <div class="stat-item">
-                                        <div class="stat-value">0</div>
-                                        <div class="stat-label">Connected</div>
+                                    <div class="overview-stats">
+                                        <div class="stat-item">
+                                            <div class="stat-value">${interfaceCount}</div>
+                                            <div class="stat-label">Total Interfaces</div>
+                                        </div>
+                                        <div class="stat-item active">
+                                            <div class="stat-value">${activeInterfaces}</div>
+                                            <div class="stat-label">Active</div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-value">${connectedInterfaces}</div>
+                                            <div class="stat-label">Connected</div>
+                                        </div>
+                                        <div class="stat-item ${interfaceCount > 0 ? 'excellent' : 'warning'}">
+                                            <div class="stat-value">${interfaceCount > 0 ? 'Excellent' : 'No Interfaces'}</div>
+                                            <div class="stat-label">Health</div>
+                                        </div>
                                     </div>
-                                    <div class="stat-item excellent">
-                                        <div class="stat-value">Excellent</div>
-                                        <div class="stat-label">Health</div>
+                                </div>
+                                
+                                <div class="overview-section device-config-card">
+                                    <h4>Device Configuration</h4>
+                                    <p class="device-config-support-text">Update core network identity values, then save your changes below.</p>
+                                    <div class="config-grid">
+                                        <div class="config-item">
+                                            <label for="device-hostname-${device.id}">Hostname</label>
+                                            <input type="text" value="${resolvedHostname}" id="device-hostname-${device.id}" />
+                                        </div>
+                                        <div class="config-item">
+                                            <label for="device-ip-${device.id}">IP Address</label>
+                                            <input type="text" value="${resolvedIpAddress}" id="device-ip-${device.id}" />
+                                        </div>
+                                        <div class="config-item">
+                                            <label for="device-subnet-${device.id}">Subnet Mask</label>
+                                            <input type="text" value="${resolvedSubnetMask}" id="device-subnet-${device.id}" />
+                                        </div>
+                                        <div class="config-item">
+                                            <label for="device-gateway-${device.id}">Default Gateway</label>
+                                            <input type="text" value="${resolvedGateway}" id="device-gateway-${device.id}" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -15088,52 +16108,156 @@ DynamicSimulation.prototype.showDeviceInterfacesPopup = function(device) {
                             </div>
                             
                             <div class="interface-list">
-                                <div class="interface-item up">
-                                    <div class="interface-indicator">
-                                        <div class="interface-status-badge up">UP</div>
+                                ${Object.entries(interfaces).map(([portName, portConfig]) => {
+                                    const adminStatus = (portConfig.status || 'up').toLowerCase();
+                                    const connectionInfo = portConnectionMap[portName];
+                                    const isConnected = connectionInfo ? true : portConfig.connected === true;
+                                    const linkStatus = isConnected ? 'Connected' : 'Disconnected';
+                                    const speed = portConfig.speed || '1000 Mbps';
+                                    const vlan = portConfig.vlan || '1';
+                                    const portIp = portConfig.ipAddress || portConfig.ip_address || 'Not assigned';
+                                    const portSubnet = portConfig.subnetMask || portConfig.subnet_mask || 'Not configured';
+                                    const matchedConnection = connectionInfo?.connection;
+                                    const connectedDevice = connectionInfo?.peerDevice || null;
+                                    const connectedDeviceName = connectedDevice ? (connectedDevice.label || connectedDevice.name || connectedDevice.id) : null;
+                                    const connectedDevicePort = connectionInfo?.peerPort || null;
+                                    const connectedDisplay = connectedDeviceName ? `${connectedDeviceName}${connectedDevicePort ? ' (' + connectedDevicePort + ')' : ''}` : 'None';
+                                    const connectionType = matchedConnection?.type || portConfig.type || 'ethernet';
+                                    const connectionTypeLabel = typeof connectionType === 'string'
+                                        ? connectionType.charAt(0).toUpperCase() + connectionType.slice(1)
+                                        : 'Unknown';
+                                    const typeIcon = connectionType === 'wireless' ? 'fas fa-wifi' : 'fas fa-network-wired';
+                                    
+                                    return `
+                                    <div class="interface-item interface-card ${adminStatus} ${isConnected ? 'connected' : 'disconnected'}" data-status="${adminStatus}" data-connected="${isConnected}" data-type="${connectionType}">
+                                        <div class="interface-card-header">
+                                            <div class="interface-card-title">
+                                                <span class="interface-name">${portName}</span>
+                                                <span class="interface-status-pill ${adminStatus}">${adminStatus.toUpperCase()}</span>
+                                            </div>
+                                            <div class="interface-card-tags">
+                                                <span class="interface-tag ${isConnected ? 'tag-connected' : 'tag-disconnected'}">
+                                                    <i class="fas fa-plug"></i> ${linkStatus}
+                                                </span>
+                                                <span class="interface-tag">
+                                                    <i class="${typeIcon}"></i> ${connectionTypeLabel}
+                                                </span>
+                                                <button class="interface-toggle" type="button" title="Toggle interface details" onclick="window.simulation.toggleInterfaceDetails(this)">
+                                                    <i class="fas fa-chevron-down"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="interface-card-body">
+                                            <div class="interface-card-meta">
+                                                <div class="interface-meta-item">
+                                                    <span class="meta-label">IP Address</span>
+                                                    <span class="meta-value">${portIp}</span>
+                                                </div>
+                                                <div class="interface-meta-item">
+                                                    <span class="meta-label">Subnet</span>
+                                                    <span class="meta-value">${portSubnet}</span>
+                                                </div>
+                                                <div class="interface-meta-item">
+                                                    <span class="meta-label">Speed</span>
+                                                    <span class="meta-value">${speed}</span>
+                                                </div>
+                                                <div class="interface-meta-item">
+                                                    <span class="meta-label">VLAN</span>
+                                                    <span class="meta-value">${vlan}</span>
+                                                </div>
+                                            </div>
+                                            <div class="interface-card-footer">
+                                                <div class="interface-link-target">
+                                                    <i class="fas fa-link"></i>
+                                                    <span>${connectedDisplay}</span>
+                                                </div>
+                                                <div class="interface-actions">
+                                                    <button class="interface-action-btn" title="Configure interface" onclick="event.stopPropagation();">
+                                                        <i class="fas fa-sliders-h"></i> Configure
+                                                    </button>
+                                                    <button class="interface-action-btn danger" title="Toggle shutdown" onclick="event.stopPropagation();">
+                                                        <i class="fas fa-power-off"></i> Shutdown
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="interface-card-details">
+                                            <div class="interface-details-grid">
+                                                <div class="detail-group">
+                                                    <h5>Network Configuration</h5>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">IP Address:</span>
+                                                        <span class="detail-value editable" onclick="event.stopPropagation();">${portIp}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Subnet Mask:</span>
+                                                        <span class="detail-value editable" onclick="event.stopPropagation();">${portSubnet}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">VLAN:</span>
+                                                        <span class="detail-value">${vlan}</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="detail-group">
+                                                    <h5>Physical Settings</h5>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Speed:</span>
+                                                        <span class="detail-value">${speed}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Duplex:</span>
+                                                        <span class="detail-value">Full</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">MTU:</span>
+                                                        <span class="detail-value">1500 bytes</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="detail-group">
+                                                    <h5>Status Information</h5>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Link State:</span>
+                                                        <span class="detail-value">${linkStatus}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Admin State:</span>
+                                                        <span class="detail-value">${adminStatus.toUpperCase()}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Connected To:</span>
+                                                        <span class="detail-value">${connectedDisplay}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="traffic-info">
+                                                <div class="traffic-stat">
+                                                    <strong>📥 Incoming Traffic</strong>
+                                                    <span>${portConfig.incomingPackets || 0} packets (${portConfig.incomingData || '0 B'})</span>
+                                                </div>
+                                                <div class="traffic-stat">
+                                                    <strong>📤 Outgoing Traffic</strong>
+                                                    <span>${portConfig.outgoingPackets || 0} packets (${portConfig.outgoingData || '0 B'})</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="interface-info">
-                                        <div class="interface-name">Port1</div>
-                                        <div class="interface-details">
-                                            <div class="interface-detail">
-                                                <strong>IP:</strong> Not assigned
-                                            </div>
-                                            <div class="interface-detail">
-                                                <strong>Subnet:</strong> Not configured
-                                            </div>
-                                            <div class="interface-detail">
-                                                <strong>VLAN:</strong> 1
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="interface-stats">
-                                        <div class="stat-detail">
-                                            <strong>Speed:</strong> 150 Mbps
-                                        </div>
-                                        <div class="stat-detail">
-                                            <strong>Duplex:</strong> Full
-                                        </div>
-                                        <div class="stat-detail">
-                                            <strong>MTU:</strong> 1500 bytes
-                                        </div>
-                                    </div>
-                                    <div class="interface-metrics">
-                                        <div class="metric">
-                                            <strong>Link:</strong> Disconnected
-                                        </div>
-                                        <div class="metric">
-                                            <strong>Last Change:</strong> 44 minutes ago
-                                        </div>
-                                        <div class="traffic-info">
-                                            <div class="traffic-stat">
-                                                <strong>In:</strong> 1397 pkts (1.14MB)
-                                            </div>
-                                            <div class="traffic-stat">
-                                                <strong>Out:</strong> 651 pkts (83.5KB)
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                            
+                            <!-- Configuration Actions -->
+                            <div class="config-actions">
+                                <button class="config-btn config-btn-reset" type="button" title="Restore original device configuration values">
+                                    <i class="fas fa-undo"></i>
+                                    Reset
+                                </button>
+                                <button class="config-btn config-btn-save" type="button" title="Save the current device configuration">
+                                    <i class="fas fa-save"></i>
+                                    Save Configuration
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -15182,6 +16306,131 @@ DynamicSimulation.prototype.showDeviceInterfacesPopup = function(device) {
     
     // Store current device reference
     this.currentInterfaceDevice = device;
+    
+    // Setup modal event listeners
+    const modal = document.getElementById('device-interfaces-modal');
+    if (modal) {
+        // Close on overlay click
+        modal.addEventListener('click', (e) => {
+            if (e.target.classList.contains('device-interfaces-modal-overlay')) {
+                this.closeDeviceInterfaces();
+            }
+        });
+        
+        // Close on ESC key
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.closeDeviceInterfaces();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+
+        // Setup interface filtering controls
+        const filterButtons = modal.querySelectorAll('.interface-filters .filter-btn');
+        const interfaceCards = Array.from(modal.querySelectorAll('.interface-card'));
+        const applyInterfaceFilter = (filter) => {
+            const activeFilter = (filter || 'all').toLowerCase();
+            interfaceCards.forEach(card => {
+                const status = (card.dataset.status || '').toLowerCase();
+                const isConnected = card.dataset.connected === 'true';
+                const shouldShow = activeFilter === 'all'
+                    || (activeFilter === 'active' && status === 'up')
+                    || (activeFilter === 'inactive' && status !== 'up')
+                    || (activeFilter === 'connected' && isConnected);
+                card.style.display = shouldShow ? '' : 'none';
+            });
+        };
+
+        if (filterButtons.length > 0) {
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyInterfaceFilter(btn.dataset.filter || 'all');
+                });
+            });
+            applyInterfaceFilter('all');
+        }
+
+        // Wire up configuration controls
+        const hostnameInput = modal.querySelector(`#device-hostname-${device.id}`);
+        const ipInput = modal.querySelector(`#device-ip-${device.id}`);
+        const subnetInput = modal.querySelector(`#device-subnet-${device.id}`);
+        const gatewayInput = modal.querySelector(`#device-gateway-${device.id}`);
+        const summaryHostname = modal.querySelector(`#device-summary-hostname-${device.id}`);
+        const summaryIp = modal.querySelector(`#device-summary-ip-${device.id}`);
+        const summaryGateway = modal.querySelector(`#device-summary-gateway-${device.id}`);
+        const saveBtn = modal.querySelector('.config-btn-save');
+        const resetBtn = modal.querySelector('.config-btn-reset');
+        const safeToast = (message, level = 'info') => {
+            if (typeof this.showToast === 'function') {
+                this.showToast(message, level);
+            } else {
+                console.log(`Toast [${level}]: ${message}`);
+            }
+        };
+
+        const updateSummaryValues = () => {
+            const values = {
+                hostname: hostnameInput?.value.trim() || '',
+                ipAddress: ipInput?.value.trim() || '',
+                subnetMask: subnetInput?.value.trim() || '',
+                gateway: gatewayInput?.value.trim() || ''
+            };
+
+            if (summaryHostname) summaryHostname.textContent = values.hostname || 'Not configured';
+            if (summaryIp) summaryIp.textContent = values.ipAddress || 'Not configured';
+            if (summaryGateway) summaryGateway.textContent = values.gateway || 'Not configured';
+            return values;
+        };
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                const formValues = updateSummaryValues();
+
+                if (!device.config) {
+                    device.config = {};
+                }
+
+                device.hostname = formValues.hostname;
+                device.config.hostname = formValues.hostname;
+                device.config.ipAddress = formValues.ipAddress;
+                device.config.subnetMask = formValues.subnetMask;
+                device.config.gateway = formValues.gateway;
+                device.ipAddress = formValues.ipAddress;
+                device.subnetMask = formValues.subnetMask;
+                device.gateway = formValues.gateway;
+
+                initialConfig.hostname = formValues.hostname;
+                initialConfig.ipAddress = formValues.ipAddress;
+                initialConfig.subnetMask = formValues.subnetMask;
+                initialConfig.gateway = formValues.gateway;
+
+                safeToast('Configuration saved successfully', 'success');
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                if (hostnameInput) hostnameInput.value = initialConfig.hostname || '';
+                if (ipInput) ipInput.value = initialConfig.ipAddress || '';
+                if (subnetInput) subnetInput.value = initialConfig.subnetMask || '';
+                if (gatewayInput) gatewayInput.value = initialConfig.gateway || '';
+
+                if (summaryHostname) summaryHostname.textContent = initialConfig.hostname || 'Not configured';
+                if (summaryIp) summaryIp.textContent = initialConfig.ipAddress || 'Not configured';
+                if (summaryGateway) summaryGateway.textContent = initialConfig.gateway || 'Not configured';
+
+                safeToast('Configuration reset to previously saved values', 'info');
+            });
+        }
+
+        [hostnameInput, ipInput, subnetInput, gatewayInput].forEach(input => {
+            if (!input) return;
+            input.addEventListener('blur', updateSummaryValues);
+        });
+    }
     
     // Focus on CLI input if CLI tab is active
     setTimeout(() => {
@@ -15235,6 +16484,20 @@ DynamicSimulation.prototype.closeDeviceInterfaces = function() {
     this.currentInterfaceDevice = null;
 };
 
+DynamicSimulation.prototype.toggleInterfaceDetails = function(toggleButton) {
+    if (!toggleButton) return;
+    const card = toggleButton.closest('.interface-card');
+    if (!card) return;
+
+    const icon = toggleButton.querySelector('i');
+    const expanded = card.classList.toggle('expanded');
+
+    if (icon) {
+        icon.classList.toggle('fa-chevron-up', expanded);
+        icon.classList.toggle('fa-chevron-down', !expanded);
+    }
+};
+
 DynamicSimulation.prototype.refreshDeviceInterfaces = function(deviceId) {
     console.log(`🔄 MVP: Refreshing interfaces for device ${deviceId}`);
     // TODO: Implement interface refresh logic
@@ -15282,6 +16545,17 @@ DynamicSimulation.prototype.executeCLICommand = function(deviceId, command) {
     responseLine.className = 'cli-response';
     responseLine.textContent = response;
     outputDiv.appendChild(responseLine);
+    
+    // ✅ TASK ASSIGNMENT: Dispatch event for CLI command tracking
+    console.log('📋 [CLI→TASK] Dispatching cli-command-executed event:', { deviceId, command });
+    document.dispatchEvent(new CustomEvent('cli-command-executed', {
+        detail: {
+            device_id: deviceId,
+            command: command,
+            output: response,
+            timestamp: new Date().toISOString()
+        }
+    }));
     
     // Scroll to bottom
     outputDiv.scrollTop = outputDiv.scrollHeight;
@@ -16234,11 +17508,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000); // Wait 1 second for full initialization
     
     
-    // Initialize Device Configurators
-    if (typeof UserDeviceConfigurator !== 'undefined') {
-        window.userDeviceConfigurator = new UserDeviceConfigurator();
-        console.log('🔧 UserDeviceConfigurator initialized');
-    }
+    // Device Configurator disabled - using MVP Device Interfaces popup instead
+    // if (typeof UserDeviceConfigurator !== 'undefined') {
+    //     window.userDeviceConfigurator = new UserDeviceConfigurator();
+    //     console.log('🔧 UserDeviceConfigurator initialized');
+    // }
+    console.log('✅ Using MVP Device Interfaces popup (UserDeviceConfigurator disabled)');
     
     // Initialize Performance Feedback System (similar to troubleshoot.html)
     window.performanceFeedback = new SimulationPerformanceFeedback();
@@ -19677,7 +20952,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // ===== END NETWORK CONFIGURATION EDITOR =====
 
 // ===== MVP: INSTRUCTOR-LED TASK ASSIGNMENT SYSTEM =====
-
+// **DISABLED - REPLACED BY task_assignment_fix.js**
+// The old embedded TaskAssignmentManager has been replaced by the external
+// EnhancedTaskAssignmentManager in static/js/task_assignment_fix.js
+/*
 // Task Assignment Manager Class
 class TaskAssignmentManager {
     constructor() {
@@ -20193,10 +21471,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('📋 [TASK MVP] Task Assignment Manager initialized in performance panel');
     }
 });
-
+*/
 // ===== END MVP TASK ASSIGNMENT SYSTEM =====
 
 </script>
+<script src="{{ url_for('static', filename='js/task_assignment_fix.js') }}"></script>
 
 <!-- Real-time Collaboration System -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>

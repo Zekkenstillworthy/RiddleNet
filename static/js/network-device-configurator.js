@@ -784,6 +784,17 @@ class NetworkDeviceConfigurator {
             output.appendChild(responseLine);
         }
         
+        // ✅ TASK ASSIGNMENT: Dispatch event for CLI command tracking
+        console.log('📋 [CLI→TASK] Configurator dispatching cli-command-executed event:', { device: this.currentDevice.id, command });
+        document.dispatchEvent(new CustomEvent('cli-command-executed', {
+            detail: {
+                device_id: this.currentDevice.id,
+                command: command,
+                output: response || '',
+                timestamp: new Date().toISOString()
+            }
+        }));
+        
         // Add new prompt
         const prompt = document.createElement('div');
         prompt.className = 'cli-prompt';

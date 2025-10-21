@@ -28,6 +28,7 @@ class TaskAssignment(db.Model):
     devices_configured = db.Column(JSONB, default=dict, nullable=False)  # {device_id: config_data}
     connections_made = db.Column(JSONB, default=list, nullable=False)  # List of connection objects
     cli_history = db.Column(JSONB, default=list, nullable=False)  # List of CLI commands executed
+    activity_log = db.Column(JSONB, default=list, nullable=False)  # Detailed activity tracking
     
     # Grading
     auto_grade_score = db.Column(db.Numeric(5, 2), default=Decimal('0.00'))
@@ -79,7 +80,7 @@ class TaskAssignment(db.Model):
     
     @property
     def completion_percentage(self):
-        """Calculate overall completion percentage based on requirements"""
+        """Calculate overall completion percentage based on requirements (capped at 100%)"""
         if not self.simulation or not self.simulation.task_config:
             return 0
         
@@ -98,7 +99,9 @@ class TaskAssignment(db.Model):
             placed_count = len(self.devices_placed or [])
             required_count = len(device_reqs)
             if required_count > 0:
-                completed_weight += (placed_count / required_count) * device_weight
+                # Cap at 100% - don't exceed required count
+                completion_ratio = min(placed_count / required_count, 1.0)
+                completed_weight += completion_ratio * device_weight
         
         # Connection requirements
         conn_reqs = task_config.get('connection_requirements', [])
@@ -108,7 +111,9 @@ class TaskAssignment(db.Model):
             made_count = len(self.connections_made or [])
             required_count = len(conn_reqs)
             if required_count > 0:
-                completed_weight += (made_count / required_count) * conn_weight
+                # Cap at 100% - don't exceed required count
+                completion_ratio = min(made_count / required_count, 1.0)
+                completed_weight += completion_ratio * conn_weight
         
         # CLI requirements
         cli_reqs = task_config.get('cli_requirements', {})
@@ -118,7 +123,9 @@ class TaskAssignment(db.Model):
             total_required = sum(len(cmds) for cmds in cli_reqs.values())
             executed_count = len(self.cli_history or [])
             if total_required > 0:
-                completed_weight += (min(executed_count, total_required) / total_required) * cli_weight
+                # Cap at 100% - don't exceed required count
+                completion_ratio = min(executed_count / total_required, 1.0)
+                completed_weight += completion_ratio * cli_weight
         
         return round((completed_weight / total_weight * 100) if total_weight > 0 else 0, 2)
     
@@ -225,24 +232,46 @@ class TaskAssignment(db.Model):
     def _validate_configurations(self, required_devices):
         """Validate device configurations"""
         configured = self.devices_configured or {}
+        placed_ids = set(self.devices_placed or [])
         correct_count = 0
         total_count = len(required_devices)
         
         details = []
         for req_device in required_devices:
             device_id = req_device['id']
-            if device_id in configured:
-                # Simplified validation - check if key fields exist
-                req_config = req_device.get('required_config', {})
-                actual_config = configured.get(device_id, {})
-                
-                if req_config.get('hostname') == actual_config.get('hostname'):
+            req_config = req_device.get('required_config', {})
+            
+            # If no specific configuration is required (None, empty dict, or missing key), just check if device is placed
+            if req_config is None or (isinstance(req_config, dict) and len(req_config) == 0):
+                if device_id in placed_ids:
                     correct_count += 1
-                    details.append({'device': device_id, 'status': 'correct'})
+                    details.append({'device': device_id, 'status': 'correct', 'reason': 'device_placed'})
                 else:
-                    details.append({'device': device_id, 'status': 'incorrect'})
+                    details.append({'device': device_id, 'status': 'missing', 'reason': 'device_not_placed'})
+            # If configuration is required, validate it
             else:
-                details.append({'device': device_id, 'status': 'missing'})
+                # Device must be in configured dict if config is required
+                if device_id in configured:
+                    actual_config = configured.get(device_id, {})
+                    
+                    # Check if required config fields match
+                    config_valid = True
+                    for key, value in req_config.items():
+                        if actual_config.get(key) != value:
+                            config_valid = False
+                            break
+                    
+                    if config_valid:
+                        correct_count += 1
+                        details.append({'device': device_id, 'status': 'correct', 'reason': 'config_matches'})
+                    else:
+                        details.append({'device': device_id, 'status': 'incorrect', 'reason': 'config_mismatch'})
+                elif device_id in placed_ids:
+                    # Device is placed but not configured - if device is placed, give partial credit
+                    correct_count += 1
+                    details.append({'device': device_id, 'status': 'correct', 'reason': 'device_placed_no_config'})
+                else:
+                    details.append({'device': device_id, 'status': 'missing', 'reason': 'device_not_placed'})
         
         return {
             'correct': correct_count,
@@ -252,14 +281,30 @@ class TaskAssignment(db.Model):
         }
     
     def _validate_connections(self, required_connections):
-        """Validate network connections"""
+        """Validate network connections with flexible field matching"""
         made_connections = self.connections_made or []
         correct_count = 0
         
         for req_conn in required_connections:
+            # Get required source and target (support multiple field names)
+            req_source = (req_conn.get('source_device') or req_conn.get('from') or 
+                         req_conn.get('device1') or req_conn.get('source'))
+            req_target = (req_conn.get('target_device') or req_conn.get('to') or 
+                         req_conn.get('device2') or req_conn.get('target'))
+            
+            if not req_source or not req_target:
+                continue
+                
             for made_conn in made_connections:
-                if (made_conn.get('source_device') == req_conn['source_device'] and
-                    made_conn.get('target_device') == req_conn['target_device']):
+                # Get made connection source and target (support multiple field names)
+                made_source = (made_conn.get('source_device') or made_conn.get('from') or 
+                             made_conn.get('device1') or made_conn.get('source'))
+                made_target = (made_conn.get('target_device') or made_conn.get('to') or 
+                             made_conn.get('device2') or made_conn.get('target'))
+                
+                # Check bidirectional match (A->B or B->A)
+                if ((made_source == req_source and made_target == req_target) or
+                    (made_source == req_target and made_target == req_source)):
                     correct_count += 1
                     break
         

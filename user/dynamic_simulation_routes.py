@@ -1119,6 +1119,20 @@ def run_simulation(simulation_id):
                         'score': s.get('score', 10)
                     }
 
+        # DEFENSIVE CHECK: Ensure simulation_config is a dict before using .get()
+        if not isinstance(simulation_config, dict):
+            print(f"⚠️ WARNING: simulation_config is type {type(simulation_config)}, converting to dict")
+            if isinstance(simulation_config, str):
+                try:
+                    import json
+                    simulation_config = json.loads(simulation_config)
+                    print(f"✅ Successfully parsed simulation_config from string to dict")
+                except Exception as parse_error:
+                    print(f"❌ Failed to parse simulation_config: {parse_error}")
+                    simulation_config = {}
+            else:
+                simulation_config = {}
+
         # Enhanced topology mapping with fallback support
         network_topology = simulation_config.get('network_topology', {})
         topology_config = simulation_config.get('topology_config', {})
@@ -1295,6 +1309,7 @@ def run_simulation(simulation_id):
             'topology_locked': topology_locked,
             'configuration_enabled': configuration_enabled,
             'instructor_provided_topology': simulation_config.get('instructor_topology', {}),
+            'admin_provided_topology': simulation_config.get('instructor_topology', {}),  # Alias for compatibility
             'device_config_templates': simulation_config.get('device_templates', {}),
             
             # Troubleshooting-specific data
@@ -1431,13 +1446,31 @@ def run_simulation(simulation_id):
                 return [clean_for_json(item) for item in obj]
             elif isinstance(obj, dict):
                 return {str(k): clean_for_json(v) for k, v in obj.items() if v is not None}
+            elif hasattr(obj, '__class__') and obj.__class__.__name__ == 'Undefined':
+                # Handle Jinja2 Undefined objects
+                return None
             else:
                 # Convert non-serializable objects to string
-                return str(obj)
+                try:
+                    # Check if object is JSON serializable
+                    json.dumps(obj)
+                    return obj
+                except (TypeError, ValueError):
+                    return str(obj)
         
         # Clean the simulation data to prevent JSON serialization issues
         clean_simulation_data = clean_for_json(simulation_data)
         clean_progress = clean_for_json(progress)
+        
+        # Additional safety: convert to JSON and back to catch any remaining issues
+        try:
+            json.dumps(clean_simulation_data)
+            json.dumps(clean_progress)
+        except TypeError as json_err:
+            print(f"⚠️ JSON serialization test failed: {json_err}")
+            # Deep clean by converting to JSON string and parsing back
+            clean_simulation_data = json.loads(json.dumps(clean_simulation_data, default=str))
+            clean_progress = json.loads(json.dumps(clean_progress, default=str))
 
         # Prepare context for template including collaboration data
         context = {
@@ -1461,9 +1494,17 @@ def run_simulation(simulation_id):
 
     except Exception as e:
         print(f"Error loading simulation {simulation_id}: {e}")
-        flash(f'Error loading simulation: {str(e)}', 'error')
+        import traceback
+        traceback.print_exc()
+        
+        # Try to give more specific error information
+        error_msg = str(e)
+        if 'Undefined' in error_msg and 'JSON serializable' in error_msg:
+            error_msg += " - This usually means there's a missing value in the simulation configuration. Check simulation #70 in the admin panel."
+        
+        flash(f'Error loading simulation: {error_msg}', 'error')
         # Don't use fallback - return error directly
-        return f"Error loading simulation: {str(e)}", 500
+        return f"Error loading simulation: {error_msg}", 500
 
 @dynamic_sim_bp.route('/learning-path/<int:path_id>')
 @user_login_required
@@ -1732,7 +1773,18 @@ def update_network_state(simulation_id):
     """Update network topology and device states with enhanced validation"""
     try:
         user = get_user_from_session()
-        data = request.get_json() or {}
+        raw_payload = request.get_json() or {}
+
+        # Ensure payload is a dict before proceeding
+        if isinstance(raw_payload, str):
+            try:
+                data = json.loads(raw_payload)
+            except (json.JSONDecodeError, ValueError):
+                data = {}
+        elif isinstance(raw_payload, dict):
+            data = raw_payload
+        else:
+            data = {}
         
         # Get current attempt
         attempt = SimulationAttempt.query.filter_by(
@@ -1747,17 +1799,27 @@ def update_network_state(simulation_id):
         # Validate topology if provided and topology is enabled for this simulation
         topology_validation = {'isValid': True, 'errors': [], 'warnings': []}
         topology_data = data.get('topology')
+        if isinstance(topology_data, str):
+            try:
+                topology_data = json.loads(topology_data)
+            except (json.JSONDecodeError, ValueError):
+                topology_data = None
         
         # Get simulation to check if topology validation is needed
         simulation = Simulation.query.get(simulation_id)
-        simulation_config = simulation.simulation_config or {} if simulation else {}
+        simulation_config = simulation.simulation_config if simulation else None
         
-        # Parse simulation_config if it's a string
-        if isinstance(simulation_config, str):
+        # DEFENSIVE CHECK: Parse simulation_config if it's a string
+        if simulation_config is None:
+            simulation_config = {}
+        elif isinstance(simulation_config, str):
             try:
                 simulation_config = json.loads(simulation_config)
             except (json.JSONDecodeError, ValueError):
+                print(f"⚠️ WARNING [network-state]: Failed to parse simulation_config for simulation {simulation_id}")
                 simulation_config = {}
+        elif not isinstance(simulation_config, dict):
+            simulation_config = {}
         
         topology_enabled = simulation_config.get('topology_enabled', False)
         selected_topology = simulation_config.get('selected_topology', '')
@@ -1826,12 +1888,26 @@ def update_network_state(simulation_id):
         
         # Update device states if provided
         device_states = data.get('deviceStates')
+        if isinstance(device_states, str):
+            try:
+                device_states = json.loads(device_states)
+            except (json.JSONDecodeError, ValueError):
+                device_states = None
         if device_states:
             update_data['deviceStates'] = device_states
             print(f"Updated device states for simulation {simulation_id}, attempt {attempt.id}")
         
         # Include metadata if provided
         metadata = data.get('metadata', {})
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except (json.JSONDecodeError, ValueError):
+                # Preserve unexpected metadata without breaking downstream .get usage
+                metadata = {'raw': metadata}
+        elif not isinstance(metadata, dict):
+            metadata = {'raw': metadata}
+
         if metadata:
             update_data['metadata'] = metadata
         
@@ -2526,8 +2602,8 @@ Compiled Tue 22-Mar-16 16:19 by prod_rel_team
 ROM: Bootstrap program is IOSv
 
 {device_id} uptime is 1 day, 2 hours, 34 minutes
-System returned to ROM by reload at 21:32:45 UTC Mon Oct 14 2024
-System restarted at 21:33:12 UTC Mon Oct 14 2024
+System returned to ROM by reload at 21:32:45 UTC Mon Oct 14 2025
+System restarted at 21:33:12 UTC Mon Oct 14 2025
 System image file is "flash0:/vios-adventerprisek9-m"
 Last reload reason: Unknown reason
 
@@ -4804,6 +4880,102 @@ def get_task_progress(simulation_id):
         return jsonify({'error': f'Failed to get task progress: {str(e)}'}), 500
 
 
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/task-progress', methods=['POST'])
+@user_login_required
+def save_task_progress(simulation_id):
+    """Save user's task progress and activity"""
+    try:
+        from instructor.models.task_assignment import TaskAssignment
+        user = get_user_from_session()
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        data = request.get_json()
+        print(f"\n{'='*80}")
+        print(f"🔍 [BACKEND DEBUG] Received task progress for simulation {simulation_id}")
+        print(f"🔍 [BACKEND DEBUG] User: {user.username} (ID: {user.id})")
+        print(f"🔍 [BACKEND DEBUG] Incoming data:")
+        print(f"  - devices_placed: {data.get('devices_placed', [])}")
+        print(f"  - devices_configured: {data.get('devices_configured', [])}")
+        print(f"  - connections_made: {data.get('connections_made', [])}")
+        print(f"  - cli_history count: {len(data.get('cli_history', []))}")
+        print(f"  - activity_log count: {len(data.get('activity_log', []))}")
+        
+        # Get or create task assignment
+        assignment = TaskAssignment.query.filter_by(
+            simulation_id=simulation_id,
+            user_id=user.id
+        ).first()
+        
+        if not assignment:
+            print(f"🔍 [BACKEND DEBUG] Creating new assignment")
+            assignment = TaskAssignment(
+                simulation_id=simulation_id,
+                user_id=user.id,
+                status='in_progress'
+            )
+            db.session.add(assignment)
+        else:
+            print(f"🔍 [BACKEND DEBUG] Updating existing assignment (ID: {assignment.id})")
+        
+        # Update progress fields
+        if 'devices_placed' in data:
+            assignment.devices_placed = data['devices_placed']
+            print(f"🔍 [BACKEND DEBUG] Set devices_placed: {assignment.devices_placed}")
+        if 'devices_configured' in data:
+            assignment.devices_configured = data['devices_configured']
+            print(f"🔍 [BACKEND DEBUG] Set devices_configured: {assignment.devices_configured}")
+        if 'connections_made' in data:
+            assignment.connections_made = data['connections_made']
+            print(f"🔍 [BACKEND DEBUG] Set connections_made: {assignment.connections_made}")
+        if 'cli_history' in data:
+            assignment.cli_history = data['cli_history']
+            print(f"🔍 [BACKEND DEBUG] Set cli_history: {len(assignment.cli_history)} commands")
+        if 'activity_log' in data:
+            assignment.activity_log = data['activity_log']
+            print(f"🔍 [BACKEND DEBUG] Set activity_log: {len(assignment.activity_log)} entries")
+        
+        assignment.last_activity = datetime.utcnow()
+        
+        db.session.commit()
+        print(f"🔍 [BACKEND DEBUG] Database commit successful")
+        
+        # Get validation results
+        validation = assignment.validate_progress()
+        completion = assignment.completion_percentage
+        print(f"🔍 [BACKEND DEBUG] Validation results:")
+        print(f"  - Completion: {completion}%")
+        print(f"  - Validation data: {validation}")
+        
+        # Emit real-time update to instructors
+        from socket_manager import socketio
+        socketio.emit('task_progress_updated', {
+            'simulation_id': simulation_id,
+            'user_id': user.id,
+            'username': user.username,
+            'assignment_id': assignment.id,
+            'completion_percentage': completion,
+            'devices_placed': len(assignment.devices_placed or []),
+            'connections_made': len(assignment.connections_made or []),
+            'cli_commands': len(assignment.cli_history or [])
+        }, room=f'instructor_simulation_{simulation_id}')
+        print(f"🔍 [BACKEND DEBUG] Socket event emitted")
+        print(f"{'='*80}\n")
+        
+        return jsonify({
+            'success': True,
+            'assignment_id': assignment.id,
+            'completion_percentage': completion,
+            'validation': validation
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error saving task progress: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/check-devices', methods=['POST'])
 @user_login_required
 def check_device_requirements(simulation_id):
@@ -4907,6 +5079,112 @@ def check_device_count_requirement(user_id, simulation_id, device_requirements):
     # This would need to be implemented to check current canvas state
     # For now, return True as devices are checked in real-time via check_device_requirements
     return True
+
+# ===== TASK CONFIGURATION ROUTES =====
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/task-assignment', methods=['GET'])
+@user_login_required
+def get_user_task_assignment(simulation_id):
+    """Get user's task assignment for this simulation"""
+    try:
+        from instructor.models.task_assignment import TaskAssignment
+        user = get_user_from_session()
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        if not user:
+            current_app.logger.error("Task assignment requested without an authenticated user in session")
+            return jsonify({
+                'success': False,
+                'error': 'User session not found. Please sign in again.'
+            }), 401
+
+        # Get existing assignment
+        assignment = TaskAssignment.query.filter_by(
+            simulation_id=simulation_id,
+            user_id=user.id
+        ).first()
+        
+        if assignment:
+            return jsonify({
+                'success': True,
+                'assignment': {
+                    'id': assignment.id,
+                    'simulation_id': assignment.simulation_id,
+                    'user_id': assignment.user_id,
+                    'status': assignment.status,
+                    'devices_placed': assignment.devices_placed or [],
+                    'devices_configured': assignment.devices_configured or {},
+                    'connections_made': assignment.connections_made or [],
+                    'cli_history': assignment.cli_history or [],
+                    'activity_log': assignment.activity_log or [],
+                    'completion_percentage': assignment.completion_percentage,
+                    'auto_grade_score': float(assignment.auto_grade_score or 0),
+                    'instructor_grade': float(assignment.instructor_grade) if assignment.instructor_grade else None,
+                    'final_score': assignment.final_score,
+                    'feedback': assignment.feedback,
+                    'submitted_at': assignment.submitted_at.isoformat() if assignment.submitted_at else None,
+                    'graded_at': assignment.graded_at.isoformat() if assignment.graded_at else None,
+                    'created_at': assignment.created_at.isoformat(),
+                    'last_activity_at': assignment.last_activity_at.isoformat() if assignment.last_activity_at else None
+                }
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'assignment': None,
+                'message': 'No assignment found. Will be created on first activity.'
+            })
+        
+    except Exception as e:
+        print(f"❌ Error getting task assignment: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/task-config', methods=['GET'])
+@login_required
+def get_simulation_task_config(simulation_id):
+    """Get task configuration for a simulation (student view)"""
+    try:
+        simulation = Simulation.query.get_or_404(simulation_id)
+        task_config = simulation.task_config or {}
+        
+        # 🔧 FIX: Handle case where task_config might be stored as JSON string
+        if isinstance(task_config, str):
+            import json
+            try:
+                task_config = json.loads(task_config)
+            except:
+                task_config = {}
+        
+        print(f"📋 [STUDENT TASK-CONFIG] Simulation {simulation_id}: enabled={task_config.get('enabled')}, devices={len(task_config.get('device_requirements', []))}, connections={len(task_config.get('connection_requirements', []))}")
+        
+        # Only return if task mode is enabled
+        if not task_config.get('enabled'):
+            return jsonify({
+                'success': True,
+                'task_config': None,
+                'message': 'Task assignments not enabled for this simulation'
+            })
+        
+        # Remove sensitive data like grading weights (students don't need to see exact percentages)
+        student_task_config = {
+            'enabled': task_config.get('enabled'),
+            'device_requirements': task_config.get('device_requirements', []),
+            'connection_requirements': task_config.get('connection_requirements', []),
+            'cli_requirements': task_config.get('cli_requirements', {}),
+            'instructions': task_config.get('instructions', ''),
+            'time_limit_minutes': task_config.get('time_limit_minutes'),
+            'task_mode': task_config.get('task_mode', 'combined')
+        }
+        
+        return jsonify({
+            'success': True,
+            'task_config': student_task_config
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting task config: {str(e)}")
+        return jsonify({'error': f'Failed to get task config: {str(e)}'}), 500
 
 # ===== END AUTOMATIC TASK VERIFICATION ROUTES =====
 

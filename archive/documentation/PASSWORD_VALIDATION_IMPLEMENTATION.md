@@ -201,7 +201,7 @@ All passwords must meet the following criteria:
 
 #### Valid Passwords (Should Accept)
 - `Password123!`
-- `Admin@2024Pass`
+- `Admin@2025Pass`
 - `SecureP@ssw0rd`
 - `MyStr0ng!Pass`
 - `Test#Pass123`

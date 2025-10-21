@@ -292,7 +292,7 @@ window.challengeNavigationGuard.setProgress('Custom progress message');
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | Dec 2024 | Initial release |
+| 1.0.0 | Dec 2025 | Initial release |
 
 ---
 

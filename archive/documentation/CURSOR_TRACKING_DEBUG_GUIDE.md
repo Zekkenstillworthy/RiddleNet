@@ -455,6 +455,6 @@ When working correctly, you should see:
 
 ---
 
-**Debug logging added:** December 2024  
+**Debug logging added:** December 2025  
 **All cursor methods now have comprehensive logging**  
 **Filter console by `🖱️` to see all cursor-related logs**
