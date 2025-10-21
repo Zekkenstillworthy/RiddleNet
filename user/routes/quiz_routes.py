@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, session
 from flask_login import login_required, current_user
 from __init__ import db
+from datetime import datetime
 import json
 
 # Create separate blueprint for quiz challenges
@@ -103,4 +104,115 @@ def submit_quiz():
     except Exception as e:
         db.session.rollback()
         print(f"Error submitting quiz: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@quiz_bp.route('/api/save_progress', methods=['POST'])
+@login_required
+def save_progress():
+    """Save quiz progress for later resumption"""
+    try:
+        data = request.json
+        
+        # Store progress in ChallengeScore metadata
+        from user.models.challenge_score import ChallengeScore
+        
+        # Get or create challenge score entry
+        challenge_score = ChallengeScore.query.filter_by(
+            user_id=current_user.id,
+            challenge_type='quiz'
+        ).first()
+        
+        if not challenge_score:
+            challenge_score = ChallengeScore(
+                user_id=current_user.id,
+                challenge_type='quiz',
+                best_score=0.0,
+                latest_score=0.0,
+                total_attempts=0
+            )
+            db.session.add(challenge_score)
+        
+        # Update metadata with progress
+        if not challenge_score.challenge_metadata:
+            challenge_score.challenge_metadata = {}
+        
+        challenge_score.challenge_metadata['in_progress'] = True
+        challenge_score.challenge_metadata['progress'] = {
+            'currentQuestion': data.get('currentQuestion', 0),
+            'score': data.get('score', 0),
+            'answeredQuestions': data.get('answeredQuestions', []),
+            'lifelinesUsed': data.get('lifelinesUsed', {}),
+            'questionOrder': data.get('questionOrder', []),
+            'totalQuestions': data.get('totalQuestions', 11),
+            'sessionId': data.get('sessionId'),
+            'savedAt': datetime.now().isoformat()
+        }
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Progress saved successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving progress: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@quiz_bp.route('/api/get_progress', methods=['GET'])
+@login_required
+def get_progress():
+    """Get saved quiz progress"""
+    try:
+        from user.models.challenge_score import ChallengeScore
+        
+        challenge_score = ChallengeScore.query.filter_by(
+            user_id=current_user.id,
+            challenge_type='quiz'
+        ).first()
+        
+        if challenge_score and challenge_score.challenge_metadata:
+            in_progress = challenge_score.challenge_metadata.get('in_progress', False)
+            progress = challenge_score.challenge_metadata.get('progress', {})
+            
+            if in_progress and progress:
+                return jsonify({
+                    'has_progress': True,
+                    'progress': progress
+                })
+        
+        return jsonify({
+            'has_progress': False
+        })
+    except Exception as e:
+        print(f"Error getting progress: {e}")
+        return jsonify({'has_progress': False, 'error': str(e)}), 500
+
+@quiz_bp.route('/api/clear_progress', methods=['POST'])
+@login_required
+def clear_progress():
+    """Clear saved quiz progress"""
+    try:
+        from user.models.challenge_score import ChallengeScore
+        
+        challenge_score = ChallengeScore.query.filter_by(
+            user_id=current_user.id,
+            challenge_type='quiz'
+        ).first()
+        
+        if challenge_score and challenge_score.challenge_metadata:
+            if 'in_progress' in challenge_score.challenge_metadata:
+                del challenge_score.challenge_metadata['in_progress']
+            if 'progress' in challenge_score.challenge_metadata:
+                del challenge_score.challenge_metadata['progress']
+            
+            db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Progress cleared successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error clearing progress: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500

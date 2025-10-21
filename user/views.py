@@ -126,19 +126,18 @@ def dashboard():
     from user.models.challenge_score import ChallengeScore
     from user.models.user_badge import UserBadge
     
-    # ✅ FIX: Get all 5 challenge types including linkup
+    # ✅ FIX: Get all 4 challenge types (troubleshooting = Link Up!)
     crimping_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='crimping').first()
     osi_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='osi').first()
     troubleshooting_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='troubleshooting').first()
     quiz_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='quiz').first()
-    linkup_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='linkup').first()
     
     # Extract best scores (for backward compatibility and template)
     crimping_score = crimping_challenge.best_score if crimping_challenge else 0
     osi_score = osi_challenge.best_score if osi_challenge else 0
     topology_score = troubleshooting_challenge.best_score if troubleshooting_challenge else 0  # Keep legacy name
+    linkup_score = troubleshooting_challenge.best_score if troubleshooting_challenge else 0  # Same as topology (Link Up!)
     quiz_score = quiz_challenge.best_score if quiz_challenge else 0
-    linkup_score = linkup_challenge.best_score if linkup_challenge else 0
     
     # Calculate dashboard stats (MVP)
     challenge_stats = ChallengeScore.get_user_stats(user.id)
@@ -147,9 +146,9 @@ def dashboard():
     user_badges = UserBadge.get_user_badges(user.id)
     user_badges_list = [badge.to_dict() for badge in user_badges]
     
-    # Get challenge data for display
+    # Get challenge data for display (4 challenges total)
     challenge_data = []
-    for challenge in [crimping_challenge, osi_challenge, troubleshooting_challenge, quiz_challenge, linkup_challenge]:
+    for challenge in [crimping_challenge, osi_challenge, troubleshooting_challenge, quiz_challenge]:
         if challenge:
             challenge_data.append(challenge.to_dict())
 
@@ -242,8 +241,8 @@ def dashboard():
         crimping_score=crimping_score,
         osi_score=osi_score,
         quiz_score=quiz_score,
-        linkup_score=linkup_score,  # ✅ FIX: Include linkup score
-        # MVP: New challenge-based stats
+        linkup_score=linkup_score,  # Same as topology_score (Link Up! = troubleshooting challenge)
+        # MVP: New challenge-based stats (4 total challenges)
         completed_challenges=challenge_stats['total_challenges_completed'],
         total_challenges=challenge_stats['total_challenges'],
         avg_score=round(challenge_stats['average_score'], 1),

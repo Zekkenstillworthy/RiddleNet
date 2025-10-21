@@ -1888,9 +1888,13 @@
 <script>
 // Back to challenges function
 function goBackToChallenges() {
-  if (confirm('Are you sure you want to leave the quiz? Your progress will not be saved.')) {
+  // Save progress before leaving
+  saveProgress();
+  
+  // Navigate after a short delay to ensure save completes
+  setTimeout(() => {
     window.location.href = "{{ url_for('user.challenges') }}";
-  }
+  }, 300);
 }
 
 // Quiz Data - 3 sets of 5 questions each that can be shuffled
@@ -2033,6 +2037,9 @@ let skipsRemaining = 2;
 let hintsRemaining = 3;
 let fiftyFiftyUsed = false;
 let answered = false;
+let quizSessionId = null; // Track unique quiz session
+let currentSet = 0; // Track which set of 5 questions we're on (0 = Set 1, 1 = Set 2, 2 = Set 3)
+let completedSets = []; // Track which sets have been completed
 
 // Shuffle array function (Fisher-Yates algorithm)
 function shuffleArray(array) {
@@ -2046,18 +2053,213 @@ function shuffleArray(array) {
 
 // Initialize Quiz
 document.addEventListener('DOMContentLoaded', function() {
-    // Shuffle each set independently and combine them
+    // Generate unique session ID
+    quizSessionId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    
+    // Try to load saved progress from server
+    loadSavedProgress();
+});
+
+// Load saved progress from server
+function loadSavedProgress() {
+    fetch('/quiz/api/get_progress', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.has_progress) {
+            // Show resume dialog
+            showResumeDialog(data);
+        } else {
+            // Start fresh quiz
+            startNewQuiz();
+        }
+    })
+    .catch(error => {
+        console.error('Error loading progress:', error);
+        // Start fresh quiz on error
+        startNewQuiz();
+    });
+}
+
+// Show resume dialog
+function showResumeDialog(savedData) {
+    const progress = savedData.progress;
+    const setNumber = progress.currentSet + 1;
+    const totalSets = 3;
+    const questionsInSet = progress.currentQuestion % 5 + 1;
+    
+    const resumeHTML = `
+        <div class="results-container" style="display: block;">
+            <div class="results-title">Resume Quiz?</div>
+            <p style="color: var(--text-secondary); font-size: 1.1rem; margin: 20px 0;">
+                You have an unfinished quiz session.
+            </p>
+            <div class="results-stats">
+                <div class="result-stat">
+                    <div class="result-stat-value">Set ${setNumber}/${totalSets}</div>
+                    <div class="result-stat-label">Current Set</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value">${questionsInSet}/5</div>
+                    <div class="result-stat-label">Questions in Set</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value">${progress.score}</div>
+                    <div class="result-stat-label">Current Score</div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn" onclick="resumeQuiz()">
+                    <i class="fas fa-play"></i> Resume Quiz
+                </button>
+                <button class="action-btn secondary" onclick="startNewQuiz()">
+                    <i class="fas fa-redo"></i> Start Fresh
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('questionContainer').style.display = 'none';
+    document.getElementById('lifelinesContainer').style.display = 'none';
+    document.querySelector('.quiz-stats').style.display = 'none';
+    document.querySelector('.progress-bar-container').style.display = 'none';
+    document.getElementById('resultsContainer').innerHTML = resumeHTML;
+    document.getElementById('resultsContainer').style.display = 'block';
+}
+
+// Resume quiz from saved progress
+function resumeQuiz() {
+    fetch('/quiz/api/get_progress', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.has_progress) {
+            const savedProgress = data.progress;
+            
+            // Restore quiz state
+            currentQuestion = savedProgress.currentQuestion;
+            currentSet = savedProgress.currentSet || 0;
+            completedSets = savedProgress.completedSets || [];
+            score = savedProgress.score;
+            answeredQuestions = savedProgress.answeredQuestions || [];
+            lifelinesUsed = savedProgress.lifelinesUsed || { fiftyFifty: 0, skip: 0, hint: 0 };
+            skipsRemaining = 2 - lifelinesUsed.skip;
+            hintsRemaining = 3 - lifelinesUsed.hint;
+            fiftyFiftyUsed = lifelinesUsed.fiftyFifty > 0;
+            
+            // Restore question order
+            if (savedProgress.questionOrder && savedProgress.questionOrder.length > 0) {
+                quizQuestions = savedProgress.questionOrder;
+            } else {
+                // If no saved order, shuffle fresh
+                questionSets.forEach(set => {
+                    const shuffledSet = shuffleArray(set);
+                    quizQuestions = quizQuestions.concat(shuffledSet);
+                });
+                quizQuestions = shuffleArray(quizQuestions);
+            }
+            
+            // Update UI
+            document.getElementById('score').textContent = score;
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('questionContainer').style.display = 'block';
+            document.getElementById('lifelinesContainer').style.display = 'flex';
+            document.querySelector('.quiz-stats').style.display = 'grid';
+            document.querySelector('.progress-bar-container').style.display = 'block';
+            
+            // Update lifeline buttons
+            updateLifelineButtons();
+            
+            // Load current question
+            loadQuestion();
+            startTimer();
+        }
+    })
+    .catch(error => {
+        console.error('Error resuming quiz:', error);
+        startNewQuiz();
+    });
+}
+
+// Start a new quiz
+function startNewQuiz() {
+    // Reset all state
+    currentQuestion = 0;
+    currentSet = 0;
+    completedSets = [];
+    score = 0;
+    answeredQuestions = [];
+    lifelinesUsed = { fiftyFifty: 0, skip: 0, hint: 0 };
+    skipsRemaining = 2;
+    hintsRemaining = 3;
+    fiftyFiftyUsed = false;
+    quizQuestions = [];
+    
+    // Shuffle questions
     questionSets.forEach(set => {
         const shuffledSet = shuffleArray(set);
         quizQuestions = quizQuestions.concat(shuffledSet);
     });
-    
-    // Optionally shuffle the order of the combined sets
     quizQuestions = shuffleArray(quizQuestions);
+    
+    // Clear saved progress on server
+    clearSavedProgress();
+    
+    // Update UI
+    document.getElementById('score').textContent = '0';
+    document.getElementById('resultsContainer').style.display = 'none';
+    document.getElementById('questionContainer').style.display = 'block';
+    document.getElementById('lifelinesContainer').style.display = 'flex';
+    document.querySelector('.quiz-stats').style.display = 'grid';
+    document.querySelector('.progress-bar-container').style.display = 'block';
+    
+    // Reset lifeline buttons
+    updateLifelineButtons();
     
     loadQuestion();
     startTimer();
-});
+}
+
+// Update lifeline button states
+function updateLifelineButtons() {
+    const fiftyBtn = document.getElementById('fiftyFiftyBtn');
+    const skipBtn = document.getElementById('skipBtn');
+    const hintBtn = document.getElementById('hintBtn');
+    
+    if (fiftyBtn) {
+        if (fiftyFiftyUsed) {
+            fiftyBtn.classList.add('disabled');
+        } else {
+            fiftyBtn.classList.remove('disabled');
+        }
+    }
+    
+    if (skipBtn) {
+        skipBtn.innerHTML = `<i class="fas fa-forward"></i> Skip (${skipsRemaining})`;
+        if (skipsRemaining <= 0) {
+            skipBtn.classList.add('disabled');
+        } else {
+            skipBtn.classList.remove('disabled');
+        }
+    }
+    
+    if (hintBtn) {
+        hintBtn.innerHTML = `<i class="fas fa-lightbulb"></i> Hint (${hintsRemaining})`;
+        if (hintsRemaining <= 0) {
+            hintBtn.classList.add('disabled');
+        } else {
+            hintBtn.classList.remove('disabled');
+        }
+    }
+}
 
 // Start Timer
 function startTimer() {
@@ -2104,15 +2306,20 @@ function loadQuestion() {
     const question = quizQuestions[currentQuestion];
     answered = false;
     
+    // Calculate which set and question within set
+    currentSet = Math.floor(currentQuestion / 5);
+    const questionInSet = (currentQuestion % 5) + 1;
+    const totalSets = 3;
+    
     // Update progress
-    document.getElementById('progress').textContent = `${currentQuestion + 1}/${quizQuestions.length}`;
+    document.getElementById('progress').textContent = `Set ${currentSet + 1}/${totalSets} - Q${questionInSet}/5`;
     const progressPercent = ((currentQuestion) / quizQuestions.length) * 100;
     document.getElementById('progressBar').style.width = progressPercent + '%';
     
     // Build question HTML
     let html = `
         <div class="question-card">
-            <div class="question-number">Question ${currentQuestion + 1} of ${quizQuestions.length}</div>
+            <div class="question-number">Set ${currentSet + 1} - Question ${questionInSet} of 5</div>
             <div class="question-text">${question.question}</div>
             ${question.image ? `<img src="${question.image}" alt="Question Image" class="question-image" />` : ''}
             <div class="options-container">
@@ -2206,20 +2413,186 @@ function showFeedback(isCorrect, explanation) {
 // Show Next Button
 function showNextButton() {
     const questionCard = document.querySelector('.question-card');
+    const questionInSet = (currentQuestion % 5) + 1;
+    const isLastInSet = questionInSet === 5;
+    
     const buttonHTML = `
         <div class="action-buttons">
             <button class="action-btn" onclick="nextQuestion()">
-                Next Question <i class="fas fa-arrow-right"></i>
+                ${isLastInSet ? '<i class="fas fa-check-circle"></i> Complete Set' : 'Next Question <i class="fas fa-arrow-right"></i>'}
             </button>
         </div>
     `;
     questionCard.insertAdjacentHTML('beforeend', buttonHTML);
 }
 
+// Quit Quiz - Save progress and return to challenges (keep this for back button)
+function quitQuiz() {
+    saveProgress();
+    setTimeout(() => {
+        window.location.href = "{{ url_for('user.challenges') }}";
+    }, 300);
+}
+
 // Next Question
 function nextQuestion() {
     currentQuestion++;
+    
+    // Check if we just completed a set (every 5 questions)
+    if (currentQuestion % 5 === 0 && currentQuestion < quizQuestions.length) {
+        const completedSetNumber = Math.floor((currentQuestion - 1) / 5);
+        completedSets.push(completedSetNumber);
+        showSetCompletionScreen(completedSetNumber);
+    } else {
+        // Save progress after each question
+        saveProgress();
+        loadQuestion();
+    }
+}
+
+// Show set completion screen
+function showSetCompletionScreen(setNumber) {
+    // Calculate score for this set
+    const setStartIndex = setNumber * 5;
+    const setEndIndex = setStartIndex + 5;
+    const setAnswers = answeredQuestions.slice(setStartIndex, setEndIndex);
+    const setScore = setAnswers.filter(a => a.isCorrect).length;
+    const setPercentage = (setScore / 5) * 100;
+    
+    const totalSets = 3;
+    const remainingSets = totalSets - (setNumber + 1);
+    
+    let performanceMessage = '';
+    if (setPercentage >= 80) {
+        performanceMessage = '🌟 Excellent work on this set!';
+    } else if (setPercentage >= 60) {
+        performanceMessage = '👍 Good job on this set!';
+    } else {
+        performanceMessage = '📚 Keep practicing!';
+    }
+    
+    const setCompletionHTML = `
+        <div class="results-container" style="display: block;">
+            <div class="results-title">Set ${setNumber + 1} Complete!</div>
+            <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 16px;">
+                ${performanceMessage}
+            </p>
+            <div class="results-stats">
+                <div class="result-stat">
+                    <div class="result-stat-value">${setScore}/5</div>
+                    <div class="result-stat-label">Set Score</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value">${setPercentage.toFixed(0)}%</div>
+                    <div class="result-stat-label">Set Accuracy</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value">${score}</div>
+                    <div class="result-stat-label">Total Score</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value">${remainingSets}</div>
+                    <div class="result-stat-label">Sets Remaining</div>
+                </div>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 1rem; margin: 20px 0;">
+                ${remainingSets > 0 ? 
+                    `You can continue to Set ${setNumber + 2} or save your progress and quit.` : 
+                    'All sets completed! View your final results.'}
+            </p>
+            <div class="action-buttons">
+                ${remainingSets > 0 ? `
+                    <button class="action-btn" onclick="continueToNextSet()">
+                        <i class="fas fa-arrow-right"></i> Continue to Set ${setNumber + 2}
+                    </button>
+                    <button class="action-btn secondary" onclick="quitQuizFromSetCompletion()">
+                        <i class="fas fa-save"></i> Save & Quit
+                    </button>
+                ` : `
+                    <button class="action-btn" onclick="loadQuestion()">
+                        <i class="fas fa-trophy"></i> View Final Results
+                    </button>
+                `}
+            </div>
+        </div>
+    `;
+    
+    // Hide quiz UI, show set completion
+    document.getElementById('questionContainer').style.display = 'none';
+    document.getElementById('lifelinesContainer').style.display = 'none';
+    document.querySelector('.quiz-stats').style.display = 'none';
+    document.querySelector('.progress-bar-container').style.display = 'none';
+    document.getElementById('resultsContainer').innerHTML = setCompletionHTML;
+    document.getElementById('resultsContainer').style.display = 'block';
+    
+    // Save progress
+    saveProgress();
+}
+
+// Continue to next set
+function continueToNextSet() {
+    // Restore quiz UI
+    document.getElementById('resultsContainer').style.display = 'none';
+    document.getElementById('questionContainer').style.display = 'block';
+    document.getElementById('lifelinesContainer').style.display = 'flex';
+    document.querySelector('.quiz-stats').style.display = 'grid';
+    document.querySelector('.progress-bar-container').style.display = 'block';
+    
+    // Load next question
     loadQuestion();
+}
+
+// Quit quiz from set completion screen
+function quitQuizFromSetCompletion() {
+    saveProgress();
+    setTimeout(() => {
+        window.location.href = "{{ url_for('user.challenges') }}";
+    }, 300);
+}
+
+// Save progress to server
+function saveProgress() {
+    fetch('/quiz/api/save_progress', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            currentQuestion: currentQuestion,
+            currentSet: currentSet,
+            completedSets: completedSets,
+            score: score,
+            answeredQuestions: answeredQuestions,
+            lifelinesUsed: lifelinesUsed,
+            questionOrder: quizQuestions,
+            totalQuestions: quizQuestions.length,
+            sessionId: quizSessionId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Progress saved:', data);
+    })
+    .catch(error => {
+        console.error('Error saving progress:', error);
+    });
+}
+
+// Clear saved progress
+function clearSavedProgress() {
+    fetch('/quiz/api/clear_progress', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Progress cleared:', data);
+    })
+    .catch(error => {
+        console.error('Error clearing progress:', error);
+    });
 }
 
 // Handle Timeout
@@ -2340,8 +2713,10 @@ function useHint() {
 function showResults() {
     clearInterval(timerInterval);
     
-    const percentage = Math.round((score / quizQuestions.length) * 100);
-    const timeTaken = (quizQuestions.length * 30) - timeLeft; // Approximate
+    const questionsAnswered = answeredQuestions.length;
+    const percentage = Math.round((score / questionsAnswered) * 100);
+    const timeTaken = (questionsAnswered * 30) - timeLeft; // Approximate
+    const setsCompleted = completedSets.length + (currentQuestion % 5 === 0 ? 1 : 0);
     
     let performanceMessage = '';
     if (percentage >= 90) {
@@ -2357,7 +2732,7 @@ function showResults() {
     const resultsHTML = `
         <div class="results-container">
             <div class="results-title">Quiz Complete!</div>
-            <div class="results-score">${score}/${quizQuestions.length}</div>
+            <div class="results-score">${score}/${questionsAnswered}</div>
             <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 24px;">
                 ${performanceMessage}
             </p>
@@ -2365,6 +2740,10 @@ function showResults() {
                 <div class="result-stat">
                     <div class="result-stat-value">${percentage}%</div>
                     <div class="result-stat-label">Accuracy</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value">${setsCompleted}/3</div>
+                    <div class="result-stat-label">Sets Completed</div>
                 </div>
                 <div class="result-stat">
                     <div class="result-stat-value">${lifelinesUsed.fiftyFifty}</div>
@@ -2403,6 +2782,8 @@ function showResults() {
 
 // Submit Quiz Results
 function submitQuizResults() {
+    const questionsAnswered = answeredQuestions.length;
+    
     fetch('/quiz/api/submit', {
         method: 'POST',
         headers: {
@@ -2410,15 +2791,19 @@ function submitQuizResults() {
         },
         body: JSON.stringify({
             score: score,
-            total_questions: quizQuestions.length,
-            time_taken: (quizQuestions.length * 30) - timeLeft,
+            total_questions: questionsAnswered,
+            time_taken: (questionsAnswered * 30) - timeLeft,
             lifelines_used: lifelinesUsed,
-            answers: answeredQuestions
+            answers: answeredQuestions,
+            sets_completed: completedSets.length,
+            partial_completion: questionsAnswered < quizQuestions.length
         })
     })
     .then(response => response.json())
     .then(data => {
         console.log('Quiz results saved:', data);
+        // Clear saved progress after successful submission
+        clearSavedProgress();
     })
     .catch(error => {
         console.error('Error saving quiz results:', error);
@@ -2427,29 +2812,11 @@ function submitQuizResults() {
 
 // Retake Quiz
 function retakeQuiz() {
-    currentQuestion = 0;
-    score = 0;
-    answeredQuestions = [];
-    lifelinesUsed = { fiftyFifty: 0, skip: 0, hint: 0 };
-    skipsRemaining = 2;
-    hintsRemaining = 3;
-    fiftyFiftyUsed = false;
+    // Clear saved progress first
+    clearSavedProgress();
     
-    document.getElementById('score').textContent = '0';
-    document.getElementById('resultsContainer').style.display = 'none';
-    document.getElementById('questionContainer').style.display = 'block';
-    document.getElementById('lifelinesContainer').style.display = 'flex';
-    document.querySelector('.quiz-stats').style.display = 'grid';
-    document.querySelector('.progress-bar-container').style.display = 'block';
-    
-    // Reset lifeline buttons
-    document.getElementById('fiftyFiftyBtn').classList.remove('disabled');
-    document.getElementById('skipBtn').classList.remove('disabled');
-    document.getElementById('skipBtn').innerHTML = '<i class="fas fa-forward"></i> Skip (2)';
-    document.getElementById('hintBtn').classList.remove('disabled');
-    document.getElementById('hintBtn').innerHTML = '<i class="fas fa-lightbulb"></i> Hint (3)';
-    
-    loadQuestion();
+    // Start a fresh quiz
+    startNewQuiz();
 }
 </script>
 
