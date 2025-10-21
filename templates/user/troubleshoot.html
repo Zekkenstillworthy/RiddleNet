@@ -22,6 +22,18 @@
             root.style.setProperty('--current-sidebar-width', '220px'); // Match --sidebar-width
         }
     })();
+    
+    // ===== FIX: Forward declaration for selectScenario =====
+    // This prevents "Uncaught ReferenceError: selectScenario is not defined" 
+    // when inline onclick handlers are parsed before the main script loads
+    window.selectScenario = function(scenarioType) {
+        console.warn('⚠️ selectScenario stub called for:', scenarioType, '- waiting for main implementation...');
+        // Queue the call to execute after the real function loads
+        if (!window._selectScenarioQueue) {
+            window._selectScenarioQueue = [];
+        }
+        window._selectScenarioQueue.push(scenarioType);
+    };
 </script>
 
 <style>
@@ -12872,7 +12884,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // ===== MOBILE TOUCH EVENT HANDLERS =====
         let touchedDevice = null;
         let touchStartPos = { x: 0, y: 0 };
-        let isDragging = false;
 
         function handleTouchStart(e) {
             console.log('📱 Touch Start Event:', {
@@ -14178,6 +14189,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Make selectScenario globally accessible for inline onclick handlers
         window.selectScenario = selectScenario;
+        
+        // Process any queued calls that happened before the function was fully loaded
+        if (window._selectScenarioQueue && window._selectScenarioQueue.length > 0) {
+            console.log('🔄 Processing', window._selectScenarioQueue.length, 'queued selectScenario calls');
+            window._selectScenarioQueue.forEach(scenarioType => {
+                selectScenario(scenarioType);
+            });
+            window._selectScenarioQueue = []; // Clear the queue
+        }
 
         // Update Live Performance sidebar with current scenario information
         function updateLivePerformanceScenario(scenarioType) {
