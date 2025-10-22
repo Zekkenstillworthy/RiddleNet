@@ -1,8 +1,4 @@
-"""
-AWS Elastic Beanstalk Entry Point for RiddleNet
-This file serves as the WSGI entry point for AWS deployment.
-Elastic Beanstalk looks for 'application' variable in application.py
-"""
+
 import os
 import sys
 

@@ -25359,9 +25359,120 @@ document.addEventListener('DOMContentLoaded', () => {
     </script>
 
     <!-- Team Session Lobby Browser Modal -->
-    <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
-    <audio id="exitSound" src="{{ url_for('static', filename='audio/Exit.mp3') }}"></audio>
-    <audio id="bgSound" src="{{ url_for('static', filename='audio/Bg_sound.mp3') }}"></audio>
+    
+    <!-- Enhanced Audio Elements for Link Up! Troubleshooting -->
+    <audio id="clickSound" preload="auto">
+      <source src="{{ url_for('static', filename='audio/Start.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="exitSound" preload="auto">
+      <source src="{{ url_for('static', filename='audio/Exit.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="bgSound" preload="auto">
+      <source src="{{ url_for('static', filename='audio/Bg_sound.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="selectSound" preload="auto">
+      <source src="{{ url_for('static', filename='audio/Select.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="correctSound" preload="auto">
+      <source src="{{ url_for('static', filename='audio/Correct.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="incorrectSound" preload="auto">
+      <source src="{{ url_for('static', filename='audio/Incorrect.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="dragSound" preload="auto">
+      <source src="{{ url_for('static', filename='audio/Drag.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="navSound" preload="auto">
+      <source src="{{ url_for('static', filename='audio/Nav.mp3') }}" type="audio/mpeg">
+    </audio>
+
+    <!-- Enhanced Sound Management for Troubleshooting -->
+    <script>
+      // Enhanced sound management system for Link Up!
+      window.troubleshootSounds = {
+        play: function(soundId, volume = 0.3) {
+          const audio = document.getElementById(soundId);
+          if (audio) {
+            audio.currentTime = 0;
+            audio.volume = volume;
+            audio.play().catch(e => console.log('Audio play failed:', e));
+          }
+        },
+        
+        playClick: function() {
+          this.play('clickSound', 0.3);
+        },
+        
+        playSelect: function() {
+          this.play('selectSound', 0.25);
+        },
+        
+        playCorrect: function() {
+          this.play('correctSound', 0.4);
+        },
+        
+        playIncorrect: function() {
+          this.play('incorrectSound', 0.4);
+        },
+        
+        playDrag: function() {
+          this.play('dragSound', 0.25);
+        },
+        
+        playNav: function() {
+          this.play('navSound', 0.25);
+        },
+        
+        playExit: function() {
+          this.play('exitSound', 0.3);
+        },
+        
+        startBg: function() {
+          const bgAudio = document.getElementById('bgSound');
+          if (bgAudio) {
+            bgAudio.volume = 0.1;
+            bgAudio.loop = true;
+            bgAudio.play().catch(e => console.log('Background audio failed:', e));
+          }
+        },
+        
+        stopBg: function() {
+          const bgAudio = document.getElementById('bgSound');
+          if (bgAudio) {
+            bgAudio.pause();
+            bgAudio.currentTime = 0;
+          }
+        }
+      };
+
+      // Auto-attach enhanced sounds to troubleshooting elements
+      document.addEventListener('DOMContentLoaded', function() {
+        // Device palette items
+        document.querySelectorAll('.device-item, .tool-item').forEach(item => {
+          item.addEventListener('mouseenter', function() {
+            window.troubleshootSounds.playSelect();
+          });
+          item.addEventListener('dragstart', function() {
+            window.troubleshootSounds.playDrag();
+          });
+        });
+
+        // Scenario cards
+        document.querySelectorAll('.scenario-card, .difficulty-card').forEach(card => {
+          card.addEventListener('mouseenter', function() {
+            window.troubleshootSounds.playSelect();
+          });
+        });
+
+        // Verification and action buttons
+        document.querySelectorAll('.verify-btn, .check-solution-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            // Will be overridden with correct/incorrect based on result
+            window.troubleshootSounds.playClick();
+          });
+        });
+      });
+    </script>
     
     <!-- Auto Landscape Orientation Module -->
     <script src="{{ url_for('static', filename='js/auto-landscape-orientation.js') }}"></script>

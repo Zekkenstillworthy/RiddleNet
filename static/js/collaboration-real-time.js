@@ -1,14 +1,10 @@
-/**
- * RiddleNet Collaboration Real-Time Module
- * Handles team sessions, real-time synchronization, chat functionality, and collaboration features
- */
 
 class CollaborationRealTime {
     constructor() {
         this.socket = null;
         this.isConnected = false;
         this.currentSession = null;
-    this.sessionId = null;
+        this.sessionId = null;
         this.currentUser = null;
         this.teamMembers = new Map();
         this.deviceLocks = new Map();

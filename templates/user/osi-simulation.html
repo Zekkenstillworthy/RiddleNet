@@ -3741,6 +3741,126 @@ if (document.readyState === 'loading') {
 <!-- Navigation Confirmation Modal -->
 {% include 'components/navigation_confirmation_modal.html' %}
 
+<!-- Enhanced Audio Elements for OSI Simulation -->
+<audio id="clickSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Start.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="selectSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Select.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="correctSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Correct.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="incorrectSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Incorrect.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="dragSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Drag.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="navSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Nav.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="closeSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Exit.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="bgSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Bg_sound.mp3') }}" type="audio/mpeg">
+</audio>
+
+<!-- OSI Simulation Sound Management System -->
+<script>
+  // Centralized sound management for OSI Simulation
+  window.osiSounds = {
+    play: function(soundId, volume = 0.3) {
+      const audio = document.getElementById(soundId);
+      if (audio) {
+        audio.currentTime = 0;
+        audio.volume = volume;
+        audio.play().catch(e => console.log('Audio play failed:', e));
+      }
+    },
+    
+    playClick: function() {
+      this.play('clickSound', 0.3);
+    },
+    
+    playSelect: function() {
+      this.play('selectSound', 0.25);
+    },
+    
+    playCorrect: function() {
+      this.play('correctSound', 0.4);
+    },
+    
+    playIncorrect: function() {
+      this.play('incorrectSound', 0.4);
+    },
+    
+    playDrag: function() {
+      this.play('dragSound', 0.25);
+    },
+    
+    playNav: function() {
+      this.play('navSound', 0.25);
+    },
+    
+    playClose: function() {
+      this.play('closeSound', 0.3);
+    },
+    
+    startBg: function() {
+      const bgAudio = document.getElementById('bgSound');
+      if (bgAudio) {
+        bgAudio.volume = 0.1;
+        bgAudio.loop = true;
+        bgAudio.play().catch(e => console.log('Background audio failed:', e));
+      }
+    },
+    
+    stopBg: function() {
+      const bgAudio = document.getElementById('bgSound');
+      if (bgAudio) {
+        bgAudio.pause();
+        bgAudio.currentTime = 0;
+      }
+    }
+  };
+
+  // Auto-attach sound effects to OSI elements
+  document.addEventListener('DOMContentLoaded', function() {
+    // Add click sounds to all buttons
+    document.querySelectorAll('button:not([data-no-sound])').forEach(button => {
+      button.addEventListener('click', function() {
+        window.osiSounds.playClick();
+      });
+    });
+
+    // Add hover sounds to layer cards and draggable items
+    document.querySelectorAll('.layer-card, .draggable-item, .scenario-card').forEach(item => {
+      item.addEventListener('mouseenter', function() {
+        window.osiSounds.playSelect();
+      });
+    });
+
+    // Add drag sounds to draggable elements
+    document.querySelectorAll('.draggable-item').forEach(item => {
+      item.addEventListener('dragstart', function() {
+        window.osiSounds.playDrag();
+      });
+    });
+
+    // Add sounds to model selection buttons
+    document.querySelectorAll('.model-option').forEach(option => {
+      option.addEventListener('mouseenter', function() {
+        window.osiSounds.playSelect();
+      });
+      option.addEventListener('click', function() {
+        window.osiSounds.playNav();
+      });
+    });
+  });
+</script>
+
 <!-- Activate Navigation Guard for OSI Challenge -->
 <script>
   // Activate navigation guard when challenge starts

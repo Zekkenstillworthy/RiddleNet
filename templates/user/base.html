@@ -1487,6 +1487,101 @@
         }
     </script>
     
+    <!-- Global Audio Elements for User Interface Sounds -->
+    <audio id="clickSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Start.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="hoverSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Select.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="navSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Nav.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="successSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Correct.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="errorSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Incorrect.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="dragSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Drag.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="closeSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Exit.mp3') }}" type="audio/mpeg">
+    </audio>
+
+    <!-- Global Sound Effect Functions -->
+    <script>
+        // Global sound effect functions available to all user pages
+        function playSound(soundId, volume = 0.3) {
+            const audio = document.getElementById(soundId);
+            if (audio) {
+                audio.currentTime = 0;
+                audio.volume = volume;
+                audio.play().catch(e => console.log('Audio play failed:', e));
+            }
+        }
+
+        function playClickSound() {
+            playSound('clickSound', 0.3);
+        }
+
+        function playHoverSound() {
+            playSound('hoverSound', 0.2);
+        }
+
+        function playNavSound() {
+            playSound('navSound', 0.25);
+        }
+
+        function playSuccessSound() {
+            playSound('successSound', 0.3);
+        }
+
+        function playErrorSound() {
+            playSound('errorSound', 0.3);
+        }
+
+        function playDragSound() {
+            playSound('dragSound', 0.25);
+        }
+
+        function playCloseSound() {
+            playSound('closeSound', 0.3);
+        }
+
+        // Auto-attach sound effects to common UI elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click sounds to all buttons (unless they already have custom handlers)
+            document.querySelectorAll('button:not([data-no-sound])').forEach(button => {
+                if (!button.hasAttribute('data-sound-attached')) {
+                    button.addEventListener('click', function(e) {
+                        if (!this.classList.contains('no-sound')) {
+                            playClickSound();
+                        }
+                    });
+                    button.setAttribute('data-sound-attached', 'true');
+                }
+            });
+
+            // Add hover sounds to navigation items
+            document.querySelectorAll('.nav-link, .sidebar a').forEach(link => {
+                if (!link.hasAttribute('data-sound-attached')) {
+                    link.addEventListener('mouseenter', playHoverSound);
+                    link.setAttribute('data-sound-attached', 'true');
+                }
+            });
+
+            // Add sounds to close buttons
+            document.querySelectorAll('[data-dismiss], .close, .btn-close').forEach(closeBtn => {
+                if (!closeBtn.hasAttribute('data-sound-attached')) {
+                    closeBtn.addEventListener('click', playCloseSound);
+                    closeBtn.setAttribute('data-sound-attached', 'true');
+                }
+            });
+        });
+    </script>
+    
     <!-- Enhanced Landscape Optimizations -->
     
     <!-- CRITICAL: Prevent FOUC - Set CSS variables before first paint -->

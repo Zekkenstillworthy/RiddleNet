@@ -444,6 +444,17 @@
 
 {% block content %}
 <div class="challenges-container fade-in">
+    <!-- Audio Elements for Sound Effects -->
+    <audio id="hoverSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Select.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="clickSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Start.mp3') }}" type="audio/mpeg">
+    </audio>
+    <audio id="navSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Nav.mp3') }}" type="audio/mpeg">
+    </audio>
+    
     <!-- Challenges Grid -->
     <div class="challenges-grid">
         <!-- Crimping Challenge -->
@@ -550,6 +561,28 @@
     // View: Badge visual states
     // Presenter: Controls overlay opacity based on progress
 
+    // Sound Effect Functions
+    function playSound(soundId) {
+        const audio = document.getElementById(soundId);
+        if (audio) {
+            audio.currentTime = 0;
+            audio.volume = 0.3; // Set volume to 30% for subtle feedback
+            audio.play().catch(e => console.log('Audio play failed:', e));
+        }
+    }
+
+    function playHoverSound() {
+        playSound('hoverSound');
+    }
+
+    function playClickSound() {
+        playSound('clickSound');
+    }
+
+    function playNavSound() {
+        playSound('navSound');
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const cards = document.querySelectorAll('.challenge-card');
         
@@ -563,6 +596,16 @@
                 card.style.opacity = '1';
                 card.style.transform = 'translateY(0)';
             }, 100 * index);
+
+            // Add hover sound effect
+            card.addEventListener('mouseenter', function() {
+                playHoverSound();
+            });
+
+            // Add click sound effect
+            card.addEventListener('click', function(e) {
+                playClickSound();
+            });
         });
 
         // MVP Presenter: Initialize badge overlay darkness based on progress

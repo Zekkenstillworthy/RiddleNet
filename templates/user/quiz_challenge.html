@@ -2852,4 +2852,127 @@ function retakeQuiz() {
   }
 </script>
 
+<!-- Enhanced Audio Elements for Quiz Challenge -->
+<audio id="clickSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Start.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="selectSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Select.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="correctSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Correct.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="incorrectSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Incorrect.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="navSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Nav.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="closeSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Exit.mp3') }}" type="audio/mpeg">
+</audio>
+<audio id="bgSound" preload="auto">
+  <source src="{{ url_for('static', filename='audio/Bg_sound.mp3') }}" type="audio/mpeg">
+</audio>
+
+<!-- Quiz Sound Management System -->
+<script>
+  // Centralized sound management for Quiz Challenge
+  window.quizSounds = {
+    play: function(soundId, volume = 0.3) {
+      const audio = document.getElementById(soundId);
+      if (audio) {
+        audio.currentTime = 0;
+        audio.volume = volume;
+        audio.play().catch(e => console.log('Audio play failed:', e));
+      }
+    },
+    
+    playClick: function() {
+      this.play('clickSound', 0.3);
+    },
+    
+    playSelect: function() {
+      this.play('selectSound', 0.25);
+    },
+    
+    playCorrect: function() {
+      this.play('correctSound', 0.4);
+    },
+    
+    playIncorrect: function() {
+      this.play('incorrectSound', 0.4);
+    },
+    
+    playNav: function() {
+      this.play('navSound', 0.25);
+    },
+    
+    playClose: function() {
+      this.play('closeSound', 0.3);
+    },
+    
+    startBg: function() {
+      const bgAudio = document.getElementById('bgSound');
+      if (bgAudio) {
+        bgAudio.volume = 0.1;
+        bgAudio.loop = true;
+        bgAudio.play().catch(e => console.log('Background audio failed:', e));
+      }
+    },
+    
+    stopBg: function() {
+      const bgAudio = document.getElementById('bgSound');
+      if (bgAudio) {
+        bgAudio.pause();
+        bgAudio.currentTime = 0;
+      }
+    }
+  };
+
+  // Auto-attach sound effects to quiz elements
+  document.addEventListener('DOMContentLoaded', function() {
+    // Add click sounds to all buttons
+    document.querySelectorAll('button:not([data-no-sound])').forEach(button => {
+      button.addEventListener('click', function() {
+        window.quizSounds.playClick();
+      });
+    });
+
+    // Add hover sounds to quiz options
+    document.querySelectorAll('.option-btn').forEach(option => {
+      option.addEventListener('mouseenter', function() {
+        if (!this.disabled && !answered) {
+          window.quizSounds.playSelect();
+        }
+      });
+    });
+
+    // Add sounds to lifeline buttons
+    document.querySelectorAll('.lifeline-btn').forEach(btn => {
+      btn.addEventListener('mouseenter', function() {
+        if (!this.disabled) {
+          window.quizSounds.playSelect();
+        }
+      });
+    });
+  });
+
+  // Integrate sounds into existing quiz functions
+  // Override selectAnswer to add sound feedback
+  const originalSelectAnswer = window.selectAnswer;
+  if (typeof originalSelectAnswer === 'function') {
+    window.selectAnswer = function(selectedIndex) {
+      // Play sound before executing original function
+      const correctIndex = quizQuestions[currentQuestion].correct;
+      if (selectedIndex === correctIndex) {
+        window.quizSounds.playCorrect();
+      } else {
+        window.quizSounds.playIncorrect();
+      }
+      return originalSelectAnswer(selectedIndex);
+    };
+  }
+</script>
+
 {% endblock %}
