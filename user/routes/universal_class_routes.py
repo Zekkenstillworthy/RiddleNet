@@ -860,7 +860,6 @@ def api_get_assignment(assignment_id):
             'due_date_iso': assignment.due_date.isoformat() if assignment.due_date else None,
             'points': assignment.points,
             'assignment_type': assignment.assignment_type,
-            'category': assignment.category,
             'allow_file_uploads': assignment.allow_file_uploads,
             'allowed_file_types': assignment.allowed_file_types,
             'max_file_size_mb': assignment.max_file_size_mb,

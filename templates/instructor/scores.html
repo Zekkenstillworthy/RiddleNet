@@ -235,6 +235,139 @@
             filter: drop-shadow(0 0 10px var(--cyber-glow));
         }
         
+        /* Summary Overview Cards */
+        .summary-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 10px 0;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 217, 255, 0.15);
+            border-color: var(--cyber-glow);
+        }
+        
+        .summary-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--accent-color), var(--network-purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .summary-content {
+            flex: 1;
+        }
+        
+        .summary-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .summary-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Compact Stats Grid for Top 5 */
+        .stats-grid-compact {
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        
+        .stats-grid-compact .stat-card {
+            padding: 15px 10px;
+        }
+        
+        .stats-grid-compact .stat-card h3 {
+            font-size: 0.75rem;
+        }
+        
+        /* Expandable Section */
+        .expandable-section {
+            margin-top: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .expand-toggle {
+            width: 100%;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15));
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 15px 20px;
+            color: var(--cyber-glow);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .expand-toggle:hover {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(139, 92, 246, 0.25));
+            border-color: var(--cyber-glow);
+            box-shadow: 0 4px 16px rgba(0, 217, 255, 0.2);
+        }
+        
+        .expand-toggle i {
+            transition: transform 0.3s ease;
+        }
+        
+        .expand-toggle.active i {
+            transform: rotate(180deg);
+        }
+        
+        .expandable-content {
+            margin-top: 15px;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .top-categories-section {
+            margin-top: 20px;
+        }
+        
         /* Modern Table Design with Cyber Theme */
         .data-table {
             background: var(--glass-bg);
@@ -921,9 +1054,35 @@
                 font-size: 0.95rem;
             }
             
+            .summary-overview {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .summary-card {
+                padding: 15px 10px;
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .summary-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+            
+            .summary-value {
+                font-size: 1.4rem;
+            }
+            
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 2px;
+            }
+            
+            .stats-grid-compact {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
             }
             
             .stat-card {
@@ -940,6 +1099,11 @@
             
             .stat-card .stat-subtitle {
                 font-size: 0.45rem;
+            }
+            
+            .expand-toggle {
+                font-size: 0.85rem;
+                padding: 12px 15px;
             }
             
             .filter-controls {
@@ -1166,21 +1330,102 @@
                             </div>
                         </div>
                         
-                        <!-- Performance Statistics Grid -->
-                        <div class="stats-grid">
-                            {% for stat in category_stats %}
-                                <div class="stat-card">
-                                    <div class="stat-icon">
-                                        <i class="fas fa-{% if stat.category == 'subnetting' %}network-wired{% elif stat.category == 'topology' %}project-diagram{% elif stat.category == 'troubleshooting' %}bug{% else %}chart-bar{% endif %}"></i>
-                                    </div>
-                                    <h3>{{ stat.category|capitalize }}</h3>
-                                    <div class="stat-value">{{ stat.count }}</div>
-                                    <div class="stat-subtitle">
-                                        Avg: {{ "%.1f"|format(stat.avg_score) }} | 
-                                        Peak: {{ stat.max_score }}
+                        <!-- Summary Overview Cards -->
+                        <div class="summary-overview">
+                            <div class="summary-card">
+                                <div class="summary-icon">
+                                    <i class="fas fa-tasks"></i>
+                                </div>
+                                <div class="summary-content">
+                                    <div class="summary-label">Total Categories</div>
+                                    <div class="summary-value">{{ category_stats|length }}</div>
+                                </div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="summary-content">
+                                    <div class="summary-label">Average Score</div>
+                                    <div class="summary-value">
+                                        {% set total_avg = category_stats|map(attribute='avg_score')|sum / category_stats|length if category_stats|length > 0 else 0 %}
+                                        {{ "%.1f"|format(total_avg) }}%
                                     </div>
                                 </div>
-                            {% endfor %}
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-icon">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <div class="summary-content">
+                                    <div class="summary-label">Highest Peak</div>
+                                    <div class="summary-value">
+                                        {% set max_peak = category_stats|map(attribute='max_score')|max if category_stats|length > 0 else 0 %}
+                                        {{ max_peak }}%
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-icon">
+                                    <i class="fas fa-fire"></i>
+                                </div>
+                                <div class="summary-content">
+                                    <div class="summary-label">Most Active</div>
+                                    <div class="summary-value">
+                                        {% set most_active = category_stats|sort(attribute='count', reverse=true)|first if category_stats|length > 0 else None %}
+                                        {{ most_active.category[:8]|upper if most_active else 'N/A' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Top 5 Categories -->
+                        <div class="top-categories-section">
+                            <h4 style="color: var(--cyber-glow); margin: 20px 0 15px 0; font-size: 1.1rem;">
+                                <i class="fas fa-star"></i> Top 5 Most Active Categories
+                            </h4>
+                            <div class="stats-grid stats-grid-compact">
+                                {% set top_categories = category_stats|sort(attribute='count', reverse=true) %}
+                                {% for stat in top_categories[:5] %}
+                                    <div class="stat-card">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-{% if stat.category == 'subnetting' %}network-wired{% elif stat.category == 'topology' %}project-diagram{% elif stat.category == 'troubleshooting' %}bug{% else %}chart-bar{% endif %}"></i>
+                                        </div>
+                                        <h3>{{ stat.category|replace('_', ' ')|replace('-', ' ')|upper }}</h3>
+                                        <div class="stat-value">{{ stat.count }}</div>
+                                        <div class="stat-subtitle">
+                                            Avg: {{ "%.1f"|format(stat.avg_score) }} | 
+                                            Peak: {{ stat.max_score }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Expandable All Categories Section -->
+                        <div class="expandable-section">
+                            <button class="expand-toggle" id="toggleAllCategories" onclick="playClickSound()">
+                                <i class="fas fa-chevron-down"></i>
+                                <span>View All {{ category_stats|length }} Categories</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="expandable-content" id="allCategoriesContent" style="display: none;">
+                                <div class="stats-grid">
+                                    {% for stat in category_stats|sort(attribute='category') %}
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-{% if stat.category == 'subnetting' %}network-wired{% elif stat.category == 'topology' %}project-diagram{% elif stat.category == 'troubleshooting' %}bug{% else %}chart-bar{% endif %}"></i>
+                                            </div>
+                                            <h3>{{ stat.category|replace('_', ' ')|replace('-', ' ')|upper }}</h3>
+                                            <div class="stat-value">{{ stat.count }}</div>
+                                            <div class="stat-subtitle">
+                                                Avg: {{ "%.1f"|format(stat.avg_score) }} | 
+                                                Peak: {{ stat.max_score }}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="section-header">
@@ -1283,6 +1528,28 @@
                 clickSound.play();
             }
         }
+        
+        // Toggle All Categories Expandable Section
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('toggleAllCategories');
+            const content = document.getElementById('allCategoriesContent');
+            
+            if (toggleBtn && content) {
+                toggleBtn.addEventListener('click', function() {
+                    const isVisible = content.style.display === 'block';
+                    
+                    if (isVisible) {
+                        content.style.display = 'none';
+                        toggleBtn.classList.remove('active');
+                        toggleBtn.querySelector('span').textContent = 'View All ' + (toggleBtn.querySelector('span').textContent.match(/\d+/) || [''])[0] + ' Categories';
+                    } else {
+                        content.style.display = 'block';
+                        toggleBtn.classList.add('active');
+                        toggleBtn.querySelector('span').textContent = 'Hide All Categories';
+                    }
+                });
+            }
+        });
 
         // Initialize DataTables with pagination
         function initDataTables() {

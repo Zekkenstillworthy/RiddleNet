@@ -670,6 +670,47 @@ def class_content_manager():
             enrolled_students = selected_class.students.all() if selected_class.students else []
             student_count = len(enrolled_students)
                 
+            # Build enriched module data including attached Quiz
+            modules_data = []
+            for module_item in class_modules:
+                if hasattr(module_item, 'to_dict'):
+                    module_dict = module_item.to_dict(include_lessons=True)
+                else:
+                    module_dict = {
+                        'id': module_item.id,
+                        'title': module_item.title,
+                        'description': module_item.description,
+                        'module_number': getattr(module_item, 'module_number', ''),
+                        'order_index': getattr(module_item, 'order_index', 0),
+                        'is_published': getattr(module_item, 'is_published', False),
+                        'is_active': getattr(module_item, 'is_active', True),
+                        'objectives': getattr(module_item, 'objectives', []),
+                        'content': getattr(module_item, 'content', ''),
+                        'estimated_duration': getattr(module_item, 'estimated_duration', 60),
+                        'level': getattr(module_item, 'level', 'Beginner'),
+                        'lessons': [lesson.to_dict() for lesson in getattr(module_item, 'lessons', []) if getattr(lesson, 'is_active', True)]
+                    }
+
+                module_question_groups = []
+                if hasattr(module_item, 'question_groups') and module_item.question_groups is not None:
+                    try:
+                        module_qgs = module_item.question_groups.all()
+                    except Exception:
+                        module_qgs = list(getattr(module_item, 'question_groups', []) or [])
+                else:
+                    module_qgs = []
+
+                for qg in module_qgs:
+                    module_question_groups.append({
+                        'id': qg.id,
+                        'name': getattr(qg, 'name', None),
+                        'description': getattr(qg, 'description', None),
+                        'question_count': len(qg.questions) if hasattr(qg, 'questions') and qg.questions else 0
+                    })
+
+                module_dict['question_groups'] = module_question_groups
+                modules_data.append(module_dict)
+
             # Build comprehensive class content dictionary
             class_content = {
                 'simulations': [sim.to_dict() if hasattr(sim, 'to_dict') else {
@@ -677,25 +718,26 @@ def class_content_manager():
                     'title': sim.title,
                     'description': sim.description
                 } for sim in class_simulations],
-                'question_groups': [qg.to_dict() if hasattr(qg, 'to_dict') else {
-                    'id': qg.id,
-                    'title': qg.title,
-                    'description': qg.description
-                } for qg in question_groups],
-                'modules': [module_item.to_dict(include_lessons=True) if hasattr(module_item, 'to_dict') else {
-                    'id': module_item.id,
-                    'title': module_item.title,
-                    'description': module_item.description,
-                    'module_number': getattr(module_item, 'module_number', ''),
-                    'order_index': getattr(module_item, 'order_index', 0),
-                    'is_published': getattr(module_item, 'is_published', False),
-                    'is_active': getattr(module_item, 'is_active', True),
-                    'objectives': getattr(module_item, 'objectives', []),
-                    'content': getattr(module_item, 'content', ''),
-                    'estimated_duration': getattr(module_item, 'estimated_duration', 60),
-                    'level': getattr(module_item, 'level', 'Beginner'),
-                    'lessons': [lesson.to_dict() for lesson in getattr(module_item, 'lessons', []) if getattr(lesson, 'is_active', True)]
-                } for module_item in class_modules],
+                'question_groups': [
+                    {
+                        **(qg.to_dict() if hasattr(qg, 'to_dict') else {
+                            'id': qg.id,
+                            'name': getattr(qg, 'name', None),
+                            'description': getattr(qg, 'description', None),
+                            'question_count': len(qg.questions) if hasattr(qg, 'questions') else 0
+                        }),
+                        'assigned_module_ids': (
+                            [module.id for module in qg.modules.filter_by(class_id=selected_class.id).all()]
+                            if hasattr(qg, 'modules') and hasattr(qg.modules, 'filter_by')
+                            else [
+                                module.id for module in getattr(qg, 'modules', [])
+                                if getattr(module, 'class_id', None) == selected_class.id
+                            ]
+                        )
+                    }
+                    for qg in question_groups
+                ],
+                'modules': modules_data,
                 'announcements': [ann.to_dict() if hasattr(ann, 'to_dict') else {
                     'id': ann.id,
                     'title': ann.title,

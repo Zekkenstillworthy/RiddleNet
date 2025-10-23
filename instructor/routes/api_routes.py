@@ -9,6 +9,7 @@ import string
 from datetime import datetime
 from utils.permission_decorators import teacher_required
 from utils.route_guards import instructor_required
+from utils.auth_decorators import api_instructor_required
 
 api_bp = Blueprint('instructor_api', __name__, url_prefix='/instructor/api')
 
@@ -19,11 +20,20 @@ def instructor_api_write_guard():
     if request.method in ('GET', 'HEAD', 'OPTIONS'):
         return None
     # For mutating methods, enforce teacher/instructor access
+    print(f"🔐 API write guard: {request.method} {request.path}")
+    print(f"👤 Current user: {current_user}, authenticated: {current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False}")
+    print(f"🔑 Session namespace: {session.get('auth_namespace')}")
+    print(f"📋 User role: {getattr(current_user, 'role', None)}")
     # The decorator returns a Flask response on failure; emulate that here
     @teacher_required
     def _noop():
         return None
-    return _noop()
+    result = _noop()
+    if result:
+        print(f"❌ Auth check failed: {result}")
+    else:
+        print(f"✅ Auth check passed")
+    return result
 
 @api_bp.route('/deadlines/<int:class_id>', methods=['GET'])
 def get_deadlines(class_id):
@@ -1059,7 +1069,7 @@ def download_collaboration_file(file_id):
         }), 500
 
 @api_bp.route('/grades/<int:class_id>', methods=['GET'])
-@instructor_required
+@api_instructor_required
 def get_class_grades(class_id):
     """Get comprehensive grade data for a class"""
     try:
@@ -1902,12 +1912,26 @@ def get_class_question_groups(class_id):
         
         question_groups_data = []
         for qg in question_groups:
+            assigned_module_ids = []
+            if hasattr(qg, 'modules'):
+                try:
+                    assigned_module_ids = [
+                        module.id for module in qg.modules.filter_by(class_id=class_id).all()
+                    ]
+                except Exception:
+                    # Fallback for non-dynamic relationships
+                    assigned_module_ids = [
+                        module.id for module in getattr(qg, 'modules', [])
+                        if getattr(module, 'class_id', None) == class_id
+                    ]
+
             question_groups_data.append({
                 'id': qg.id,
                 'name': qg.name,
                 'description': qg.description,
                 'question_count': len(qg.questions) if hasattr(qg, 'questions') else 0,
-                'is_active': getattr(qg, 'is_active', True)
+                'is_active': getattr(qg, 'is_active', True),
+                'assigned_module_ids': assigned_module_ids
             })
         
         return jsonify({
@@ -1967,7 +1991,7 @@ def get_class_simulations(class_id):
         }), 500
 
 @api_bp.route('/modules/<int:module_id>/content', methods=['GET'])
-@instructor_required
+@api_instructor_required
 def get_module_content(module_id):
     """Get content assigned to a module (simulations, assignments, Quiz).
 
@@ -1976,6 +2000,9 @@ def get_module_content(module_id):
     class), return a 200 with an empty content payload so the UI can render an empty
     state gracefully.
     """
+    print(f"\n{'='*80}")
+    print(f"🔍 [GET_MODULE_CONTENT] CALLED FOR MODULE_ID={module_id}")
+    print(f"{'='*80}")
     try:
         from instructor.models.module import Module
         from instructor.models.simulation_assignment import SimulationAssignment
@@ -2066,6 +2093,8 @@ def get_module_content(module_id):
 @api_bp.route('/modules/<int:module_id>/assign-simulation', methods=['POST'])
 def assign_simulation_to_module(module_id):
     """Assign a simulation to a module"""
+    print(f"\n🎯 assign_simulation_to_module called for module_id={module_id}")
+    print(f"👤 User: {current_user}, authenticated: {current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False}")
     try:
         from instructor.models.module import Module
         from instructor.models.simulation import Simulation
@@ -2073,17 +2102,24 @@ def assign_simulation_to_module(module_id):
         from datetime import datetime, timedelta
         
         data = request.get_json()
+        print(f"📋 Request data: {data}")
         simulation_id = data.get('simulation_id')
         due_date_str = data.get('due_date')
         
         if not simulation_id:
+            print(f"❌ No simulation_id provided")
             return jsonify({
                 'success': False,
                 'error': 'Simulation ID is required'
             }), 400
             
+        print(f"🔍 Looking up module {module_id}...")
         module = Module.query.get_or_404(module_id)
+        print(f"✅ Module found: {module.title} (class_id={module.class_id})")
+        
+        print(f"🔍 Looking up simulation {simulation_id}...")
         simulation = Simulation.query.get_or_404(simulation_id)
+        print(f"✅ Simulation found: {simulation.title}")
         
         # Parse due date
         due_date = None
@@ -2094,23 +2130,75 @@ def assign_simulation_to_module(module_id):
                 # Fallback: set due date to 7 days from now
                 due_date = datetime.utcnow() + timedelta(days=7)
         
-        # Check if assignment already exists
+        # Check if an active assignment for this module already exists
+        print(f"🔍 Checking for existing assignment...")
         existing_assignment = SimulationAssignment.query.filter_by(
             simulation_id=simulation_id,
             module_id=module_id,
-            class_id=module.class_id
+            class_id=module.class_id,
+            is_active=True
         ).first()
-        
+
         if existing_assignment:
-            # Idempotent success: already assigned
+            # Idempotent success: already assigned and active
+            print(f"ℹ️ Assignment already exists and is active (id={existing_assignment.id})")
             return jsonify({
                 'success': True,
                 'message': f'Simulation "{simulation.title}" is already assigned to module "{module.title}"',
                 'alreadyAssigned': True,
                 'assignment_id': existing_assignment.id
             }), 200
+
+        # Reactivate a previously linked assignment if one exists but is inactive
+        inactive_assignment = SimulationAssignment.query.filter_by(
+            simulation_id=simulation_id,
+            module_id=module_id,
+            class_id=module.class_id,
+            is_active=False
+        ).first()
+
+        if inactive_assignment:
+            print(f"♻️ Reactivating inactive assignment (id={inactive_assignment.id})")
+            inactive_assignment.is_active = True
+            inactive_assignment.is_published = True
+            inactive_assignment.assignment_type = 'module'
+            inactive_assignment.due_date = due_date
+            inactive_assignment.assigned_date = datetime.utcnow()
+            db.session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': f'Simulation "{simulation.title}" reassigned to module "{module.title}"',
+                'assignment_id': inactive_assignment.id,
+                'reactivated': True
+            }), 200
+
+        # Repurpose a class-level assignment (module_id None) if available
+        orphan_assignment = SimulationAssignment.query.filter_by(
+            simulation_id=simulation_id,
+            class_id=module.class_id,
+            module_id=None,
+            is_active=True
+        ).first()
+
+        if orphan_assignment:
+            print(f"🛠️ Repurposing class-level assignment (id={orphan_assignment.id}) for module {module_id}")
+            orphan_assignment.module_id = module_id
+            orphan_assignment.assignment_type = 'module'
+            orphan_assignment.due_date = due_date
+            orphan_assignment.assigned_date = datetime.utcnow()
+            orphan_assignment.is_published = True
+            db.session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': f'Simulation "{simulation.title}" assigned to module "{module.title}"',
+                'assignment_id': orphan_assignment.id,
+                'repurposed': True
+            }), 200
         
         # Create new assignment
+        print(f"🆕 Creating new simulation assignment...")
         assignment = SimulationAssignment(
             title=f"{simulation.title} - {module.title}",
             description=f"Simulation assignment for {module.title}",
@@ -2125,7 +2213,9 @@ def assign_simulation_to_module(module_id):
         )
         
         db.session.add(assignment)
+        print(f"💾 Committing to database...")
         db.session.commit()
+        print(f"✅ Assignment created successfully (id={assignment.id})")
         
         # Emit WebSocket event to users viewing this module
         try:
@@ -2154,6 +2244,9 @@ def assign_simulation_to_module(module_id):
         })
         
     except Exception as e:
+        print(f"❌ Error in assign_simulation_to_module: {e}")
+        import traceback
+        traceback.print_exc()
         db.session.rollback()
         return jsonify({
             'success': False,

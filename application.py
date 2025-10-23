@@ -160,6 +160,7 @@ def register_blueprints():
         ('instructor.controllers.tutorial_controller', 'tutorial_bp', None),
         ('instructor.controllers.rubric_controller', 'rubric_bp', None),
         ('instructor.controllers.admin_settings_controller', 'admin_settings_bp', None),
+        ('instructor.controllers.deadline_controller', 'deadline_controller_bp', None),
         ('instructor.routes.api_routes', 'api_bp', None),
         ('instructor.routes.topology_routes', 'topology_bp', None),
         ('instructor.routes.topology_api_routes', 'topology_api_bp', None),

@@ -1669,42 +1669,7 @@ html {
             </div>
         </div>
 
-        <!-- Description -->
-        {% if lesson.description %}
-        <div class="lesson-description">
-            {{ lesson.description }}
-        </div>
-        {% endif %}
-
-        <!-- Learning Objectives -->
-        {% if lesson.learning_objectives %}
-        <div class="content-section">
-            <h3 class="section-title">
-                <i class="fas fa-bullseye"></i>
-                Learning Objectives
-            </h3>
-            <ul class="objectives-list">
-                {% for objective in lesson.learning_objectives %}
-                <li>{{ objective }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-
-        <!-- Key Concepts -->
-        {% if lesson.key_concepts %}
-        <div class="content-section">
-            <h3 class="section-title">
-                <i class="fas fa-key"></i>
-                Key Concepts
-            </h3>
-            <ul class="concepts-list">
-                {% for concept in lesson.key_concepts %}
-                <li>{{ concept }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
+        
 
 
 
@@ -1767,82 +1732,6 @@ html {
                 </div>
             </div>
         </div>
-
-                <!-- No Questions Modal -->
-                <div class="questions-modal" id="noQuestionsModal" style="display: none;">
-                    <div class="questions-modal-content" style="max-width: 560px;">
-                        <div class="questions-modal-header">
-                            <h2 style="margin: 0; color: var(--text-primary); font-size: 1.15rem;">
-                                <i class="fas fa-info-circle" style="color: var(--warning-color); margin-right: 10px;"></i>
-                                No Questions Available
-                            </h2>
-                            <span class="questions-modal-close" onclick="closeNoQuestionsModal()">&times;</span>
-                        </div>
-                        <div class="questions-modal-body">
-                            <div style="text-align: center; padding: 16px 8px;">
-                                <i class="fas fa-question-circle" style="font-size: 2.2rem; margin-bottom: 12px; color: var(--text-secondary);"></i>
-                                <p id="no-questions-text" style="color: var(--text-secondary); font-size: 0.98rem; margin: 0 0 16px 0;">
-                                    There are currently no questions assigned to this module.
-                                </p>
-                                <button class="quick-action-btn" onclick="closeNoQuestionsModal()" style="min-width: 140px;">
-                                    <i class="fas fa-check"></i>
-                                    <span>OK</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-    
-                    <!-- Click outside to close -->
-                    <script>
-                    function openNoQuestionsModal(moduleTitle) {
-                        console.log('🚫 openNoQuestionsModal() called with moduleTitle:', moduleTitle);
-                        const modal = document.getElementById('noQuestionsModal');
-                        const text = document.getElementById('no-questions-text');
-                        
-                        console.log('🔍 No questions modal elements:', {
-                            modal: modal ? 'Found' : 'Missing',
-                            text: text ? 'Found' : 'Missing'
-                        });
-                        
-                        if (text && moduleTitle) {
-                            const newText = `There are currently no questions assigned to <strong>${moduleTitle}</strong> module.`;
-                            console.log('📝 Setting no questions text:', newText);
-                            text.innerHTML = newText;
-                        }
-                        if (modal) {
-                            console.log('🎪 Showing no questions modal');
-                            modal.style.display = 'flex';
-                            document.body.style.overflow = 'hidden';
-                        } else {
-                            console.error('❌ No questions modal element not found!');
-                        }
-                    }
-                    function closeNoQuestionsModal() {
-                        console.log('🔒 closeNoQuestionsModal() called');
-                        const modal = document.getElementById('noQuestionsModal');
-                        if (modal) {
-                            console.log('✅ Closing no questions modal');
-                            modal.style.display = 'none';
-                            document.body.style.overflow = 'auto';
-                        } else {
-                            console.warn('⚠️ No questions modal not found for closing');
-                        }
-                        const questionsToggle = document.getElementById('questions-toggle');
-                        if (questionsToggle) {
-                            console.log('🔄 Removing active state from questions toggle');
-                            questionsToggle.classList.remove('active');
-                        }
-                    }
-                    // Outside click handler
-                    window.addEventListener('click', function(e) {
-                        const modal = document.getElementById('noQuestionsModal');
-                        if (e.target === modal) {
-                            closeNoQuestionsModal();
-                        }
-                    });
-                    </script>
-    
-                </div>
         {% endif %}
     </div>
     {% else %}
@@ -2967,5 +2856,82 @@ async function safeJson(res) {
         </div>
     </div>
 </div>
+
+<!-- No Questions Modal -->
+<div class="questions-modal" id="noQuestionsModal" style="display: none;">
+    <div class="questions-modal-content" style="max-width: 560px;">
+        <div class="questions-modal-header">
+            <h2 style="margin: 0; color: var(--text-primary); font-size: 1.15rem;">
+                <i class="fas fa-info-circle" style="color: var(--warning-color); margin-right: 10px;"></i>
+                No Questions Available
+            </h2>
+            <span class="questions-modal-close" onclick="closeNoQuestionsModal()">&times;</span>
+        </div>
+        <div class="questions-modal-body">
+            <div style="text-align: center; padding: 16px 8px;">
+                <i class="fas fa-question-circle" style="font-size: 2.2rem; margin-bottom: 12px; color: var(--text-secondary);"></i>
+                <p id="no-questions-text" style="color: var(--text-secondary); font-size: 0.98rem; margin: 0 0 16px 0;">
+                    There are currently no questions assigned to this module.
+                </p>
+                <button class="quick-action-btn" onclick="closeNoQuestionsModal()" style="min-width: 140px;">
+                    <i class="fas fa-check"></i>
+                    <span>OK</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// No Questions Modal Functions
+function openNoQuestionsModal(moduleTitle) {
+    console.log('🚫 openNoQuestionsModal() called with moduleTitle:', moduleTitle);
+    const modal = document.getElementById('noQuestionsModal');
+    const text = document.getElementById('no-questions-text');
+    
+    console.log('🔍 No questions modal elements:', {
+        modal: modal ? 'Found' : 'Missing',
+        text: text ? 'Found' : 'Missing'
+    });
+    
+    if (text && moduleTitle) {
+        const newText = `There are currently no questions assigned to <strong>${moduleTitle}</strong> module.`;
+        console.log('📝 Setting no questions text:', newText);
+        text.innerHTML = newText;
+    }
+    if (modal) {
+        console.log('🎪 Showing no questions modal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    } else {
+        console.error('❌ No questions modal element not found!');
+    }
+}
+
+function closeNoQuestionsModal() {
+    console.log('🔒 closeNoQuestionsModal() called');
+    const modal = document.getElementById('noQuestionsModal');
+    if (modal) {
+        console.log('✅ Closing no questions modal');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    } else {
+        console.warn('⚠️ No questions modal not found for closing');
+    }
+    const questionsToggle = document.getElementById('questions-toggle');
+    if (questionsToggle) {
+        console.log('🔄 Removing active state from questions toggle');
+        questionsToggle.classList.remove('active');
+    }
+}
+
+// Outside click handler for noQuestionsModal
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('noQuestionsModal');
+    if (e.target === modal) {
+        closeNoQuestionsModal();
+    }
+});
+</script>
 
 {% endblock %}

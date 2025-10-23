@@ -9889,7 +9889,10 @@ function loadModuleAvailableSimulations() {
             const container = document.getElementById('available-simulations');
             if (!container) return;
             if (data.success && data.simulations && data.simulations.length > 0) {
-                container.innerHTML = data.simulations.map(sim => `
+                const availableSimulations = data.simulations.filter(sim => !sim.module_id);
+
+                if (availableSimulations.length > 0) {
+                    container.innerHTML = availableSimulations.map(sim => `
                     <div class="content-item-selectable" onclick="assignSimulationToModule(${sim.id})">
                         <div class="content-item-info">
                             <h4>${sim.title}</h4>
@@ -9905,6 +9908,14 @@ function loadModuleAvailableSimulations() {
                         </button>
                     </div>
                 `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state-small">
+                            <i class="fas fa-desktop"></i>
+                            <p>No unassigned simulations available</p>
+                        </div>
+                    `;
+                }
             } else {
                 container.innerHTML = `
                     <div class="empty-state-small">
@@ -10003,39 +10014,61 @@ function loadModuleAvailableQuestionGroups() {
         .then(data => {
             const container = document.getElementById('available-question-groups');
             if (!container) return;
-            if (data.success && data.question_groups && data.question_groups.length > 0) {
-                container.innerHTML = data.question_groups.map(qg => `
-                    <div class="content-item-selectable" onclick="assignQuestionGroupToModule(${qg.id})">
-                        <div class="content-item-info">
-                            <h4>${qg.name}</h4>
-                            <p>${qg.description || 'No description'}</p>
-                            <div class="content-meta">
-                                <span><i class="fas fa-question"></i> ${qg.question_count} questions</span>
+
+            if (data.success) {
+                const questionGroups = Array.isArray(data.question_groups) ? data.question_groups : [];
+                const moduleId = Number(window.currentAssignmentModule || 0);
+                const availableQuestionGroups = questionGroups.filter(qg => {
+                    if (!Array.isArray(qg.assigned_module_ids)) {
+                        return true;
+                    }
+                    if (!moduleId) {
+                        return qg.assigned_module_ids.length === 0;
+                    }
+                    return !qg.assigned_module_ids.includes(moduleId);
+                });
+
+                if (availableQuestionGroups.length > 0) {
+                    container.innerHTML = availableQuestionGroups.map(qg => `
+                        <div class="content-item-selectable" onclick="assignQuestionGroupToModule(${qg.id})">
+                            <div class="content-item-info">
+                                <h4>${qg.name}</h4>
+                                <p>${qg.description || 'No description'}</p>
+                                <div class="content-meta">
+                                    <span><i class="fas fa-question"></i> ${qg.question_count} questions</span>
+                                </div>
                             </div>
+                            <button class="assign-btn">
+                                <i class="fas fa-plus"></i>
+                                Assign
+                            </button>
                         </div>
-                        <button class="assign-btn">
-                            <i class="fas fa-plus"></i>
-                            Assign
-                        </button>
-                    </div>
-                `).join('');
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state-small">
+                            <i class="fas fa-question-circle"></i>
+                            <p>No additional quizzes available for this module</p>
+                        </div>
+                    `;
+                }
             } else {
                 container.innerHTML = `
                     <div class="empty-state-small">
                         <i class="fas fa-question-circle"></i>
-                        <p>No Quiz available</p>
+                        <p>No quizzes available</p>
                     </div>
                 `;
             }
         })
         .catch(error => {
-            console.error('Error loading Quiz:', error);
+            console.error('Error loading quizzes:', error);
             const container = document.getElementById('available-question-groups');
             if (!container) return;
             container.innerHTML = `
                 <div class="error-state-small">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>Error loading Quiz</p>
+                    <p>Error loading quizzes</p>
                 </div>
             `;
         });
@@ -10143,8 +10176,10 @@ function assignQuestionGroupToModule(questionGroupId) {
     window._assignQGInFlight.add(key);
 
     console.log('📤 Assigning Quiz to module:', { moduleId, questionGroupId });
+    console.log('🔗 Full URL:', `/instructor/api/modules/${moduleId}/assign-question-group`);
     (async function assignQG() {
         try {
+            console.log('🚀 Starting fetch request...');
             const response = await fetch(`/instructor/api/modules/${moduleId}/assign-question-group`, {
                 method: 'POST',
                 headers: {
@@ -10154,14 +10189,23 @@ function assignQuestionGroupToModule(questionGroupId) {
                     question_group_id: questionGroupId
                 })
             });
+            console.log('📥 Response received:', { 
+                status: response.status, 
+                statusText: response.statusText,
+                ok: response.ok,
+                headers: Array.from(response.headers.entries())
+            });
             const ct = response.headers.get('content-type') || '';
             const isJSON = ct.includes('application/json');
+            console.log('📋 Content-Type:', ct, 'isJSON:', isJSON);
             const payload = isJSON ? await response.json() : { success: false, error: `Unexpected content-type: ${ct}` };
+            console.log('📦 Payload:', payload);
             if (!response.ok) {
                 console.error('❌ Assign Quiz failed:', response.status, response.statusText, payload);
                 throw new Error(payload.error || `HTTP ${response.status}`);
             }
             if (payload.success) {
+                console.log('✅ Assignment successful!');
                 moduleBuilder.showToast(payload.message, 'success');
                 closeModuleAssignmentModal();
                 loadModuleContent(moduleId); // Refresh module content
@@ -10171,8 +10215,10 @@ function assignQuestionGroupToModule(questionGroupId) {
             }
         } catch (error) {
             console.error('❌ Error assigning Quiz:', error);
+            console.error('❌ Error stack:', error.stack);
             moduleBuilder.showToast(error.message || 'Failed to assign Quiz', 'error');
         } finally {
+            console.log('🏁 Cleaning up in-flight flag');
             window._assignQGInFlight.delete(key);
         }
     })();
@@ -11167,6 +11213,11 @@ function exportGrades() {
 
 // DEADLINES TAB FUNCTIONALITY
 let deadlineData = null;
+const grantExtensionState = {
+    assignmentMap: new Map(),
+    formInitialized: false,
+    currentAssignmentId: null
+};
 
 function showDeadlines() {
     console.log('Loading deadlines data (called via switchTab)');
@@ -11420,9 +11471,295 @@ function exportDeadlineReport() {
     moduleBuilder.showToast('Downloading deadline report...', 'success');
 }
 
-function grantExtension() {
-    // Show extension grant modal
-    alert('Extension granting modal will be implemented');
+function ensureGrantExtensionFormSetup() {
+    if (grantExtensionState.formInitialized) {
+        return;
+    }
+
+    grantExtensionState.formInitialized = true;
+
+    const hoursInput = document.getElementById('extensionHours');
+    const assignmentSelect = document.getElementById('extensionAssignment');
+    const waivePenaltyCheckbox = document.getElementById('waiveLatePenalty');
+    const customPenaltyInput = document.getElementById('customPenaltyRate');
+    const form = document.getElementById('grantExtensionForm');
+
+    if (assignmentSelect) {
+        assignmentSelect.addEventListener('change', () => {
+            grantExtensionState.currentAssignmentId = assignmentSelect.value || null;
+            updateExtensionNewDueDate();
+        });
+    }
+
+    if (hoursInput) {
+        hoursInput.addEventListener('input', updateExtensionNewDueDate);
+    }
+
+    if (waivePenaltyCheckbox && customPenaltyInput) {
+        waivePenaltyCheckbox.addEventListener('change', event => {
+            customPenaltyInput.disabled = event.target.checked;
+            if (event.target.checked) {
+                customPenaltyInput.value = '';
+            }
+        });
+    }
+
+    if (form) {
+        form.addEventListener('reset', () => {
+            grantExtensionState.currentAssignmentId = null;
+            const newDueDateInput = document.getElementById('extensionNewDueDate');
+            if (newDueDateInput) {
+                newDueDateInput.value = '';
+            }
+            if (customPenaltyInput) {
+                customPenaltyInput.disabled = false;
+            }
+        });
+    }
+}
+
+function resetGrantExtensionFormState() {
+    const form = document.getElementById('grantExtensionForm');
+    if (form) {
+        form.reset();
+    }
+
+    const studentSelect = document.getElementById('extensionStudent');
+    if (studentSelect) {
+        studentSelect.innerHTML = '<option value="">Select a student...</option>';
+        studentSelect.disabled = false;
+    }
+
+    const assignmentSelect = document.getElementById('extensionAssignment');
+    if (assignmentSelect) {
+        assignmentSelect.innerHTML = '<option value="">Select an assignment...</option>';
+        assignmentSelect.disabled = false;
+    }
+
+    const newDueDateInput = document.getElementById('extensionNewDueDate');
+    if (newDueDateInput) {
+        newDueDateInput.value = '';
+    }
+
+    const customPenaltyInput = document.getElementById('customPenaltyRate');
+    if (customPenaltyInput) {
+        customPenaltyInput.disabled = false;
+    }
+
+    grantExtensionState.assignmentMap.clear();
+    grantExtensionState.currentAssignmentId = null;
+}
+
+function populateGrantExtensionStudents(selectedStudentId) {
+    const studentSelect = document.getElementById('extensionStudent');
+    if (!studentSelect) {
+        return;
+    }
+
+    const students = moduleBuilder?.classContent?.students || [];
+    studentSelect.innerHTML = '<option value="">Select a student...</option>';
+
+    if (!students.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No enrolled students available';
+        option.disabled = true;
+        studentSelect.appendChild(option);
+        studentSelect.disabled = true;
+        return;
+    }
+
+    const sortKey = student => {
+        const last = (student.last_name || '').toLowerCase();
+        const first = (student.first_name || '').toLowerCase();
+        const username = (student.username || '').toLowerCase();
+        return `${last} ${first} ${username}`.trim();
+    };
+
+    const sortedStudents = [...students].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+
+    sortedStudents.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        const displayName = `${student.first_name || ''} ${student.last_name || ''}`.trim() || student.username || `Student ${student.id}`;
+        option.textContent = displayName;
+        option.dataset.email = student.email || '';
+        studentSelect.appendChild(option);
+    });
+
+    if (selectedStudentId) {
+        studentSelect.value = String(selectedStudentId);
+    }
+}
+
+function populateGrantExtensionAssignments(selectedAssignmentId) {
+    const assignmentSelect = document.getElementById('extensionAssignment');
+    if (!assignmentSelect) {
+        return;
+    }
+
+    assignmentSelect.innerHTML = '<option value="">Select an assignment...</option>';
+    grantExtensionState.assignmentMap.clear();
+
+    const assignments = Array.isArray(deadlineData?.assignments) ? deadlineData.assignments : [];
+
+    if (!assignments.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No assignments available';
+        option.disabled = true;
+        assignmentSelect.appendChild(option);
+        assignmentSelect.disabled = true;
+        return;
+    }
+
+    assignmentSelect.disabled = false;
+
+    assignments.forEach(assignment => {
+        grantExtensionState.assignmentMap.set(String(assignment.id), assignment);
+        const option = document.createElement('option');
+        option.value = assignment.id;
+        option.textContent = assignment.title || `Assignment ${assignment.id}`;
+        assignmentSelect.appendChild(option);
+    });
+
+    if (selectedAssignmentId) {
+        assignmentSelect.value = String(selectedAssignmentId);
+        if (assignmentSelect.value !== String(selectedAssignmentId)) {
+            assignmentSelect.value = '';
+        }
+    }
+
+    grantExtensionState.currentAssignmentId = assignmentSelect.value || null;
+    updateExtensionNewDueDate();
+}
+
+function formatDateTimeForInput(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+}
+
+function updateExtensionNewDueDate() {
+    const assignmentSelect = document.getElementById('extensionAssignment');
+    const hoursInput = document.getElementById('extensionHours');
+    const newDueDateInput = document.getElementById('extensionNewDueDate');
+
+    if (!assignmentSelect || !hoursInput || !newDueDateInput) {
+        return;
+    }
+
+    const selectedId = assignmentSelect.value;
+    const hours = parseInt(hoursInput.value, 10);
+
+    if (!selectedId || Number.isNaN(hours) || hours <= 0) {
+        newDueDateInput.value = '';
+        return;
+    }
+
+    const assignment = grantExtensionState.assignmentMap.get(String(selectedId));
+    const baseDate = assignment?.due_date ? new Date(assignment.due_date) : new Date();
+
+    if (Number.isNaN(baseDate.getTime())) {
+        newDueDateInput.value = '';
+        return;
+    }
+
+    const extendedDate = new Date(baseDate.getTime() + hours * 3600 * 1000);
+    newDueDateInput.value = formatDateTimeForInput(extendedDate);
+}
+
+async function grantExtension() {
+    ensureGrantExtensionFormSetup();
+
+    const assignmentSelect = document.getElementById('extensionAssignment');
+    const studentSelect = document.getElementById('extensionStudent');
+    const hoursInput = document.getElementById('extensionHours');
+    const reasonInput = document.getElementById('extensionReason');
+    const waivePenaltyCheckbox = document.getElementById('waiveLatePenalty');
+    const customPenaltyInput = document.getElementById('customPenaltyRate');
+    const approvalNotesInput = document.getElementById('approvalNotes');
+
+    if (!assignmentSelect || !studentSelect || !hoursInput || !reasonInput) {
+        console.error('Grant extension form elements missing');
+        return;
+    }
+
+    const assignmentId = parseInt(assignmentSelect.value, 10);
+    const studentId = parseInt(studentSelect.value, 10);
+    const hours = parseInt(hoursInput.value, 10);
+    const reason = reasonInput.value.trim();
+
+    if (Number.isNaN(assignmentId)) {
+        moduleBuilder.showToast('Please select an assignment', 'warning');
+        return;
+    }
+
+    if (Number.isNaN(studentId)) {
+        moduleBuilder.showToast('Please select a student', 'warning');
+        return;
+    }
+
+    if (Number.isNaN(hours) || hours <= 0) {
+        moduleBuilder.showToast('Enter a valid extension duration (in hours)', 'warning');
+        return;
+    }
+
+    if (!reason) {
+        moduleBuilder.showToast('Provide a reason for the extension', 'warning');
+        return;
+    }
+
+    const payload = {
+        student_id: studentId,
+        hours,
+        reason,
+        waive_late_penalty: waivePenaltyCheckbox?.checked || false
+    };
+
+    const customPenalty = parseFloat(customPenaltyInput?.value);
+    if (!Number.isNaN(customPenalty)) {
+        payload.custom_penalty_rate = customPenalty;
+    }
+
+    const approvalNotes = approvalNotesInput?.value.trim();
+    if (approvalNotes) {
+        payload.approval_notes = approvalNotes;
+    }
+
+    const submitButton = document.querySelector('#grantExtensionModal .btn.btn-primary');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.dataset.originalText = submitButton.dataset.originalText || submitButton.innerHTML;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Granting...';
+    }
+
+    try {
+        const result = await adminFetch(`/instructor/api/assignments/${assignmentId}/extensions`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to grant extension');
+        }
+
+        moduleBuilder.showToast(result.message || 'Extension granted successfully', 'success');
+        closeModal('grantExtensionModal');
+        resetGrantExtensionFormState();
+        await loadDeadlineData();
+    } catch (error) {
+        console.error('Error granting extension:', error);
+        moduleBuilder.showToast(error.message || 'Failed to grant extension', 'error');
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = submitButton.dataset.originalText || 'Grant Extension';
+        }
+    }
 }
 
 function bulkEditDeadlines() {
@@ -11459,7 +11796,13 @@ function openDeadlineSettingsModal(assignmentId) {
             'Content-Type': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            const statusMessage = response.status === 404 ? 'Assignment not found' : `Failed to load deadline settings (${response.status})`;
+            throw new Error(statusMessage);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Populate modal with data
@@ -11475,7 +11818,7 @@ function openDeadlineSettingsModal(assignmentId) {
     })
     .catch(error => {
         console.error('Error loading deadline settings:', error);
-        moduleBuilder.showToast('Error loading deadline settings', 'error');
+        moduleBuilder.showToast(error.message || 'Error loading deadline settings', 'error');
         closeDeadlineSettingsModal();
     });
 }
@@ -11655,20 +11998,41 @@ function applyBulkExtension() {
     }
 }
 
-function showGrantExtensionModal() {
-    // Close deadline settings modal
+function showGrantExtensionModal(assignmentId = null) {
     closeDeadlineSettingsModal();
-    // Open grant extension modal
-    const extensionModal = document.getElementById('grantExtensionModal');
-    if (extensionModal) {
-        extensionModal.style.display = 'flex';
-        extensionModal.classList.add('show');
-    }
+    const fallbackAssignmentId = assignmentId || document.getElementById('deadlineSettingsAssignmentId')?.value;
+    const normalizedAssignmentId = fallbackAssignmentId ? parseInt(fallbackAssignmentId, 10) : null;
+    const targetAssignmentId = Number.isNaN(normalizedAssignmentId) ? null : normalizedAssignmentId;
+    grantExtensionFor(targetAssignmentId);
 }
 
-function grantExtensionFor(assignmentId) {
-    // Show extension modal for specific assignment
-    alert(`Grant extension for assignment ${assignmentId}`);
+async function grantExtensionFor(assignmentId) {
+    if (!moduleBuilder?.currentClass) {
+        moduleBuilder.showToast('Please select a class first', 'warning');
+        return;
+    }
+
+    ensureGrantExtensionFormSetup();
+    resetGrantExtensionFormState();
+
+    if (!deadlineData) {
+        await loadDeadlineData();
+    }
+
+    if (!Array.isArray(deadlineData?.assignments) || !deadlineData.assignments.length) {
+        moduleBuilder.showToast('No assignments available for extensions', 'warning');
+        return;
+    }
+
+    populateGrantExtensionStudents();
+    populateGrantExtensionAssignments(assignmentId ? String(assignmentId) : null);
+    updateExtensionNewDueDate();
+
+    const modal = document.getElementById('grantExtensionModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+    }
 }
 
 function editExtension(extensionId) {
