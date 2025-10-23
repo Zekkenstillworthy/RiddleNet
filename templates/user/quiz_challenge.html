@@ -269,11 +269,43 @@
         font-size: 1rem;
     }
 
+    /* Next Question Button - Highlighted style */
+    .next-question-btn {
+        background: linear-gradient(135deg, var(--success-color), #00D9FF) !important;
+        border: 2px solid var(--success-color) !important;
+        font-weight: 600;
+        animation: pulseGlow 2s ease-in-out infinite;
+        flex-grow: 1;
+        min-width: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .next-question-btn:hover:not(.disabled) {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    }
+
+    .next-question-btn i {
+        font-size: 1rem;
+    }
+
+    @keyframes pulseGlow {
+        0%, 100% {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+        50% {
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
+        }
+    }
+
     .feedback-container {
         background: var(--glass-bg);
         border-radius: 12px;
         padding: 20px;
-        margin-top: 20px;
+        margin: 0;
         border-left: 4px solid;
         animation: slideIn 0.3s ease-out;
     }
@@ -1514,6 +1546,15 @@
         min-width: 100% !important;
     }
 
+    /* Next Question Button - Mobile full width */
+    .next-question-btn {
+        flex: 1 1 100% !important;
+        min-width: 100% !important;
+        padding: 14px 16px !important;
+        font-size: 0.9rem !important;
+        font-weight: 700 !important;
+    }
+
     .lifeline-btn i {
         font-size: 0.9rem !important;
         margin-right: 4px !important;
@@ -1582,7 +1623,7 @@
     /* Feedback Container */
     .feedback-container {
         padding: 14px !important;
-        margin-top: 12px !important;
+        margin: 0 !important;
     }
 
     .feedback-title {
@@ -1871,6 +1912,10 @@
         <button class="lifeline-btn" id="hintBtn" onclick="useHint()">
             <i class="fas fa-lightbulb"></i>
             Hint (3)
+        </button>
+        <button class="lifeline-btn next-question-btn" id="nextQuestionBtn" onclick="nextQuestion()" style="display: none;">
+            <i class="fas fa-arrow-right"></i>
+            <span id="nextQuestionText">Next Question</span>
         </button>
     </div>
 
@@ -2349,6 +2394,12 @@ function loadQuestion() {
     
     document.getElementById('questionContainer').innerHTML = html;
     
+    // Hide next question button
+    const nextBtn = document.getElementById('nextQuestionBtn');
+    if (nextBtn) {
+        nextBtn.style.display = 'none';
+    }
+    
     // Reset lifeline state for new question
     fiftyFiftyUsed = false;
     
@@ -2398,32 +2449,55 @@ function selectAnswer(index) {
 
 // Show Feedback
 function showFeedback(isCorrect, explanation) {
-    const questionCard = document.querySelector('.question-card');
-    const feedbackHTML = `
-        <div class="feedback-container ${isCorrect ? 'correct' : 'wrong'}">
-            <div class="feedback-title">
-                ${isCorrect ? '✅ Great job! You nailed it!' : '❌ Oops! Not quite right.'}
+    // Get the question text element and replace it with explanation
+    const questionText = document.querySelector('.question-text');
+    const questionNumber = document.querySelector('.question-number');
+    
+    if (questionText) {
+        // Update the question number to show result
+        if (questionNumber) {
+            questionNumber.innerHTML = `<i class="fas fa-${isCorrect ? 'check-circle' : 'times-circle'}"></i> ${isCorrect ? 'Correct Answer!' : 'Incorrect Answer'}`;
+            questionNumber.style.color = isCorrect ? 'var(--success-color)' : 'var(--danger-color)';
+        }
+        
+        // Replace question with explanation - keeping the same styling
+        questionText.innerHTML = `
+            <div style="color: ${isCorrect ? 'var(--success-color)' : 'var(--danger-color)'}; margin-bottom: 16px; font-weight: 700;">
             </div>
-            <div class="feedback-text">${explanation}</div>
-        </div>
-    `;
-    questionCard.insertAdjacentHTML('beforeend', feedbackHTML);
+            <div>
+                ${explanation}
+            </div>
+        `;
+        
+        // Add subtle background highlight only
+        questionText.style.background = isCorrect ? 'rgba(0, 255, 136, 0.05)' : 'rgba(255, 71, 87, 0.05)';
+        questionText.style.borderLeft = `4px solid ${isCorrect ? 'var(--success-color)' : 'var(--danger-color)'}`;
+        questionText.style.paddingLeft = '20px';
+        questionText.style.borderRadius = '8px';
+    }
 }
 
 // Show Next Button
 function showNextButton() {
-    const questionCard = document.querySelector('.question-card');
+    const nextBtn = document.getElementById('nextQuestionBtn');
+    const nextBtnText = document.getElementById('nextQuestionText');
     const questionInSet = (currentQuestion % 5) + 1;
     const isLastInSet = questionInSet === 5;
     
-    const buttonHTML = `
-        <div class="action-buttons">
-            <button class="action-btn" onclick="nextQuestion()">
-                ${isLastInSet ? '<i class="fas fa-check-circle"></i> Complete Set' : 'Next Question <i class="fas fa-arrow-right"></i>'}
-            </button>
-        </div>
-    `;
-    questionCard.insertAdjacentHTML('beforeend', buttonHTML);
+    // Update button text
+    if (isLastInSet) {
+        nextBtnText.innerHTML = 'Complete Set';
+        nextBtn.querySelector('i').className = 'fas fa-check-circle';
+    } else {
+        nextBtnText.innerHTML = 'Next Question';
+        nextBtn.querySelector('i').className = 'fas fa-arrow-right';
+    }
+    
+    // Show the button with animation
+    nextBtn.style.display = 'flex';
+    setTimeout(() => {
+        nextBtn.style.animation = 'pulseGlow 2s ease-in-out infinite';
+    }, 100);
 }
 
 // Quit Quiz - Save progress and return to challenges (keep this for back button)
@@ -2436,6 +2510,12 @@ function quitQuiz() {
 
 // Next Question
 function nextQuestion() {
+    // Hide the next button immediately
+    const nextBtn = document.getElementById('nextQuestionBtn');
+    if (nextBtn) {
+        nextBtn.style.display = 'none';
+    }
+    
     currentQuestion++;
     
     // Check if we just completed a set (every 5 questions)
@@ -2609,17 +2689,31 @@ function handleTimeout() {
     // Show correct answer
     options[question.correct].classList.add('correct');
     
-    // Show timeout feedback
-    const questionCard = document.querySelector('.question-card');
-    const feedbackHTML = `
-        <div class="feedback-container wrong">
-            <div class="feedback-title">
-                ⏰ Time's up!
+    // Update question text to show timeout feedback
+    const questionText = document.querySelector('.question-text');
+    const questionNumber = document.querySelector('.question-number');
+    
+    if (questionText) {
+        // Update the question number to show timeout
+        if (questionNumber) {
+            questionNumber.innerHTML = `<i class="fas fa-clock"></i> Time's Up!`;
+            questionNumber.style.color = 'var(--danger-color)';
+        }
+        
+        // Replace question with explanation - keeping the same styling
+        questionText.innerHTML = `
+            
+            <div>
+                ${question.explanation}
             </div>
-            <div class="feedback-text">${question.explanation}</div>
-        </div>
-    `;
-    questionCard.insertAdjacentHTML('beforeend', feedbackHTML);
+        `;
+        
+        // Add subtle background highlight
+        questionText.style.background = 'rgba(255, 71, 87, 0.05)';
+        questionText.style.borderLeft = '4px solid var(--danger-color)';
+        questionText.style.paddingLeft = '20px';
+        questionText.style.borderRadius = '8px';
+    }
     
     // Record as incorrect
     answeredQuestions.push({

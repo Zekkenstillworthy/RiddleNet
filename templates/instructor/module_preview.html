@@ -70,14 +70,12 @@
     100% { opacity: 1; transform: scale(1); }
 }
 
-
-
-
-
-
-
-
-
+/* Override admin-actions-banner styles for better consistency */
+.admin-nav-brand .logo-icon img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
 
 .admin-nav-brand {
     display: flex;
@@ -188,7 +186,7 @@
 .learning-container {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 90px 24px 24px 24px;
   display: flex;
   min-height: 100vh;
   gap: 2rem;
@@ -204,10 +202,11 @@
   backdrop-filter: blur(20px);
   padding: 1.5rem;
   height: fit-content;
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 140px);
   position: sticky;
-  top: 2rem;
+  top: 90px;
   overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -680,106 +679,63 @@
 
 @media (max-width: 768px) {
     .learning-container {
-        padding: 90px 16px 0 16px;
+        padding: 90px 16px 16px 16px;
     }
     
     .class-sidebar {
         padding: 1rem;
     }
     
-    /* Responsive Design */
-    @media (max-width: 1024px) {
-        .learning-container {
-            flex-direction: column;
-            padding-top: 90px; /* Account for fixed top bar */
-        }
-        
-        .class-sidebar {
-            width: 100%;
-            max-height: none;
-            position: static;
-        }
-        
-        .module-navigation .module-nav-list {
-            grid-template-columns: 1fr;
-        }
-        
-        .quick-actions {
-            grid-template-columns: 1fr;
-        }
-        
-        .class-title {
-            font-size: 1.1rem;
-        }
-        
-        .module-nav-item {
-            padding: 10px 12px;
-        }
-        
-        .module-meta {
-            gap: 16px;
-        }
-
-        .instructor-actions-banner {
-            padding: 0 16px;
-            flex-wrap: wrap;
-            height: auto;
-            min-height: 70px;
-        }
-
-        .admin-nav-right {
-            gap: 12px;
-        }
-
-        .back-btn {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-        }
+    .admin-actions-banner {
+        padding: 0 16px;
+        flex-wrap: wrap;
+        height: auto;
+        min-height: 70px;
     }
 
-    @media (max-width: 768px) {
-        .learning-container {
-            padding: 1rem;
-            padding-top: 120px; /* Account for mobile header */
-        }
+    .admin-nav-right {
+        gap: 12px;
+    }
 
-        .instructor-actions-banner {
-            padding: 0 12px;
-            height: auto;
-            min-height: 60px;
-        }
+    .back-btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+    
+    .back-btn span {
+        display: none;
+    }
 
-        .admin-nav-brand .logo-text {
-            display: none; /* Hide text on mobile */
-        }
-
-        .admin-nav-brand .logo-icon {
-            width: 36px;
-            height: 36px;
-        }
-
-        .admin-nav-right {
-            gap: 8px;
-        }
-
-        .back-btn {
-            padding: 6px 10px;
-            font-size: 0.75rem;
-        }
-
-        .back-btn span {
-            display: none; /* Hide text, show only icons on mobile */
-        }
-
-        .profile-name-nav {
-            display: none; /* Hide username on mobile */
-        }
+    .profile-name-nav {
+        display: none;
+    }
+    
+    .admin-nav-brand .logo-text {
+        display: none;
+    }
+    
+    .module-title {
+        font-size: 1.8rem;
+    }
+    
+    .module-header {
+        padding: 24px;
+    }
+    
+    .module-meta {
+        gap: 12px;
     }
 }
 
 @media (max-width: 480px) {
-    .nav-brand .logo-text {
-        display: none;
+    .admin-nav-brand .logo-icon {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .admin-nav-brand .logo-icon img {
+        width: 32px;
+        height: 32px;
     }
 }
 
@@ -811,25 +767,25 @@ html {
 
 {% block body %}
 <!-- Override the body block to remove the learning navigation -->
-<main class="learning-main" style="padding-top: 70px; margin-top: 0;">
+<main class="learning-main">
     {% block content %}
    
 
 <!-- Admin Actions Banner - Unified Top Bar -->
-<nav class="instructor-actions-banner">
+<nav class="admin-actions-banner">
     <div class="admin-nav-left">
         <a href="/instructor/classes" class="admin-nav-brand">
             <div class="logo-icon">
-                <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" style="width: 60px; height: 60px;">
+                <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" style="width: 40px; height: 40px;">
             </div>
             <span class="logo-text">RiddleNet</span>
         </a>
-        <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_data.id) }}" class="back-btn">
-            <i class="fas fa-arrow-left"></i>
-            Back to Content Manager
-        </a>
     </div>
     <div class="admin-nav-right">
+        <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_data.id) }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            <span>Back to Content Manager</span>
+        </a>
         <div class="user-profile-nav" onclick="window.location.href='/instructor/classes'">
             <div class="profile-avatar-nav">
                 {% if current_user and current_user.is_authenticated %}
@@ -859,7 +815,7 @@ html {
     </div>
 </nav>
 
-<div class="learning-container" style="padding-top: 90px;">
+<div class="learning-container">
     <!-- Persistent Class Sidebar -->
     <div class="class-sidebar">
         <!-- Class Header -->

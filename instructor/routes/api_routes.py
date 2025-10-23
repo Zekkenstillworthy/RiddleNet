@@ -1658,6 +1658,156 @@ def check_assignment_availability(assignment_id):
             'error': str(e)
         }), 500
 
+
+@api_bp.route('/assignments/<int:assignment_id>/due-date', methods=['PUT'])
+def update_assignment_due_date(assignment_id):
+    """Update the due date for an assignment"""
+    try:
+        from instructor.models.class_content import ClassAssignment
+        from datetime import datetime
+        
+        assignment = ClassAssignment.query.get_or_404(assignment_id)
+        data = request.get_json()
+        
+        new_due_date = data.get('due_date')
+        if not new_due_date:
+            return jsonify({
+                'success': False,
+                'error': 'Due date is required'
+            }), 400
+        
+        # Parse the date
+        try:
+            due_date_obj = datetime.fromisoformat(new_due_date.replace('Z', '+00:00'))
+        except ValueError:
+            due_date_obj = datetime.strptime(new_due_date, '%Y-%m-%dT%H:%M')
+        
+        assignment.due_date = due_date_obj
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Due date updated successfully',
+            'assignment': {
+                'id': assignment.id,
+                'title': assignment.title,
+                'due_date': assignment.due_date.isoformat() if assignment.due_date else None
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating due date: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@api_bp.route('/assignments/<int:assignment_id>/bulk-extension', methods=['POST'])
+def grant_bulk_assignment_extension(assignment_id):
+    """Grant deadline extension to multiple students for an assignment"""
+    try:
+        from instructor.models.class_content import ClassAssignment, ClassEnrollment
+        from instructor.models.deadline_policy import StudentDeadlineExtension
+        from instructor.models.assignment_submission import AssignmentSubmission
+        from user.models.user import User
+        from flask_login import current_user
+        from datetime import datetime, timedelta
+        
+        assignment = ClassAssignment.query.get_or_404(assignment_id)
+        data = request.get_json()
+        
+        extension_days = data.get('extension_days', 7)
+        reason = data.get('reason', 'Bulk deadline extension')
+        notify = data.get('notify', True)
+        target = data.get('target', 'all')  # 'all', 'no_submission', 'late'
+        
+        if not assignment.due_date:
+            return jsonify({
+                'success': False,
+                'error': 'Assignment has no due date set'
+            }), 400
+        
+        # Get the class enrollments
+        enrollments = ClassEnrollment.query.filter_by(class_id=assignment.class_id).all()
+        student_ids = [e.student_id for e in enrollments]
+        
+        # Filter students based on target
+        target_students = []
+        if target == 'all':
+            target_students = student_ids
+        elif target == 'no_submission':
+            # Get students who haven't submitted
+            submitted_student_ids = [s.student_id for s in AssignmentSubmission.query.filter_by(
+                assignment_id=assignment_id
+            ).all()]
+            target_students = [sid for sid in student_ids if sid not in submitted_student_ids]
+        elif target == 'late':
+            # Get students who submitted late
+            late_submissions = AssignmentSubmission.query.filter_by(
+                assignment_id=assignment_id,
+                is_late=True
+            ).all()
+            target_students = [s.student_id for s in late_submissions]
+        
+        # Calculate new due date
+        extension_hours = extension_days * 24
+        new_due_date = assignment.due_date + timedelta(hours=extension_hours)
+        
+        # Grant extensions
+        extensions_granted = 0
+        for student_id in target_students:
+            # Check if extension already exists
+            existing_extension = StudentDeadlineExtension.query.filter_by(
+                assignment_id=assignment_id,
+                student_id=student_id,
+                is_active=True
+            ).first()
+            
+            if existing_extension:
+                # Update existing extension
+                existing_extension.extension_hours += extension_hours
+                existing_extension.extended_due_date = new_due_date
+                existing_extension.reason = f"{existing_extension.reason}; {reason}"
+            else:
+                # Create new extension
+                extension = StudentDeadlineExtension(
+                    assignment_id=assignment_id,
+                    student_id=student_id,
+                    original_due_date=assignment.due_date,
+                    extended_due_date=new_due_date,
+                    extension_hours=extension_hours,
+                    reason=reason,
+                    approved_by=current_user.id,
+                    is_active=True,
+                    waive_late_penalty=False
+                )
+                db.session.add(extension)
+            
+            extensions_granted += 1
+        
+        db.session.commit()
+        
+        # TODO: Send notifications if notify is True
+        # This would involve sending emails to affected students
+        
+        return jsonify({
+            'success': True,
+            'message': f'Extension granted to {extensions_granted} students',
+            'count': extensions_granted,
+            'extension_days': extension_days,
+            'new_due_date': new_due_date.isoformat()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error granting bulk extension: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @api_bp.route('/classes/<int:class_id>/deadline-report', methods=['GET'])
 def get_class_deadline_report(class_id):
     """Get comprehensive deadline report for a class"""

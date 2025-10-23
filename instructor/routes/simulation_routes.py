@@ -123,7 +123,23 @@ def edit_simulation(simulation_id):
                 return redirect(url_for('class_controller.index'))
         
         # Convert simulation data to troubleshooting format if needed
-        simulation = simulation_data['simulation']
+        simulation_raw = simulation_data.get('simulation')
+
+        if isinstance(simulation_raw, str):
+            try:
+                simulation = json.loads(simulation_raw)
+            except (json.JSONDecodeError, TypeError) as decode_error:
+                current_app.logger.error(
+                    f"Unexpected simulation payload format during export for {simulation_id}: {decode_error}"
+                )
+                return jsonify({'error': 'Simulation payload is malformed and cannot be exported'}), 500
+        elif isinstance(simulation_raw, dict):
+            simulation = simulation_raw
+        else:
+            current_app.logger.error(
+                f"Unexpected simulation payload type during export for {simulation_id}: {type(simulation_raw)}"
+            )
+            return jsonify({'error': 'Simulation payload is malformed and cannot be exported'}), 500
 
         # Some legacy paths may return JSON strings; normalize to dict
         if isinstance(simulation, str):
@@ -1452,17 +1468,46 @@ def export_simulation_rnetfile(simulation_id):
         
         # Ensure JSON fields are properly parsed
         step_definitions = safe_json_parse(simulation.get('step_definitions'), [])
+        if not isinstance(step_definitions, list):
+            step_definitions = []
+
         validation_rules = safe_json_parse(simulation.get('validation_rules'), {})
+        if not isinstance(validation_rules, dict):
+            validation_rules = {}
+
         simulation_config = safe_json_parse(simulation.get('simulation_config'), {})
+        if not isinstance(simulation_config, dict):
+            simulation_config = {}
+
         initial_state = safe_json_parse(simulation.get('initial_state'), {})
+        if not isinstance(initial_state, dict):
+            initial_state = {}
+
         expected_outcomes = safe_json_parse(simulation.get('expected_outcomes'), {})
+        if not isinstance(expected_outcomes, dict):
+            expected_outcomes = {}
+
         hints = safe_json_parse(simulation.get('hints'), [])
+        if not isinstance(hints, list):
+            hints = []
+
         tags = safe_json_parse(simulation.get('tags'), [])
+        if not isinstance(tags, list):
+            tags = []
+
         learning_objectives = safe_json_parse(simulation.get('learning_objectives'), [])
+        if not isinstance(learning_objectives, list):
+            learning_objectives = []
+
         prerequisite_knowledge = safe_json_parse(simulation.get('prerequisite_knowledge'), [])
+        if not isinstance(prerequisite_knowledge, list):
+            prerequisite_knowledge = []
         
         # Extract task configuration from simulation_config
         task_config = simulation_config.get('task_config', {})
+        if not isinstance(task_config, dict):
+            task_config = {}
+
         task_mode = simulation_config.get('task_mode', 'combined')
         
         # Create rnetfile format export

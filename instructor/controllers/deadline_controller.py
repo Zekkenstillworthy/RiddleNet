@@ -28,7 +28,7 @@ from user.models.user import User
 from utils.auth_decorators import instructor_required
 
 
-deadline_controller_bp = Blueprint("deadline_controller", __name__, url_prefix="/admin")
+deadline_controller_bp = Blueprint("deadline_controller", __name__, url_prefix="/instructor")
 
 
 def _safe_int(value, default):
@@ -276,3 +276,67 @@ def preview_deadline(assignment_id):
         availability=availability,
         penalty_preview=penalty_preview,
     )
+
+
+@deadline_controller_bp.route("/assignment/<int:assignment_id>/deadline-settings", methods=["GET"])
+@login_required
+@instructor_required
+def assignment_deadline_settings(assignment_id):
+    """Get deadline settings for a specific assignment"""
+    try:
+        from instructor.models.deadline_policy import AssignmentAvailabilityWindow
+        
+        assignment = ClassAssignment.query.get_or_404(assignment_id)
+        
+        # Get availability window if exists
+        availability = AssignmentAvailabilityWindow.query.filter_by(
+            assignment_id=assignment_id
+        ).first()
+        
+        # Get active extensions for this assignment
+        extensions = StudentDeadlineExtension.query.filter_by(
+            assignment_id=assignment_id,
+            is_active=True
+        ).all()
+        _hydrate_extension_students(extensions)
+        
+        # Get deadline policy if assigned
+        deadline_policy = None
+        if hasattr(assignment, 'deadline_policy_id') and assignment.deadline_policy_id:
+            deadline_policy = DeadlinePolicy.query.get(assignment.deadline_policy_id)
+        
+        # Get all available policies
+        all_policies = DeadlinePolicy.query.order_by(DeadlinePolicy.name).all()
+        
+        # If accessed via AJAX, return JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'success': True,
+                'assignment': {
+                    'id': assignment.id,
+                    'title': assignment.title,
+                    'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                    'description': assignment.description
+                },
+                'availability': availability.to_dict() if availability else None,
+                'extensions': [ext.to_dict() for ext in extensions],
+                'deadline_policy': deadline_policy.to_dict() if deadline_policy else None,
+                'available_policies': [p.to_dict() for p in all_policies]
+            })
+        
+        # Otherwise render template (for backward compatibility)
+        return render_template(
+            "instructor/deadline_settings.html",
+            assignment=assignment,
+            availability=availability,
+            extensions=extensions,
+            deadline_policy=deadline_policy,
+            available_policies=all_policies
+        )
+        
+    except Exception as exc:
+        current_app.logger.error("Failed to load deadline settings: %s", exc, exc_info=True)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'error': str(exc)}), 500
+        flash("Unable to load deadline settings.", "error")
+        return redirect(url_for("deadline_controller.deadline_management_dashboard"))

@@ -743,7 +743,7 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="createClassModalTitle">Create New Class</h5>
+        <h5 class="modal-title" id="createClassModalTitle">Add Class</h5>
         <button
           type="button"
           class="btn-close btn-close-white"
@@ -921,18 +921,7 @@
               Students
             </button>
           </li>
-          <li class="nav-item" role="presentation">
-            <button
-              class="nav-link"
-              id="questions-tab"
-              data-bs-toggle="tab"
-              data-bs-target="#questions-tab-pane"
-              type="button"
-              role="tab"
-            >
-              Questions
-            </button>
-          </li>
+          
           <li class="nav-item" role="presentation">
             <button
               class="nav-link"
@@ -1221,6 +1210,53 @@
 
     // Initialize with a random code
     generateCodeFromAPI();
+    
+    // Add event listener to reset modal when "Add Class" button is clicked
+    addSafeEventListener("addClassBtn", "click", function () {
+      // Reset modal title to "Add Class"
+      const modalTitle = document.getElementById("createClassModalTitle");
+      if (modalTitle) {
+        modalTitle.textContent = "Add Class";
+      }
+      
+      // Reset the submit button text and function
+      const createBtn = document.getElementById("createClassBtn");
+      if (createBtn) {
+        createBtn.textContent = "Create Class";
+        createBtn.onclick = function() {
+          window.createClass();
+        };
+      }
+      
+      // Enable code generation button
+      const generateCodeBtn = document.getElementById("generateCodeBtn");
+      if (generateCodeBtn) {
+        generateCodeBtn.disabled = false;
+      }
+      
+      // Reset form
+      const form = document.getElementById("createClassForm");
+      if (form) {
+        form.reset();
+      }
+      
+      // Set default dates
+      const today = new Date().toISOString().split("T")[0];
+      const classStartEl = document.getElementById("classStart");
+      if (classStartEl) {
+        classStartEl.value = today;
+      }
+      
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 3);
+      const classEndEl = document.getElementById("classEnd");
+      if (classEndEl) {
+        classEndEl.value = endDate.toISOString().split("T")[0];
+      }
+      
+      // Generate new code
+      generateCodeFromAPI();
+    });
 
     // Load Quiz
     loadQuestionGroups();    // Pagination variables
@@ -2020,6 +2056,12 @@
                 if (checkbox) checkbox.checked = true;
               });
             }, 500); // Give time for Quiz to load
+          }
+          
+          // Change the modal title to Edit Class
+          const modalTitle = document.getElementById("createClassModalTitle");
+          if (modalTitle) {
+            modalTitle.textContent = "Edit Class";
           }
           
           // Change the create button to update

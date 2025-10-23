@@ -2,32 +2,47 @@
 
 {% block title %}{{ 'Edit' if lesson else 'Create' }} Lesson - {{ module.title }}{% endblock %}
 
+{% block sidebar %}
+<!-- Override sidebar block to hide it -->
+{% endblock %}
+
 {% block head %}
 <style>
 :root {
-    /* Modern Gaming Network Theme - Matching Dashboard */
-    --primary-color: #0F172A;
-    --secondary-color: #1E293B;
-    --accent-color: #3B82F6;
-    --success-color: #10B981;
-    --warning-color: #F59E0B;
-    --danger-color: #EF4444;
-    --cyber-glow: #00D9FF;
+    /* Modern Gaming Network Theme - Learning Version - From enhanced_editor.html */
+    --primary-color: #0B1426;
+    --secondary-color: #1A2B47;
+    --accent-color: #00D4FF;
+    --success-color: #00FF88;
+    --warning-color: #FF8C42;
+    --danger-color: #FF4757;
+    --cyber-glow: #00D4FF;
     --neon-green: #39FF14;
     --network-purple: #8B5CF6;
     
     /* Background & Surface Colors */
-    --background: #020617;
-    --surface: #0F172A;
-    --surface-hover: #1E293B;
-    --border-color: rgba(59, 130, 246, 0.2);
-    --glass-bg: rgba(15, 23, 42, 0.8);
-    --glass-border: rgba(0, 217, 255, 0.15);
+    --background: #0B1426;
+    --surface: #1A2B47;
+    --surface-hover: #243B5C;
+    --border-color: rgba(0, 212, 255, 0.2);
+    --glass-bg: rgba(30, 41, 71, 0.8);
     
     /* Text Colors */
-    --text-primary: #F8FAFC;
-    --text-secondary: #CBD5E1;
-    --text-muted: #64748B;
+    --text-primary: #FFFFFF;
+    --text-secondary: #B3E5FC;
+    --text-muted: #7DD3FC;
+    
+    /* Layout */
+    --transition-speed: 0.4s;
+    --border-radius: 16px;
+    --shadow-lg: 0 25px 50px -12px rgba(0, 212, 255, 0.3);
+    --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.6);
+    --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    --card-bg: linear-gradient(135deg, #1E3A5F, #243B5C);
     
     /* Admin Layout */
     --border: var(--border-color);
@@ -35,64 +50,421 @@
     --bg-secondary: var(--surface-hover);
 }
 
-/* Enhanced Modern Card Styling */
-.modern-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-}
-
-.modern-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 35px rgba(0, 217, 255, 0.2);
-    border-color: var(--cyber-glow);
-}
-
-/* Enhanced Main Content Layout */
-/* NOTE: .main-content base styles are in admin/base.html - DO NOT override margin-left */
-
-.admin-container {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-/* Enhanced Form Container */
-.lesson-form-container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 40px;
-    position: relative;
-    overflow: hidden;
-}
-
-.lesson-form-container::before {
+/* Network Grid Background Animation */
+body::before {
     content: '';
-    position: absolute;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: 
+        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: -1;
+    animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
+}
+
+/* Fixed Navigation Bar - From enhanced_editor.html */
+.learning-nav {
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple), var(--neon-green));
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    border-bottom: 2px solid var(--border-color);
+    padding: 0 24px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.learning-nav::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
     animation: pulse 2s ease-in-out infinite alternate;
 }
 
-/* Enhanced Form Section Styling */
-.form-section {
-    margin-bottom: 40px;
-    padding: 24px;
-    background: rgba(255, 255, 255, 0.02);
+/* Navigation Components */
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.nav-brand .logo-icon {
+    height: 40px;
+    width: 40px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 6px;
+    background: var(--gradient-primary);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    transition: all var(--transition-speed) ease;
+    overflow: hidden;
+}
+
+.nav-brand .logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.nav-brand .logo-icon:hover {
+    box-shadow: var(--shadow-glow);
+    transform: scale(1.1);
+}
+
+.nav-brand .logo-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nav-btn {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    color: var(--cyber-glow);
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.nav-btn:hover {
+    background: rgba(0, 212, 255, 0.2);
+    border-color: var(--cyber-glow);
+    color: white;
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.user-profile-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
     transition: all 0.3s ease;
 }
 
-.form-section:hover {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: var(--border-color);
+.user-profile-nav:hover {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.3);
 }
+
+.profile-avatar-nav {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    overflow: hidden;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.profile-name-nav {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* Learning Container - Two Column Layout */
+.learning-container {
+    display: flex;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    min-height: calc(100vh - 70px);
+    padding-top: 110px;
+    margin-left: 0 !important;
+    width: 100% !important;
+}
+
+/* Class Sidebar - Left Column */
+.class-sidebar {
+    width: 320px;
+    background: var(--glass-bg);
+    border-radius: 20px;
+    border: 2px solid var(--border-color);
+    box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px);
+    padding: 1.5rem;
+    height: fit-content;
+    max-height: calc(100vh - 140px);
+    position: sticky;
+    top: 100px;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.class-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--cyber-glow);
+    margin-bottom: 0.5rem;
+}
+
+.class-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.nav-section-title {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-section-title i {
+    color: var(--cyber-glow);
+}
+
+/* Module Container - Main Content Area */
+.module-container {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Module Header */
+.module-header {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 24px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+}
+
+.module-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--cyber-glow);
+    margin: 0 0 12px 0;
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.module-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 16px 0 0 0;
+}
+
+.module-meta {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.meta-item i {
+    color: var(--cyber-glow);
+}
+
+/* Media Categories */
+.media-category {
+    background: rgba(26, 35, 126, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.category-header {
+    background: rgba(0, 212, 255, 0.1);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.category-title {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.category-count {
+    background: rgba(0, 212, 255, 0.2);
+    color: var(--cyber-glow);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+}
+
+.media-items {
+    padding: 12px;
+}
+
+.media-item {
+    background: var(--surface-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.media-item:hover {
+    border-color: var(--cyber-glow);
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.media-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.media-icon.video {
+    background: linear-gradient(135deg, #FF4757, #FF6B7A);
+}
+
+.media-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.media-title {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.media-meta {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Content Cards */
+.content-card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-title {
+    color: var(--text-primary);
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.card-title i {
+    color: var(--cyber-glow);
+    text-shadow: 0 0 15px currentColor;
+}
+
+/* Enhanced Modern Card Styling - REMOVED (using content-card instead) */
+
+/* Enhanced Main Content Layout - REMOVED (using learning-container instead) */
+
+/* Enhanced Form Container - REMOVED (using content-card instead) */
+
+/* Enhanced Form Section Styling - REMOVED (using content-card instead) */
 
 .section-title {
     color: var(--text-primary);
@@ -109,7 +481,7 @@
 .section-title i {
     color: var(--cyber-glow);
     font-size: 1.2rem;
-    text-shadow: 0 0 8px currentColor;
+    text-shadow: 0 0 15px currentColor;
 }
 
 /* Enhanced Form Input Styling */
@@ -136,9 +508,9 @@
 .form-input, .form-textarea, .form-select {
     width: 100%;
     padding: 14px 18px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-color);
     border-radius: 10px;
-    background: var(--bg-primary);
+    background: var(--surface);
     color: var(--text-primary);
     font-size: 0.95rem;
     transition: all 0.3s ease;
@@ -148,7 +520,7 @@
 .form-input:focus, .form-textarea:focus, .form-select:focus {
     border-color: var(--cyber-glow);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.15);
+    box-shadow: var(--glow-cyan);
     background: var(--surface-hover);
 }
 
@@ -169,9 +541,9 @@
     gap: 12px;
     margin-top: 20px;
     padding: 16px;
-    background: rgba(59, 130, 246, 0.05);
+    background: rgba(0, 212, 255, 0.05);
     border-radius: 8px;
-    border: 1px solid rgba(59, 130, 246, 0.1);
+    border: 1px solid var(--border-color);
 }
 
 .form-checkbox {
@@ -189,9 +561,9 @@
 
 /* Enhanced Simulation Selector */
 .simulation-selector {
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
-    background: var(--bg-secondary);
+    background: var(--surface);
     max-height: 320px;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -203,7 +575,7 @@
     align-items: center;
     gap: 16px;
     padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-color);
     transition: all 0.3s ease;
     position: relative;
 }
@@ -213,8 +585,8 @@
 }
 
 .simulation-item:hover {
-    background: var(--bg-primary);
-    border-color: var(--border-color);
+    background: var(--surface-hover);
+    border-color: var(--cyber-glow);
 }
 
 .simulation-checkbox {
@@ -250,7 +622,7 @@
     border-top: 2px solid var(--border-color);
 }
 
-/* Enhanced Button Styling to Match instructor Dashboard */
+/* Enhanced Button Styling */
 .action-btn {
     padding: 12px 24px;
     border-radius: 8px;
@@ -260,38 +632,57 @@
     gap: 8px;
     font-weight: 600;
     transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--border-color);
     cursor: pointer;
     font-size: 0.95rem;
     letter-spacing: 0.01em;
+    background: rgba(26, 35, 126, 0.4);
+    color: var(--text-primary);
+    width: 100%;
+    justify-content: center;
 }
 
 .action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: var(--glow-cyan);
+    background: var(--cyber-glow);
+    color: white;
+    text-decoration: none;
+}
+
+.action-btn i {
+    color: var(--cyber-glow);
+}
+
+.action-btn:hover i {
+    color: white;
 }
 
 .action-btn.primary {
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    background: var(--gradient-primary);
     color: white;
-    border-color: #2563eb;
+    border-color: var(--cyber-glow);
 }
 
 .action-btn.primary:hover {
-    background: linear-gradient(135deg, #2563eb, #1e40af);
-    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
+}
+
+.action-btn.primary i {
+    color: white;
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 212, 255, 0.05);
     color: var(--text-secondary);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 212, 255, 0.1);
     color: var(--text-primary);
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--cyber-glow);
 }
 
 /* Enhanced Help Text */
@@ -322,6 +713,7 @@
 .breadcrumb-link:hover {
     text-decoration: underline;
     color: var(--neon-green);
+    text-shadow: 0 0 10px currentColor;
 }
 
 /* Enhanced Responsive Design */
@@ -357,10 +749,10 @@
 
 @keyframes glow {
     0%, 100% { 
-        box-shadow: 0 0 5px var(--cyber-glow);
+        box-shadow: var(--glow-cyan);
     }
     50% { 
-        box-shadow: 0 0 20px var(--cyber-glow), 0 0 30px var(--cyber-glow);
+        box-shadow: var(--shadow-glow);
     }
 }
 
@@ -370,70 +762,175 @@
 .form-select:focus {
     animation: glow 2s ease-in-out infinite;
 }
+
+/* Page Header Styling */
+.page-header {
+    margin-bottom: 32px;
+}
+
+.page-title {
+    color: var(--text-primary);
+    margin: 16px 0 8px 0;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.page-title i {
+    color: var(--cyber-glow);
+    margin-right: 12px;
+    text-shadow: 0 0 15px currentColor;
+}
+
+.page-description {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 0;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<main class="main-content">
-    <div class="admin-container">
-        <!-- Enhanced Header with Admin Actions Banner Style -->
-        <div class="instructor-actions-banner" style="position: relative; margin: -32px -32px 32px -32px;">
-            <div class="admin-nav-left">
-                <a href="{{ url_for('enhanced_module.edit_module_simple', module_id=module.id) }}" class="back-btn">
-                    <i class="fas fa-arrow-left"></i>
-                    Back to {{ module.title }}
-                </a>
-                <div class="admin-nav-brand">
-                    <div class="logo-icon">
-                        <i class="fas fa-graduation-cap"></i>
+<!-- Fixed Navigation Bar -->
+<nav class="learning-nav">
+    <div class="nav-brand">
+        <div class="logo-icon">
+            <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="RiddleNet">
+        </div>
+        <span class="logo-text">RiddleNet</span>
+    </div>
+    <div class="nav-actions">
+        <a href="{{ url_for('enhanced_module.edit_module_simple', module_id=module.id) }}" class="nav-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to Module
+        </a>
+        <div class="user-profile-nav">
+            <div class="profile-avatar-nav">A</div>
+            <span class="profile-name-nav">Admin</span>
+        </div>
+    </div>
+</nav>
+
+<!-- Learning Container with Sidebar Layout -->
+<div class="learning-container">
+    <!-- Left Sidebar -->
+    <aside class="class-sidebar">
+        <div class="sidebar-header">
+            <h2 class="class-title">{{ action }} Lesson</h2>
+            <p class="class-subtitle">{{ module.title }}</p>
+        </div>
+
+        <div class="nav-section">
+            <h3 class="nav-section-title">
+                <i class="fas fa-info-circle"></i>
+                Lesson Details
+            </h3>
+            <div class="media-category">
+                <div class="category-header">
+                    <span class="category-title">
+                        <i class="fas fa-book"></i>
+                        {{ lesson.title if lesson else 'New Lesson' }}
+                    </span>
+                </div>
+                <div class="media-items" style="min-height: 60px; padding: 16px;">
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">
+                        <div style="margin-bottom: 8px;">
+                            <strong>{{ class_obj.name }}</strong>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <i class="fas fa-layer-group"></i> Module {{ module.module_number }}
+                        </div>
+                        <div>
+                            <i class="fas fa-clock"></i> {{ lesson.estimated_duration if lesson else '45' }} min
+                        </div>
                     </div>
-                    <span>{{ action }} Lesson</span>
-                </div>
-            </div>
-            <div class="admin-nav-right">
-                <div class="preview-badge">{{ module.module_number }}</div>
-                <div class="user-profile">
-                    <div class="user-name">{{ module.title }}</div>
                 </div>
             </div>
         </div>
 
-        <!-- Page Header -->
-        <div class="page-header" style="margin-bottom: 32px;">
-            <div>
-                <div class="breadcrumb">
-                    <a href="{{ url_for('class_controller.class_overview', class_id=class_obj.id) }}" class="breadcrumb-link">
-                        <i class="fas fa-book"></i> {{ class_obj.name }}
-                    </a>
-                    <i class="fas fa-chevron-right"></i>
-                    <a href="{{ url_for('enhanced_module.edit_module_simple', module_id=module.id) }}" class="breadcrumb-link">
-                        {{ module.title }}
-                    </a>
-                    <i class="fas fa-chevron-right"></i>
-                    <span>{{ action }} Lesson</span>
+        {% if simulations %}
+        <div class="nav-section" style="margin-top: 24px;">
+            <h3 class="nav-section-title">
+                <i class="fas fa-flask"></i>
+                Available Simulations
+                <span class="category-count">{{ simulations|length }}</span>
+            </h3>
+            <div class="media-items" style="max-height: 200px; overflow-y: auto;">
+                {% for simulation in simulations[:3] %}
+                <div class="media-item">
+                    <div class="media-icon video">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <div class="media-info">
+                        <div class="media-title">{{ simulation.title }}</div>
+                        <div class="media-meta">Simulation</div>
+                    </div>
                 </div>
-                <h1 class="page-title" style="color: var(--text-primary); margin: 16px 0 8px 0; font-size: 2rem; font-weight: 700;">
-                    <i class="fas fa-graduation-cap" style="color: var(--cyber-glow); margin-right: 12px;"></i>
-                    {{ action }} Lesson
-                </h1>
-                <p class="page-description" style="color: var(--text-secondary); font-size: 1.1rem; margin: 0;">
-                    {{ action }} lesson for Module {{ module.module_number }}: {{ module.title }}
-                </p>
+                {% endfor %}
+                {% if simulations|length > 3 %}
+                <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 8px;">
+                    +{{ simulations|length - 3 }} more available
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="quick-actions" style="margin-top: 24px;">
+            <a href="{{ url_for('enhanced_module.edit_module_simple', module_id=module.id) }}" class="action-btn">
+                <i class="fas fa-times"></i>
+                Cancel
+            </a>
+            {% if lesson %}
+            <a href="{{ url_for('lesson_editor.advanced_editor', lesson_id=lesson.id) }}" class="action-btn">
+                <i class="fas fa-magic"></i>
+                Advanced Editor
+            </a>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="module-container">
+        <!-- Module Header -->
+        <div class="module-header">
+            <div class="breadcrumb" style="justify-content: center; margin-bottom: 16px;">
+                <i class="fas fa-home"></i>
+                <a href="{{ url_for('class_controller.class_overview', class_id=class_obj.id) }}" class="breadcrumb-link">
+                    {{ class_obj.name }}
+                </a>
+                <i class="fas fa-chevron-right"></i>
+                <span>{{ module.title }}</span>
+            </div>
+            <h1 class="module-title">{{ lesson.title if lesson else 'New Lesson' }}</h1>
+            <p class="module-subtitle">{{ lesson.description if lesson else 'Create a new lesson for this module' }}</p>
+            <div class="module-meta">
+                <div class="meta-item">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Module {{ module.module_number }}</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-clock"></i>
+                    <span>{{ lesson.estimated_duration if lesson else '45' }} minutes</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-pen"></i>
+                    <span>Editor Mode</span>
+                </div>
             </div>
         </div>
 
-        <!-- Enhanced Form Container with instructor Dashboard Styling -->
-        <div class="lesson-form-container modern-card" style="background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);">
-            <form method="POST" action="{{ url_for('lesson.update_lesson', lesson_id=lesson.id) if lesson else url_for('lesson.create_lesson', class_id=class_obj.id, module_id=module.id) }}">
-                <!-- Hidden field to ensure module_id is always present -->
-                <input type="hidden" name="module_id" value="{{ module.id }}">
-                
+        <!-- Form Content -->
+        <form method="POST" action="{{ url_for('lesson.update_lesson', lesson_id=lesson.id) if lesson else url_for('lesson.create_lesson', class_id=class_obj.id, module_id=module.id) }}">
+            <input type="hidden" name="module_id" value="{{ module.id }}">
+            
             <!-- Basic Information -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-info-circle"></i>
-                    Basic Information
-                </h3>
+            <div class="content-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-info-circle"></i>
+                        Basic Information
+                    </h3>
+                </div>
                 
                 <div class="form-row">
                     <div class="form-group">
@@ -462,11 +959,13 @@
             </div>
 
             <!-- Learning Content -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-book-open"></i>
-                    Learning Content
-                </h3>
+            <div class="content-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-book-open"></i>
+                        Learning Content
+                    </h3>
+                </div>
                 
                 <div class="form-group">
                     <label class="form-label">Learning Objectives</label>
@@ -490,39 +989,17 @@
                 </div>
             </div>
 
-            <!-- Settings -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-cog"></i>
-                    Settings
-                </h3>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Estimated Duration (minutes)</label>
-                        <input type="number" name="estimated_duration" class="form-input" 
-                               value="{{ lesson.estimated_duration if lesson else 30 }}" 
-                               min="1" max="300">
-                        <div class="form-help">Expected time for students to complete this lesson</div>
-                    </div>
-                </div>
-                
-                <div class="checkbox-group">
-                    <input type="checkbox" id="requires_simulation" name="requires_simulation_completion" 
-                           class="form-checkbox" {{ 'checked' if lesson and lesson.requires_simulation_completion else '' }}>
-                    <label for="requires_simulation" class="checkbox-label">
-                        Require simulation completion to mark lesson as complete
-                    </label>
-                </div>
-            </div>
+            
 
             <!-- Attached Simulations -->
             {% if simulations %}
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-flask"></i>
-                    Attached Simulations
-                </h3>
+            <div class="content-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-flask"></i>
+                        Attached Simulations
+                    </h3>
+                </div>
                 
                 <div class="simulation-selector">
                     {% for simulation in simulations %}
@@ -539,25 +1016,13 @@
                     </div>
                     {% endfor %}
                 </div>
-                <div class="form-help">Select simulations that students should complete as part of this lesson</div>
+                <div class="form-help" style="margin-top: 16px;">Select simulations that students should complete as part of this lesson</div>
             </div>
             {% endif %}
 
-            <!-- Enhanced Form Actions with instructor Dashboard Button Styling -->
+            <!-- Form Actions -->
             <div class="form-actions">
-                <a href="{{ url_for('enhanced_module.edit_module_simple', module_id=module.id) }}" class="btn btn-secondary action-btn">
-                    <i class="fas fa-times"></i>
-                    Cancel
-                </a>
-                
-                {% if lesson %}
-                <a href="{{ url_for('lesson_editor.advanced_editor', lesson_id=lesson.id) }}" class="btn btn-primary action-btn primary">
-                    <i class="fas fa-magic"></i>
-                    Advanced Editor
-                </a>
-                {% endif %}
-                
-                <button type="submit" class="btn btn-primary action-btn primary">
+                <button type="submit" class="action-btn primary" style="margin-left: auto;">
                     <i class="fas fa-save"></i>
                     {{ action }} Lesson
                 </button>
@@ -565,7 +1030,6 @@
         </form>
     </div>
 </div>
-</main>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

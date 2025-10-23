@@ -866,19 +866,26 @@ class UserController:
         from werkzeug.utils import secure_filename
         from flask import session
         
-        # CRITICAL FIX: Enforce admin namespace isolation
+        # Allow both legacy admin namespace and instructor namespace to access this route
         auth_namespace = session.get('auth_namespace', 'unknown')
-        if auth_namespace != 'admin':
-            flash('Access denied. Admin credentials required.', 'error')
+        if auth_namespace not in {'admin', 'instructor'}:
+            flash('Access denied. Instructor credentials required.', 'error')
             session.clear()  # Clear potentially poisoned session
             return redirect(url_for('auth.login'))
-        
-        if not isinstance(current_user, Instructor):
+
+        # Accept both legacy Instructor accounts and new InstructorUser accounts
+        if isinstance(current_user, Instructor):
+            admin = current_user
+            model_cls = Instructor
+            other_model_cls = InstructorUser
+        elif isinstance(current_user, InstructorUser):
+            admin = current_user
+            model_cls = InstructorUser
+            other_model_cls = Instructor
+        else:
             flash('Access denied', 'error')
             session.clear()  # Clear potentially poisoned session
             return redirect(url_for('auth.login'))
-        
-        admin = current_user
         
         # Get form data
         username = request.form.get('username', '').strip()
@@ -894,11 +901,31 @@ class UserController:
                 flash('Username is required', 'error')
                 return redirect(url_for('admin_user.admin_profile'))
             
-            # Check if username is already taken by another admin
-            existing_admin = Instructor.query.filter(Admin.username == username, Admin.id != admin.id).first()
+            # Check if username is already taken by another admin/instructor
+            existing_admin = model_cls.query.filter(
+                model_cls.username == username,
+                model_cls.id != admin.id
+            ).first()
             if existing_admin:
                 flash('Username is already taken', 'error')
                 return redirect(url_for('admin_user.admin_profile'))
+
+            # Also prevent collisions across instructor/admin tables
+            username_conflict = other_model_cls.query.filter_by(username=username).first()
+            if username_conflict:
+                flash('Username is already taken by another account type', 'error')
+                return redirect(url_for('admin_user.admin_profile'))
+
+            # Enforce unique email across both account types when provided
+            if email:
+                email_conflict_same = model_cls.query.filter(
+                    model_cls.email == email,
+                    model_cls.id != admin.id
+                ).first()
+                email_conflict_other = other_model_cls.query.filter_by(email=email).first()
+                if email_conflict_same or email_conflict_other:
+                    flash('Email address is already in use.', 'error')
+                    return redirect(url_for('admin_user.admin_profile'))
             
             # Handle password update
             if new_password:

@@ -216,6 +216,8 @@ def create_module(class_id):
         
         # Validate required fields
         if not title:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'error': 'Module title is required'}), 400
             flash('Module title is required', 'error')
             return redirect(url_for('enhanced_module.create_module_form', class_id=class_id))
         
@@ -370,16 +372,34 @@ def create_module(class_id):
             print(f"⚠️ WebSocket emit failed (non-critical): {ws_error}")
             logging.warning(f'WebSocket emit failed for module creation: {ws_error}')
         
+        # Check if this is an AJAX request
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
+            return jsonify({
+                'success': True,
+                'message': 'Module created successfully!',
+                'module': {
+                    'id': module.id,
+                    'title': module.title,
+                    'description': module.description,
+                    'order_index': module.order_index,
+                    'class_id': module.class_id
+                }
+            }), 200
+        
         flash('Module created successfully!', 'success')
         return redirect(url_for('dashboard.class_content_manager') + f'?class_id={class_id}&module_id={module.id}')
         
     except ValueError as e:
         logging.error(f'CREATE MODULE ValueError: {e}')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'error': f'Invalid input: {str(e)}'}), 400
         flash(f'Invalid input: {str(e)}', 'error')
         return redirect(url_for('enhanced_module.create_module_form', class_id=class_id))
     except Exception as e:
         logging.error(f'CREATE MODULE Exception: {e}')
         db.session.rollback()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
+            return jsonify({'success': False, 'error': f'Error creating module: {str(e)}'}), 500
         flash(f'Error creating module: {str(e)}', 'error')
         return redirect(url_for('enhanced_module.create_module_form', class_id=class_id))
 
