@@ -28,19 +28,27 @@ class BadgeService:
         """
         newly_earned_badges = []
         
-        if challenge_type == 'crimping':
+        # Normalize challenge type to handle variants
+        # 'linkup_easy', 'troubleshooting_medium', 'troubleshooting_hard' -> 'troubleshooting'
+        normalized_type = challenge_type
+        if challenge_type.startswith('linkup') or challenge_type.startswith('troubleshooting'):
+            normalized_type = 'troubleshooting'
+        elif challenge_type == 'quiz_challenge':
+            normalized_type = 'quiz'
+        
+        if normalized_type == 'crimping':
             badges = BadgeService._check_crimping_badges(user_id, score, metadata)
             newly_earned_badges.extend(badges)
         
-        elif challenge_type == 'osi':
+        elif normalized_type == 'osi':
             badges = BadgeService._check_osi_badges(user_id, score, metadata)
             newly_earned_badges.extend(badges)
         
-        elif challenge_type == 'troubleshooting':
+        elif normalized_type == 'troubleshooting':
             badges = BadgeService._check_troubleshooting_badges(user_id, score, metadata)
             newly_earned_badges.extend(badges)
         
-        elif challenge_type == 'quiz' or challenge_type == 'quiz_challenge':
+        elif normalized_type == 'quiz':
             badges = BadgeService._check_quiz_badges(user_id, score, metadata)
             newly_earned_badges.extend(badges)
         
@@ -162,7 +170,7 @@ class BadgeService:
         completed_modules = ChallengeScore.query.filter_by(
             user_id=user_id,
             challenge_type='troubleshooting'
-        ).with_entities(ChallengeScore.metadata).all()
+        ).with_entities(ChallengeScore.challenge_metadata).all()
         
         # Extract unique module categories from metadata
         unique_completed = set()
