@@ -2321,6 +2321,9 @@ html {
           <span class="participant-count" id="participantCount">
             <i class="fas fa-users"></i> <span id="participantCountNum">0</span>
           </span>
+          <button onclick="exitLiveQuiz()" style="margin-left: 12px; padding: 8px 16px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+            <i class="fas fa-times"></i> Exit
+          </button>
         </div>
       </div>
 
@@ -2404,6 +2407,9 @@ html {
               <span class="stat-label">Correct Answers</span>
             </div>
           </div>
+          <button onclick="exitLiveQuiz()" style="margin-top: 20px; padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            Back to Lesson
+          </button>
         </div>
       </div>
     </div>
@@ -4311,8 +4317,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const activeSession = liveQuizSessions.find(s => s.status === 'active');
         if (activeSession) {
             console.log('Auto-joining active quiz session:', activeSession.id);
-            // Show notification or auto-join prompt
-            showLiveQuizNotification(activeSession);
+            // Notification modal removed per user request
+            // showLiveQuizNotification(activeSession);
         }
     }
 });
@@ -4553,6 +4559,12 @@ function initializeLiveQuiz(sessionId, questions) {
   const liveQuizContainer = document.getElementById('liveQuizContainer');
   if (liveQuizContainer) {
     liveQuizContainer.style.display = 'block';
+  }
+  
+  // Hide lesson content when Live Quiz is active
+  const lessonContent = document.querySelector('.lesson-content');
+  if (lessonContent) {
+    lessonContent.style.display = 'none';
   }
   
   // Set session code display
@@ -4938,6 +4950,43 @@ function showQuizCompletion(data) {
   
   // Update final leaderboard
   updateLeaderboard(data.leaderboard);
+}
+
+// Exit Live Quiz and return to lesson
+function exitLiveQuiz() {
+  // Hide Live Quiz container
+  const liveQuizContainer = document.getElementById('liveQuizContainer');
+  if (liveQuizContainer) {
+    liveQuizContainer.style.display = 'none';
+  }
+  
+  // Show lesson content
+  const lessonContent = document.querySelector('.lesson-content');
+  if (lessonContent) {
+    lessonContent.style.display = 'block';
+  }
+  
+  // Show Live Quiz button again
+  const buttonContainer = document.getElementById('liveQuizButtonContainer');
+  if (buttonContainer) {
+    buttonContainer.style.display = 'block';
+  }
+  
+  // Disconnect socket if connected
+  if (liveQuizState.socket) {
+    liveQuizState.socket.disconnect();
+    liveQuizState.socket = null;
+    liveQuizState.isConnected = false;
+  }
+  
+  // Reset quiz state
+  liveQuizState.sessionId = null;
+  liveQuizState.questions = [];
+  liveQuizState.currentQuestionIndex = 0;
+  liveQuizState.currentQuestion = null;
+  liveQuizState.answered = false;
+  
+  console.log('[LiveQuiz] Exited Live Quiz and returned to lesson');
 }
 
 // Toggle Leaderboard
