@@ -24,6 +24,10 @@ fi
 
 cd /home/ubuntu/RiddleNet
 
+# Activate virtual environment
+echo "Activating virtual environment..."
+source venv/bin/activate
+
 echo -e "${YELLOW}📋 Step 1: Backing up database...${NC}"
 # Create backup timestamp
 BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -34,7 +38,7 @@ echo "Backup timestamp: $BACKUP_TIMESTAMP"
 
 echo ""
 echo -e "${YELLOW}📋 Step 2: Checking current schema...${NC}"
-python3 << 'EOF'
+python << 'EOF'
 import sys
 sys.path.insert(0, '/home/ubuntu/RiddleNet')
 from __init__ import create_app, db
@@ -67,7 +71,7 @@ EOF
 
 echo ""
 echo -e "${YELLOW}📋 Step 3: Running migration...${NC}"
-python3 migrations/011_update_live_quiz_responses_columns.py upgrade
+python migrations/011_update_live_quiz_responses_columns.py upgrade
 
 if [ $? -eq 0 ]; then
     echo ""
@@ -75,7 +79,7 @@ if [ $? -eq 0 ]; then
     
     echo ""
     echo -e "${YELLOW}📋 Step 4: Verifying schema...${NC}"
-    python3 << 'EOF'
+    python << 'EOF'
 import sys
 sys.path.insert(0, '/home/ubuntu/RiddleNet')
 from __init__ import create_app, db

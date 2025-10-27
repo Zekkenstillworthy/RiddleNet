@@ -22,10 +22,23 @@ scp -i riddlenetv1.pem deployment\fix_production_live_quiz_responses.sh ubuntu@5
 ssh -i riddlenetv1.pem ubuntu@54.66.229.118
 ```
 
-### 3️⃣ Run the Automated Fix
+### 3️⃣ Run the Migration
 ```bash
 cd ~/RiddleNet
-chmod +x deployment/fix_production_live_quiz_responses.sh
+
+# Activate virtual environment (IMPORTANT!)
+source venv/bin/activate
+
+# Run migration
+python migrations/011_update_live_quiz_responses_columns.py upgrade
+
+# Restart application
+sudo systemctl restart riddlenet
+```
+
+**Alternative: Use Automated Script**
+```bash
+# After activating venv, run:
 ./deployment/fix_production_live_quiz_responses.sh
 ```
 
@@ -53,13 +66,23 @@ sudo journalctl -u riddlenet -f --lines=50
 ### Manual Migration:
 ```bash
 cd ~/RiddleNet
-python3 migrations/011_update_live_quiz_responses_columns.py upgrade
+
+# MUST activate venv first!
+source venv/bin/activate
+
+# Run migration
+python migrations/011_update_live_quiz_responses_columns.py upgrade
+
+# Restart application
 sudo systemctl restart riddlenet
 ```
 
 ### Check Migration Success:
 ```bash
-python3 << 'EOF'
+cd ~/RiddleNet
+source venv/bin/activate  # Activate venv first!
+
+python << 'EOF'
 import sys
 sys.path.insert(0, '/home/ubuntu/RiddleNet')
 from __init__ import create_app, db
@@ -135,15 +158,18 @@ chmod +x deployment/fix_production_live_quiz_responses.sh
 
 ### Error: "Module not found"
 ```bash
-# Ensure you're in the RiddleNet directory
+# Ensure you're in the RiddleNet directory AND activated venv
 cd ~/RiddleNet
+source venv/bin/activate
 pwd  # Should show /home/ubuntu/RiddleNet
 ```
 
 ### Error: "Application context" error
 ```bash
-# Use the full Python path
-/usr/bin/python3 migrations/011_update_live_quiz_responses_columns.py upgrade
+# Make sure venv is activated
+cd ~/RiddleNet
+source venv/bin/activate
+python migrations/011_update_live_quiz_responses_columns.py upgrade
 ```
 
 ### Application won't restart
