@@ -869,10 +869,31 @@ def module_detail(class_id, module_id):
             for session in all_sessions:
                 live_quiz_sessions.append(session.to_dict())
             
-            print(f"Found {len(live_quiz_sessions)} live quiz sessions for module {module_id}")
+            # Enhanced logging for debugging production issues
+            print(f"[LiveQuiz] Class {class_id}, Module {module_id}: Found {len(live_quiz_sessions)} sessions")
+            if live_quiz_sessions:
+                for session in live_quiz_sessions:
+                    print(f"  ✅ Session #{session.get('id')}: {session.get('title')} ({session.get('status')}) - Code: {session.get('session_code')}")
+            else:
+                # Check if ANY sessions exist for this class (debugging)
+                total_class_sessions = LiveQuizSession.query.filter_by(class_id=class_id).count()
+                total_module_sessions = LiveQuizSession.query.filter_by(class_id=class_id, module_id=module_id).count()
+                print(f"  ⚠️  No active/waiting sessions found")
+                print(f"  ℹ️  Total sessions for class {class_id}: {total_class_sessions}")
+                print(f"  ℹ️  Total sessions for this module: {total_module_sessions}")
+                
+                # Show what sessions DO exist for this module (if any)
+                all_module_sessions = LiveQuizSession.query.filter_by(
+                    class_id=class_id, 
+                    module_id=module_id
+                ).all()
+                if all_module_sessions:
+                    print(f"  📝 Existing sessions (all statuses):")
+                    for s in all_module_sessions:
+                        print(f"     - Session #{s.id}: {s.title} (status: {s.status})")
             
         except Exception as e:
-            print(f"Error fetching live quiz sessions: {e}")
+            print(f"[LiveQuiz] Error fetching live quiz sessions: {e}")
             import traceback
             traceback.print_exc()
             live_quiz_sessions = []
