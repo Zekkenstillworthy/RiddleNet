@@ -1,4 +1,4 @@
-"""
+﻿"""
 Advanced Lesson Editor Controller
 Provides rich multimedia content management and real-time preview capabilities
 """

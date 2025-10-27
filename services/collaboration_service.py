@@ -220,23 +220,23 @@ class TeamSession:
     def send_chat_message(self, user_id: str, message: str, message_type: str = 'text') -> Dict[str, Any]:
         """Send a chat message"""
         with self.state_lock:
-            print(f"💬 [DEBUG] TeamSession.send_chat_message called")
-            print(f"💬 [DEBUG]   - user_id: {user_id} (type: {type(user_id)})")
-            print(f"💬 [DEBUG]   - message: {message}")
-            print(f"💬 [DEBUG]   - session_id: {self.session_id}")
-            print(f"💬 [DEBUG]   - team_members: {self.team_members}")
-            print(f"💬 [DEBUG]   - participants: {list(self.participants.keys())}")
+            print(f"[MSG] [DEBUG] TeamSession.send_chat_message called")
+            print(f"[MSG] [DEBUG]   - user_id: {user_id} (type: {type(user_id)})")
+            print(f"[MSG] [DEBUG]   - message: {message}")
+            print(f"[MSG] [DEBUG]   - session_id: {self.session_id}")
+            print(f"[MSG] [DEBUG]   - team_members: {self.team_members}")
+            print(f"[MSG] [DEBUG]   - participants: {list(self.participants.keys())}")
             
             if user_id not in self.team_members:
-                print(f"❌ [DEBUG] User {user_id} not in team_members")
+                print(f"[ERROR] [DEBUG] User {user_id} not in team_members")
                 return {'success': False, 'error': 'User not assigned to this team'}
             
             if user_id not in self.participants:
-                print(f"❌ [DEBUG] User {user_id} not in participants")
+                print(f"[ERROR] [DEBUG] User {user_id} not in participants")
                 return {'success': False, 'error': 'User not in session'}
             
             if not self.participants[user_id]['permissions']['can_chat']:
-                print(f"❌ [DEBUG] User {user_id} doesn't have chat permission")
+                print(f"[ERROR] [DEBUG] User {user_id} doesn't have chat permission")
                 return {'success': False, 'error': 'Chat permission denied'}
             
             # CRITICAL FIX: Get fresh username from database instead of cached value
@@ -245,11 +245,11 @@ class TeamSession:
                 from models import User
                 user = User.query.get(int(user_id))
                 actual_username = user.username if user else self.participants[user_id]['username']
-                print(f"💬 [DEBUG] Username lookup:")
-                print(f"💬 [DEBUG]   - Cached username: {self.participants[user_id]['username']}")
-                print(f"💬 [DEBUG]   - Fresh username from DB: {actual_username}")
+                print(f"[MSG] [DEBUG] Username lookup:")
+                print(f"[MSG] [DEBUG]   - Cached username: {self.participants[user_id]['username']}")
+                print(f"[MSG] [DEBUG]   - Fresh username from DB: {actual_username}")
             except Exception as e:
-                print(f"⚠️ [DEBUG] Failed to get fresh username from DB: {e}")
+                print(f"[WARNING] [DEBUG] Failed to get fresh username from DB: {e}")
                 actual_username = self.participants[user_id]['username']
             
             chat_message = {
@@ -262,10 +262,10 @@ class TeamSession:
                 'session_id': self.session_id
             }
             
-            print(f"💬 [DEBUG] Created chat_message:")
-            print(f"💬 [DEBUG]   - id: {chat_message['id']}")
-            print(f"💬 [DEBUG]   - user_id: {chat_message['user_id']}")
-            print(f"💬 [DEBUG]   - username: {chat_message['username']}")
+            print(f"[MSG] [DEBUG] Created chat_message:")
+            print(f"[MSG] [DEBUG]   - id: {chat_message['id']}")
+            print(f"[MSG] [DEBUG]   - user_id: {chat_message['user_id']}")
+            print(f"[MSG] [DEBUG]   - username: {chat_message['username']}")
             
             self.chat_messages.append(chat_message)
             
@@ -275,7 +275,7 @@ class TeamSession:
             
             self.last_activity = datetime.utcnow()
             
-            print(f"✅ [DEBUG] Chat message created successfully")
+            print(f"[OK] [DEBUG] Chat message created successfully")
             return {'success': True, 'message': chat_message}
     
     def get_chat_history(self, limit: int = 50) -> List[Dict[str, Any]]:

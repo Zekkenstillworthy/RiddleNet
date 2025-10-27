@@ -33,7 +33,7 @@ def run_migration():
             )
             
             if not os.path.exists(migration_file):
-                print(f"❌ Migration file not found: {migration_file}")
+                print(f"[ERROR] Migration file not found: {migration_file}")
                 return False
             
             print(f"📄 Reading migration file: {migration_file}")
@@ -72,7 +72,7 @@ def run_migration():
             if current_statement:
                 statements.append('\n'.join(current_statement))
             
-            print(f"📝 Found {len(statements)} SQL statements to execute")
+            print(f"[NOTE] Found {len(statements)} SQL statements to execute")
             print()
             
             # Execute each statement
@@ -90,27 +90,27 @@ def run_migration():
                     db.session.execute(text(statement))
                     db.session.commit()
                     success_count += 1
-                    print(f"    ✅ Success")
+                    print(f"    [OK] Success")
                     
                 except Exception as e:
                     error_msg = str(e)
                     # Check if it's an "already exists" error (which is OK)
                     if 'already exists' in error_msg.lower() or 'duplicate' in error_msg.lower():
-                        print(f"    ⚠️  Already exists (skipping)")
+                        print(f"    [WARNING]  Already exists (skipping)")
                         db.session.rollback()
                         success_count += 1
                     else:
-                        print(f"    ❌ Error: {error_msg}")
+                        print(f"    [ERROR] Error: {error_msg}")
                         db.session.rollback()
             
             print()
             print("=" * 70)
-            print(f"✅ Migration complete! {success_count}/{len(statements)} statements executed")
+            print(f"[OK] Migration complete! {success_count}/{len(statements)} statements executed")
             print("=" * 70)
             print()
             
             # Verify the changes
-            print("🔍 Verifying migration...")
+            print("[DEBUG] Verifying migration...")
             
             # Check if task_config column exists
             try:
@@ -121,11 +121,11 @@ def run_migration():
                     AND column_name = 'task_config'
                 """))
                 if result.fetchone():
-                    print("✅ task_config column exists in simulations table")
+                    print("[OK] task_config column exists in simulations table")
                 else:
-                    print("⚠️  task_config column NOT found in simulations table")
+                    print("[WARNING]  task_config column NOT found in simulations table")
             except Exception as e:
-                print(f"⚠️  Could not verify task_config column: {e}")
+                print(f"[WARNING]  Could not verify task_config column: {e}")
             
             # Check if task_assignments table exists
             try:
@@ -136,32 +136,32 @@ def run_migration():
                     )
                 """))
                 if result.scalar():
-                    print("✅ task_assignments table exists")
+                    print("[OK] task_assignments table exists")
                     
                     # Count rows
                     count_result = db.session.execute(text("SELECT COUNT(*) FROM task_assignments"))
                     count = count_result.scalar()
                     print(f"   📊 {count} task assignment(s) in database")
                 else:
-                    print("⚠️  task_assignments table NOT found")
+                    print("[WARNING]  task_assignments table NOT found")
             except Exception as e:
-                print(f"⚠️  Could not verify task_assignments table: {e}")
+                print(f"[WARNING]  Could not verify task_assignments table: {e}")
             
             # Check if sample data was added to simulation id=1
             try:
                 from instructor.models.simulation import Simulation
                 sim = Simulation.query.get(1)
                 if sim and sim.task_config:
-                    print(f"✅ Sample task configuration loaded in simulation #{sim.id} ('{sim.title}')")
+                    print(f"[OK] Sample task configuration loaded in simulation #{sim.id} ('{sim.title}')")
                     print(f"   Task enabled: {sim.task_config.get('enabled', False)}")
                     print(f"   Devices: {len(sim.task_config.get('device_requirements', []))}")
                     print(f"   Connections: {len(sim.task_config.get('connection_requirements', []))}")
                 elif sim:
-                    print(f"⚠️  Simulation #{sim.id} exists but has no task_config")
+                    print(f"[WARNING]  Simulation #{sim.id} exists but has no task_config")
                 else:
                     print("ℹ️  No simulation with id=1 found (this is OK for new installations)")
             except Exception as e:
-                print(f"⚠️  Could not verify sample data: {e}")
+                print(f"[WARNING]  Could not verify sample data: {e}")
             
             print()
             print("=" * 70)
@@ -178,7 +178,7 @@ def run_migration():
             return True
             
         except Exception as e:
-            print(f"\n❌ Migration failed: {str(e)}")
+            print(f"\n[ERROR] Migration failed: {str(e)}")
             import traceback
             traceback.print_exc()
             return False

@@ -1,4 +1,4 @@
-from __init__ import db
+﻿from __init__ import db
 from instructor.models.question import Question
 from werkzeug.security import generate_password_hash
 from instructor.models.user import Instructor
@@ -54,13 +54,13 @@ def setup_database():
         seq_name = seq_name_result.scalar_one()
         db.session.execute(text("SELECT setval(:seq, :val, true)"), {"seq": seq_name, "val": next_val})
         db.session.commit()
-        print("[database_setup] ✅ simulation_assignments.id sequence synced")
+        print("[database_setup] [OK] simulation_assignments.id sequence synced")
     except Exception as e:
         db.session.rollback()
-        print(f"[database_setup] ⚠️ Sequence sync skipped or failed: {e}")
+        print(f"[database_setup] [WARNING] Sequence sync skipped or failed: {e}")
     
     print("Database setup complete!")
-    print("✅ Performance feedback tables created successfully!")
+    print("[OK] Performance feedback tables created successfully!")
 
 def migrate_existing_tables():
     """Previously performed ad-hoc SQLite PRAGMA based migrations.

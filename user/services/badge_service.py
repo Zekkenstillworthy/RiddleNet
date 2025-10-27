@@ -203,7 +203,7 @@ class BadgeService:
             )
             if is_new:
                 badges.append(badge.to_dict())
-                print(f"[Badge Award] ✅ Troubleshooting Pro badge awarded to user {user_id}!")
+                print(f"[Badge Award] [OK] Troubleshooting Pro badge awarded to user {user_id}!")
         
         # Network Detective - Requires ALL 7 phases complete (removed score requirement)
         elif all_phases_complete:
@@ -223,7 +223,7 @@ class BadgeService:
             )
             if is_new:
                 badges.append(badge.to_dict())
-                print(f"[Badge Award] ✅ Network Detective badge awarded to user {user_id}!")
+                print(f"[Badge Award] [OK] Network Detective badge awarded to user {user_id}!")
         
         return badges
     

@@ -638,7 +638,7 @@ def get_completed_challenges(challenge_type):
         from user.models.challenge_progress import ChallengeProgress
         
         user_id = session['user_id']
-        print(f"[API] ✅ Fetching completed challenges for user {user_id}, type: {challenge_type}")
+        print(f"[API] [OK] Fetching completed challenges for user {user_id}, type: {challenge_type}")
         
         # Get progress record for this challenge type
         progress = ChallengeProgress.query.filter_by(
@@ -657,7 +657,7 @@ def get_completed_challenges(challenge_type):
                 # Check if we have an array of completed scenarios (NEW format)
                 if 'completed_scenarios' in progress.state_data:
                     completed_scenarios_ids = progress.state_data['completed_scenarios']
-                    print(f"[API] ✅ Found completed_scenarios array with {len(completed_scenarios_ids)} items")
+                    print(f"[API] [OK] Found completed_scenarios array with {len(completed_scenarios_ids)} items")
                     
                     for scenario_id in completed_scenarios_ids:
                         completed_scenarios.append({
@@ -678,7 +678,7 @@ def get_completed_challenges(challenge_type):
                         'completed_at': progress.last_updated.isoformat() if progress.last_updated else None
                     })
             else:
-                print(f"[API] ⚠️ Progress record exists but state_data is empty")
+                print(f"[API] [WARNING] Progress record exists but state_data is empty")
         else:
             print(f"[API] ℹ️ No progress record found for challenge_type: {challenge_type}")
         
@@ -693,7 +693,7 @@ def get_completed_challenges(challenge_type):
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
-        print(f"[API] ❌ ERROR in get_completed_challenges:")
+        print(f"[API] [ERROR] ERROR in get_completed_challenges:")
         print(f"[API] Error type: {type(e).__name__}")
         print(f"[API] Error message: {str(e)}")
         print(f"[API] Full traceback:")

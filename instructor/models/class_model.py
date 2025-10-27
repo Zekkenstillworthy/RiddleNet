@@ -1,4 +1,4 @@
-from __init__ import db
+﻿from __init__ import db
 from datetime import datetime
 
 # Association table for many-to-many relationship between classes and Quiz

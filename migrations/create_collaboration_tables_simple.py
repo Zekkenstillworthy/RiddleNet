@@ -120,11 +120,11 @@ def create_collaboration_tables():
         cursor.close()
         conn.close()
         
-        print("✅ Successfully created collaboration tables")
+        print("[OK] Successfully created collaboration tables")
         return True
         
     except Exception as e:
-        print(f"❌ Error creating collaboration tables: {str(e)}")
+        print(f"[ERROR] Error creating collaboration tables: {str(e)}")
         return False
 
 if __name__ == "__main__":

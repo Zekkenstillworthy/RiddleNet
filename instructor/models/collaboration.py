@@ -1,4 +1,4 @@
-"""
+﻿"""
 Database models for collaboration settings and lobby management
 """
 

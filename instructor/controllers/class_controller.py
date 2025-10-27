@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response, make_response
+﻿from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response, make_response
 from flask_login import login_required, current_user
 from utils.auth_decorators import instructor_required
 from instructor.models.class_model import Class
@@ -28,12 +28,12 @@ enhanced_generator = enhanced_template_generator
 def index():
     """Display the class management page"""
     print("=" * 80)
-    print("🔍 CLASS CONTROLLER INDEX: Route accessed at /instructor/classes")
-    print(f"🔍 Current user: {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
-    print(f"🔍 User type: {type(current_user)}")
+    print("[DEBUG] CLASS CONTROLLER INDEX: Route accessed at /instructor/classes")
+    print(f"[DEBUG] Current user: {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
+    print(f"[DEBUG] User type: {type(current_user)}")
     from flask import session, request
-    print(f"🔍 Auth namespace: {session.get('auth_namespace', 'unknown')}")
-    print(f"🔍 Referrer: {request.referrer}")
+    print(f"[DEBUG] Auth namespace: {session.get('auth_namespace', 'unknown')}")
+    print(f"[DEBUG] Referrer: {request.referrer}")
     print("=" * 80)
     
     # Show only classes owned by this admin unless super_admin
@@ -282,7 +282,7 @@ def create_class():
             # UNIVERSAL TEMPLATE SYSTEM - No need to generate class-specific templates
             # All classes now use the dynamic universal template (dynamic_class_universal.html)
             try:
-                print(f"✅ Class {new_class.id} created - using universal template system")
+                print(f"[OK] Class {new_class.id} created - using universal template system")
                 print(f"   Template: {config['universal_template']}")
                 print(f"   Route: /class/{new_class.id} (handled by universal_class_routes.py)")
                 print(f"   Mode: Universal template only (configured)")
@@ -299,7 +299,7 @@ def create_class():
         else:
             # LEGACY SYSTEM - Generate class-specific templates (if configured)
             try:
-                print(f"⚠️ Class {new_class.id} created - using legacy template generation")
+                print(f"[WARNING] Class {new_class.id} created - using legacy template generation")
                 generation_result = enhanced_generator.generate_all_class_resources(new_class.id)
                 route_registry.register_class_routes(new_class.id)
                 integration_info = enhanced_generator.create_class_dashboard_integration(new_class)
@@ -419,7 +419,7 @@ def regenerate_class_template(class_id):
         if should_use_universal_template():
             # UNIVERSAL TEMPLATE SYSTEM - No regeneration needed
             # All classes use dynamic_class_universal.html which adapts automatically
-            print(f"✅ Class {class_id} template refresh requested")
+            print(f"[OK] Class {class_id} template refresh requested")
             print(f"   Using universal template: {config['universal_template']}")
             print(f"   No regeneration needed - template adapts dynamically")
             print(f"   Mode: Universal template only (configured)")
@@ -441,7 +441,7 @@ def regenerate_class_template(class_id):
             })
         else:
             # LEGACY SYSTEM - Regenerate class-specific templates
-            print(f"⚠️ Class {class_id} using legacy template regeneration")
+            print(f"[WARNING] Class {class_id} using legacy template regeneration")
             generation_result = enhanced_generator.regenerate_class_resources(class_id)
             route_registry.refresh_class_routes(class_id)
             integration_info = enhanced_generator.create_class_dashboard_integration(class_obj)

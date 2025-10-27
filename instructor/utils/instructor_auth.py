@@ -1,4 +1,4 @@
-from flask import redirect, url_for, flash, request, session
+﻿from flask import redirect, url_for, flash, request, session
 from flask_login import current_user
 from functools import wraps
 
@@ -32,7 +32,7 @@ def protect_instructor_routes(app):
     @app.before_request
     def check_instructor_auth():
         # Debug output
-        print(f"🔍 Protection check for path: {request.path}")
+        print(f"[DEBUG] Protection check for path: {request.path}")
         
         # List of routes that don't require authentication (login/static files)
         exempt_routes = [
@@ -49,12 +49,12 @@ def protect_instructor_routes(app):
         
         # Special case: Allow access to landing page at exactly /instructor/ or /instructor
         if request.path == '/instructor/' or request.path == '/instructor':
-            print(f"✅ Allowing access to instructor landing page")
+            print(f"[OK] Allowing access to instructor landing page")
             return None
         
         # Debug: show which routes are exempt
         is_exempt = any(request.path.startswith(route) for route in exempt_routes)
-        print(f"🛡️ Path '{request.path}' is exempt: {is_exempt}")
+        print(f"[SHIELD] Path '{request.path}' is exempt: {is_exempt}")
         
         # Skip check for exempt routes
         if any(request.path.startswith(route) for route in exempt_routes):

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Week 2 Enhanced Assignment Service
 
 Provides multi-level assignment logic and real-time notification integration
@@ -33,20 +33,20 @@ class EnhancedAssignmentService:
             max_id_result = db.session.execute(text("SELECT COALESCE(MAX(id), 0) FROM simulation_assignments"))
             max_id = max_id_result.scalar_one() or 0
             next_val = max_id if max_id > 0 else 1
-            print(f"🔧 Syncing PK sequence for simulation_assignments.id -> max_id={max_id}, setval={next_val}")
+            print(f"[FIX] Syncing PK sequence for simulation_assignments.id -> max_id={max_id}, setval={next_val}")
 
             # Resolve the sequence name
             seq_name_result = db.session.execute(text("SELECT pg_get_serial_sequence('simulation_assignments','id')"))
             seq_name = seq_name_result.scalar_one()
-            print(f"🔧 Resolved sequence name: {seq_name}")
+            print(f"[FIX] Resolved sequence name: {seq_name}")
 
             # Primary attempt: setval on the resolved sequence
             db.session.execute(text("SELECT setval(:seq, :val, true)"), {"seq": seq_name, "val": next_val})
             db.session.commit()
-            print("✅ PK sequence synced using setval")
+            print("[OK] PK sequence synced using setval")
             return True
         except Exception as e1:
-            print(f"⚠️ setval failed: {e1}; attempting ALTER SEQUENCE fallback")
+            print(f"[WARNING] setval failed: {e1}; attempting ALTER SEQUENCE fallback")
             db.session.rollback()
             try:
                 # Fallback: ALTER SEQUENCE RESTART WITH max_id + 1
@@ -57,10 +57,10 @@ class EnhancedAssignmentService:
                 seq_name = seq_name_result.scalar_one()
                 db.session.execute(text(f"ALTER SEQUENCE {seq_name} RESTART WITH {restart_with}"))
                 db.session.commit()
-                print(f"✅ PK sequence synced using ALTER SEQUENCE RESTART WITH {restart_with}")
+                print(f"[OK] PK sequence synced using ALTER SEQUENCE RESTART WITH {restart_with}")
                 return True
             except Exception as e2:
-                print(f"❌ Failed to sync PK sequence: {e2}")
+                print(f"[ERROR] Failed to sync PK sequence: {e2}")
                 db.session.rollback()
                 return False
 
@@ -199,8 +199,8 @@ class EnhancedAssignmentService:
                                  description: str = "", due_date: Optional[datetime] = None,
                                  max_attempts: int = 3) -> SimulationAssignment:
         """Create an explicit assignment with custom settings"""
-        print(f"🔧 AssignmentService.create_explicit_assignment called")
-        print(f"🔧 Params: sim_id={simulation_id}, class_id={class_id}, title={title}")
+        print(f"[FIX] AssignmentService.create_explicit_assignment called")
+        print(f"[FIX] Params: sim_id={simulation_id}, class_id={class_id}, title={title}")
         
         assigned_by_id = 1
         try:
@@ -212,16 +212,16 @@ class EnhancedAssignmentService:
                 if uid is not None:
                     try:
                         assigned_by_id = int(uid)
-                        print(f"🔧 Using current user ID as assigned_by: {assigned_by_id}")
+                        print(f"[FIX] Using current user ID as assigned_by: {assigned_by_id}")
                     except (TypeError, ValueError):
-                        print(f"🔧 Failed to convert user ID to int, using default: 1")
+                        print(f"[FIX] Failed to convert user ID to int, using default: 1")
                         pass
         except Exception as auth_e:
-            print(f"🔧 Error getting current user, using default assigned_by=1: {auth_e}")
+            print(f"[FIX] Error getting current user, using default assigned_by=1: {auth_e}")
             # If anything goes wrong, keep default fallback
             pass
             
-        print(f"🔧 Creating SimulationAssignment object...")
+        print(f"[FIX] Creating SimulationAssignment object...")
         assignment = SimulationAssignment(
             title=title,
             description=description,
@@ -235,31 +235,31 @@ class EnhancedAssignmentService:
             is_published=True
         )
         
-        print(f"🔧 Adding assignment to database session...")
+        print(f"[FIX] Adding assignment to database session...")
         db.session.add(assignment)
         
-        print(f"🔧 Committing assignment with sequence retry...")
+        print(f"[FIX] Committing assignment with sequence retry...")
         # Use the new sequence sync utility
         try:
             from utils.sequence_sync import commit_with_sequence_retry
             commit_with_sequence_retry('simulation_assignments', 'id')
         except ImportError:
             # Fallback to the old method if new utility is not available
-            print(f"🔧 Using fallback sequence sync method...")
+            print(f"[FIX] Using fallback sequence sync method...")
             self._sync_pk_sequence()
             self._commit_with_sequence_retry()
         
-        print(f"🔧 Assignment committed successfully, ID: {assignment.id}")
+        print(f"[FIX] Assignment committed successfully, ID: {assignment.id}")
 
         # Real-time notification
         try:
-            print(f"🔧 Emitting assignment_created notification...")
+            print(f"[FIX] Emitting assignment_created notification...")
             emit_assignment_created(assignment.id, class_id, 'explicit')
-            print(f"🔧 Notification emitted successfully")
+            print(f"[FIX] Notification emitted successfully")
         except Exception as emit_e:
-            print(f"⚠️  Error emitting assignment_created: {emit_e}")
+            print(f"[WARNING]  Error emitting assignment_created: {emit_e}")
         
-        print(f"🔧 Assignment creation completed successfully")
+        print(f"[FIX] Assignment creation completed successfully")
         return assignment
     
     def auto_assign_new_simulation(self, simulation_id: int) -> List[SimulationAssignment]:

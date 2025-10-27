@@ -30,7 +30,8 @@ class User(db.Model, UserMixin):
     # Define relationship with scores - let SQLAlchemy figure out the join automatically
     scores = db.relationship('Score', backref='user', lazy=True, cascade='all, delete-orphan')
     
-    # Session tracking relationship - temporarily commented out due to missing UserSession model
+    # Session tracking relationship - active sessions for concurrent login prevention
+    # Note: Uncommented to enable session tracking
     # sessions = db.relationship('UserSession', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     
     # The relationship with classes is defined in the Class model

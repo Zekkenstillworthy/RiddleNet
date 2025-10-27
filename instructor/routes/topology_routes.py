@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+﻿from flask import Blueprint, jsonify, request
 from instructor.controllers.topology_controller import TopologyController
 from instructor.models.topology import Topology
 from __init__ import db

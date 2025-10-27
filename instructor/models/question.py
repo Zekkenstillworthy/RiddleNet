@@ -1,4 +1,4 @@
-import json
+﻿import json
 from __init__ import db
 
 class Question(db.Model):

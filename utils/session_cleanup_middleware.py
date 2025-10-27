@@ -1,4 +1,4 @@
-"""
+﻿"""
 Session Cleanup Middleware
 Prevents admin session contamination in user class routes
 """
@@ -41,7 +41,7 @@ def clean_instructor_session_contamination():
             # Ensure admin namespace is set for instructor users
             if 'auth_namespace' not in session or session['auth_namespace'] != 'instructor':
                 session['auth_namespace'] = 'instructor'
-            print(f"🔐 Preserving admin session for admin accessing: {request.path}")
+            print(f"[AUTH] Preserving admin session for admin accessing: {request.path}")
             return
     
     # For user-only routes, clear admin namespace (but don't redirect)
@@ -60,4 +60,4 @@ def init_session_cleanup(app):
         if result is not None:
             return result  # Return redirect if admin is blocked
     
-    print("✅ Session cleanup middleware initialized")
+    print("[OK] Session cleanup middleware initialized")

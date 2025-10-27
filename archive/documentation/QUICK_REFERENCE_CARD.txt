@@ -1,0 +1,217 @@
+╔═══════════════════════════════════════════════════════════════════════╗
+║                  CONCURRENT LOGIN PREVENTION                          ║
+║                        Quick Reference                                ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 📋 WHAT WAS IMPLEMENTED                                             │
+└─────────────────────────────────────────────────────────────────────┘
+
+✅ Session tracking for users and instructors
+✅ Automatic termination of previous sessions on new login
+✅ Session validation on every request
+✅ Session expiry after 24 hours
+✅ WebSocket notifications for terminated sessions
+✅ Database tables for session management
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🚀 QUICK START                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. Run migration:
+   > python migrations\007_add_session_tracking.py upgrade
+
+2. Restart application:
+   > python run.py
+
+3. Test it:
+   - Login as "Gilbert" on Chrome
+   - Login as "Gilbert" on Firefox
+   - Chrome will be logged out automatically
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 📁 FILES CREATED                                                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+NEW FILES (7):
+├── user/models/user_session.py
+├── instructor/models/instructor_session.py
+├── utils/session_guard.py
+├── migrations/007_add_session_tracking.py
+├── scripts/setup_session_tracking.bat
+├── archive/documentation/CONCURRENT_LOGIN_PREVENTION.md
+└── archive/documentation/IMPLEMENTATION_SUMMARY.md
+
+MODIFIED FILES (4):
+├── user/views.py
+├── instructor/controllers/auth_controller.py
+├── application.py
+└── user/models/user.py
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🗄️ DATABASE TABLES                                                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+user_sessions:
+├── id (PK)
+├── user_id (FK → user.id)
+├── session_token (unique, 64 chars)
+├── ip_address
+├── user_agent
+├── created_at
+├── last_activity
+├── expires_at
+└── is_active
+
+instructor_sessions:
+├── id (PK)
+├── instructor_id (FK → instructor.id)
+├── session_token (unique, 64 chars)
+├── ip_address
+├── user_agent
+├── created_at
+├── last_activity
+├── expires_at
+└── is_active
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🔄 HOW IT WORKS                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+LOGIN:
+1. User enters credentials
+2. Check for existing active session
+3. If exists → Terminate old session
+4. Create new session with unique token
+5. Store token in Flask session
+6. User logged in
+
+VALIDATION (Every Request):
+1. Check if user is authenticated
+2. Retrieve session token from Flask session
+3. Validate token in database
+4. Check if active and not expired
+5. Update last_activity
+6. If invalid → Log out and redirect
+
+CONCURRENT LOGIN:
+Device A: Gilbert logs in → Session A created
+Device B: Gilbert logs in → Session A terminated, Session B created
+Device A: Any request → Session A invalid → Logged out
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ ⚙️ CONFIGURATION                                                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+Change session expiry (default: 24 hours):
+In user/views.py and instructor/controllers/auth_controller.py:
+
+  new_session = UserSession.create_session(
+      user_id=user.id,
+      expiry_hours=48,  # ← Change this
+      request_obj=request
+  )
+
+Skip validation for specific routes:
+In application.py:
+
+  if request.path in ['/your/route']:  # ← Add here
+      return None
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🧪 TESTING                                                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+Manual Test:
+□ Login as "Gilbert" on Chrome
+□ Login as "Gilbert" on Firefox
+□ Try to use Chrome → Should redirect to login
+□ Message: "Your session has been terminated..."
+
+Database Check:
+SELECT * FROM user_sessions WHERE user_id = <gilbert_id>;
+SELECT * FROM instructor_sessions WHERE instructor_id = <gilbert_id>;
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🔧 TROUBLESHOOTING                                                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+❌ Users getting logged out unexpectedly
+   → Check session cookies are being sent
+   → Verify session token is stored in Flask session
+   → Check database migration completed
+
+❌ Multiple sessions not terminated
+   → Verify db.session.commit() is called
+   → Check tables exist: user_sessions, instructor_sessions
+   → Verify session tokens are unique
+
+❌ Session expires too quickly
+   → Check expiry_hours parameter
+   → Verify last_activity is updated
+   → Check system time is correct
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🛡️ SECURITY BENEFITS                                               │
+└─────────────────────────────────────────────────────────────────────┘
+
+✓ Prevents account sharing
+✓ Protects against session hijacking
+✓ Automatic session expiry
+✓ Audit trail (IP, user agent, timestamps)
+✓ Single point of access enforcement
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🔄 MAINTENANCE                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+Clean up expired sessions (run daily):
+
+  from user.models.user_session import UserSession
+  from instructor.models.instructor_session import InstructorSession
+  
+  UserSession.cleanup_expired_sessions()
+  InstructorSession.cleanup_expired_sessions()
+
+Schedule with cron:
+  0 2 * * * cd /path/to/riddlenet && python -c "from user.models.user_session import UserSession; UserSession.cleanup_expired_sessions()"
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🔙 ROLLBACK (IF NEEDED)                                            │
+└─────────────────────────────────────────────────────────────────────┘
+
+To remove session tracking:
+
+  python migrations\007_add_session_tracking.py downgrade
+
+Then comment out validation in application.py:
+
+  # @application.before_request
+  # def validate_session_before_request():
+  #     ...
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 📚 DOCUMENTATION                                                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+Full docs:
+  archive/documentation/CONCURRENT_LOGIN_PREVENTION.md
+
+Implementation summary:
+  archive/documentation/IMPLEMENTATION_SUMMARY.md
+
+This reference:
+  archive/documentation/QUICK_REFERENCE_CARD.txt
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 📞 SUPPORT                                                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. Check documentation
+2. Review application logs
+3. Verify database tables
+4. Contact development team
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║  💡 TIP: Start with scripts\setup_session_tracking.bat               ║
+╚═══════════════════════════════════════════════════════════════════════╝

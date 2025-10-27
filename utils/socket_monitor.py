@@ -1,4 +1,4 @@
-"""
+﻿"""
 Utilities for monitoring WebSocket connection health and performance
 """
 import time

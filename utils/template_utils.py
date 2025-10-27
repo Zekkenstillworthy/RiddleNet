@@ -1,4 +1,4 @@
-"""
+﻿"""
 Utility functions for template handling and debugging
 """
 import os

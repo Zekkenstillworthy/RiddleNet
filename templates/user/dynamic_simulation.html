@@ -348,6 +348,92 @@
         animation: pulseGlow 2s ease-in-out infinite;
     }
 
+    /* Save Simulation Button */
+    .save-simulation-btn {
+        position: fixed;
+        top: 20px;
+        right: 80px;
+        width: auto;
+        min-width: 48px;
+        height: 48px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--success-color);
+        border-radius: 12px;
+        color: var(--success-color);
+        font-size: 1rem;
+        cursor: pointer;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 16px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3), 
+                    0 0 40px rgba(16, 185, 129, 0.2);
+    }
+
+    .save-simulation-btn:hover {
+        background: rgba(16, 185, 129, 0.2);
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+        transform: scale(1.05);
+        box-shadow: 0 6px 30px rgba(16, 185, 129, 0.5), 
+                    0 0 60px rgba(16, 185, 129, 0.4);
+    }
+
+    .save-simulation-btn:active {
+        transform: scale(0.95);
+    }
+
+    .save-simulation-btn i {
+        font-size: 1.1rem;
+    }
+
+    .save-simulation-btn .btn-text {
+        font-weight: 600;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    /* Tooltip for save button */
+    .save-simulation-btn::before {
+        content: 'Save as .rnet file';
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 8px;
+        padding: 6px 12px;
+        background: rgba(15, 23, 42, 0.98);
+        border: 1px solid var(--success-color);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 0.75rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .save-simulation-btn:hover::before {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+        .save-simulation-btn .btn-text {
+            display: none;
+        }
+        .save-simulation-btn {
+            right: 75px;
+            min-width: 48px;
+            padding: 0;
+        }
+    }
+
     body.fullscreen .exit-fullscreen-btn {
         display: flex;
     }
@@ -6172,6 +6258,8 @@
 
 {% block content %}
 <div class="simulation-wrapper dynamic-simulation">
+    
+    
     <!-- Main Content -->
     <div class="simulation-content">
     <div class="simulation-main">
@@ -6269,6 +6357,11 @@
                             <i class="fas fa-trash-alt device-icon" style="font-size: 1.5rem;"></i>
                             <span class="device-label">Delete</span>
                             <div class="device-tooltip">Delete: Remove selected devices or connections</div>
+                        </div>
+                        <div class="action-btn device-item" onclick="saveSimulationAsRnet()">
+                            <i class="fas fa-save device-icon" style="font-size: 1.5rem;"></i>
+                            <span class="device-label">Save</span>
+                            <div class="device-tooltip">Save: Export simulation as .rnet file</div>
                         </div>
                     </div>
                 </div>
@@ -17364,6 +17457,209 @@ function saveTopology() {
     }
 }
 
+// Save Simulation as .rnet file
+async function saveSimulationAsRnet() {
+    const saveBtn = document.getElementById('saveSimulationBtn');
+    const originalContent = saveBtn ? saveBtn.innerHTML : null;
+    
+    try {
+        // Show loading state
+        if (saveBtn) {
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span class="btn-text">Saving...</span>';
+            saveBtn.disabled = true;
+        }
+        
+        // Show console feedback
+        console.log('💾 Starting simulation save...');
+        
+        const resolveSimulationId = () => {
+            if (window.simulation) {
+                if (window.simulation.simulationId) {
+                    return parseInt(window.simulation.simulationId, 10);
+                }
+                if (window.simulation.id) {
+                    return parseInt(window.simulation.id, 10);
+                }
+                if (window.simulation.simulation && window.simulation.simulation.id) {
+                    return parseInt(window.simulation.simulation.id, 10);
+                }
+            }
+
+            const simDataEl = document.getElementById('simulation-data');
+            if (simDataEl) {
+                try {
+                    const parsed = JSON.parse(simDataEl.textContent || '{}');
+                    if (parsed && parsed.id) {
+                        return parseInt(parsed.id, 10);
+                    }
+                } catch (parseError) {
+                    console.warn('⚠️ Unable to parse simulation-data element for ID', parseError);
+                }
+            }
+
+            const fromPath = window.location.pathname.match(/simulation\/(\d+)/);
+            if (fromPath && fromPath[1]) {
+                return parseInt(fromPath[1], 10);
+            }
+
+            const fromQuery = new URLSearchParams(window.location.search).get('simulation_id');
+            if (fromQuery) {
+                return parseInt(fromQuery, 10);
+            }
+
+            return null;
+        };
+
+        const simulationId = resolveSimulationId();
+
+        if (!simulationId || Number.isNaN(simulationId)) {
+            throw new Error('Simulation ID not found');
+        }
+
+        console.log('🧭 [RNET SAVE] Resolved simulation ID:', simulationId);
+        
+        // Fetch simulation data from the export API
+        const exportUrl = `/dynamic/api/simulation/${simulationId}/export`;
+        console.log('🌐 [RNET SAVE] Requesting export endpoint:', { url: exportUrl, simulationId });
+        const response = await fetch(exportUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        console.log('📥 [RNET SAVE] Export response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+        }
+        
+        let responsePreview = '';
+        try {
+            const rawBody = await response.clone().text();
+            responsePreview = rawBody.length > 400 ? `${rawBody.slice(0, 400)}…` : rawBody;
+            console.debug('📄 [RNET SAVE] Export raw response preview:', responsePreview);
+        } catch (previewError) {
+            console.debug('⚠️ [RNET SAVE] Unable to read raw export response for preview:', previewError);
+        }
+
+        const result = await response.json();
+
+        console.log('📦 [RNET SAVE] Export payload summary:', {
+            success: result?.success,
+            hasData: Boolean(result?.data),
+            dataKeys: result?.data ? Object.keys(result.data) : [],
+            rawSimulationDataType: typeof result?.data?.raw_simulation_data,
+        });
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to export simulation');
+        }
+        
+        // Get the exported data
+        const exportData = result.data;
+
+        if (exportData) {
+            const rawType = typeof exportData.raw_simulation_data;
+            console.log('🔍 [RNET SAVE] Export data detail:', {
+                simulationTitle: exportData?.simulation?.title,
+                metadataKeys: exportData?.metadata ? Object.keys(exportData.metadata) : [],
+                rawSimulationDataType: rawType,
+            });
+
+            if (rawType === 'string') {
+                const rawPreview = exportData.raw_simulation_data.length > 400
+                    ? `${exportData.raw_simulation_data.slice(0, 400)}…`
+                    : exportData.raw_simulation_data;
+                console.debug('🧾 [RNET SAVE] raw_simulation_data preview:', rawPreview);
+            }
+        }
+        
+        // Add current network state if available
+        if (window.networkEngine) {
+            exportData.currentState = {
+                devices: window.networkEngine.devices || [],
+                connections: window.networkEngine.connections || []
+            };
+        } else if (window.simulation) {
+            exportData.currentState = {
+                devices: window.simulation.networkDevices || [],
+                connections: window.simulation.connections || []
+            };
+        }
+        
+        // Create the .rnet file content
+        const rnetContent = JSON.stringify(exportData, null, 2);
+        
+        // Create a blob and download
+        const blob = new Blob([rnetContent], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Generate filename with simulation title and timestamp
+        const title = exportData.simulation.title || 'simulation';
+        const timestamp = new Date().toISOString().split('T')[0];
+        a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${timestamp}.rnet`;
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        console.log('✅ Simulation saved as .rnet file:', a.download);
+        
+        // Show success state
+        if (saveBtn) {
+            saveBtn.innerHTML = '<i class="fas fa-check"></i><span class="btn-text">Saved!</span>';
+            saveBtn.style.borderColor = 'var(--neon-green)';
+            saveBtn.style.color = 'var(--neon-green)';
+        }
+        
+        // Show success notification
+        if (window.simulation && window.simulation.showNotification) {
+            window.simulation.showNotification('Simulation saved successfully!', 'success');
+        }
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            if (saveBtn) {
+                saveBtn.innerHTML = originalContent;
+                saveBtn.disabled = false;
+                saveBtn.style.borderColor = '';
+                saveBtn.style.color = '';
+            }
+        }, 2000);
+        
+    } catch (error) {
+        console.error('❌ Error saving simulation:', error);
+        
+        // Show error state
+        if (saveBtn) {
+            saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span class="btn-text">Error</span>';
+            saveBtn.style.borderColor = 'var(--danger-color)';
+            saveBtn.style.color = 'var(--danger-color)';
+        }
+        
+        // Show error notification
+        if (window.simulation && window.simulation.showNotification) {
+            window.simulation.showNotification('Failed to save simulation: ' + error.message, 'error');
+        } else {
+            alert('Failed to save simulation: ' + error.message);
+        }
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            if (saveBtn) {
+                saveBtn.innerHTML = originalContent;
+                saveBtn.disabled = false;
+                saveBtn.style.borderColor = '';
+                saveBtn.style.color = '';
+            }
+        }, 2000);
+    }
+}
+
 // Enhanced step validation with network state checking
 
 
@@ -21574,8 +21870,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script src="{{ url_for('static', filename='js/force-landscape.js') }}"></script>
 <script>
-    // Use shared helper (fallback rotation allowed to preserve toolbars)
-    initForceLandscape({ allowRotateFallback: true, rotateTargetSelector: '.simulation-wrapper', pageKey: 'dynamic-simulation' });
+    // Initialize landscape orientation helper for dynamic simulation
+    if (typeof initForceLandscape === 'function') {
+      initForceLandscape({ pageKey: 'dynamic-simulation', autoFullscreen: true });
+    }
 </script>
 
 </script>

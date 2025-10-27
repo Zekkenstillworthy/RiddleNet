@@ -1,4 +1,4 @@
-# filepath: c:\Users\gilbe\Documents\Flask_Main_Official_2 - Copy\admin\routes\troubleshooting_api_routes.py
+﻿# filepath: c:\Users\gilbe\Documents\Flask_Main_Official_2 - Copy\admin\routes\troubleshooting_api_routes.py
 from flask import Blueprint, request, jsonify
 from instructor.controllers.troubleshooting_controller import TroubleshootingController
 from instructor.utils.instructor_auth import instructor_login_required

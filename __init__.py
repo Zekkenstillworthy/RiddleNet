@@ -162,6 +162,17 @@ def create_app(config=None):
         except Exception as e:
             print(f"⚠️ Error registering dynamic simulation blueprint: {e}")
         
+        # Ensure the Live Quiz MVP API is always available for student clients
+        try:
+            from api.live_quiz_api import live_quiz_bp as live_quiz_api_bp
+            if live_quiz_api_bp.name not in app.blueprints:
+                app.register_blueprint(live_quiz_api_bp)
+                print("Live Quiz MVP API blueprint registered")
+            else:
+                print("Live Quiz MVP API blueprint already registered")
+        except Exception as e:
+            print(f"Error registering Live Quiz MVP API blueprint: {e}")
+
         # Register the API blueprint with explicit url_prefix
         # Commented out to avoid conflicts with QuizController routes
         # We'll register this in run.py after the QuizController

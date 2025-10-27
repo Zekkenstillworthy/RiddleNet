@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import uuid
 import json
 import threading
-from flask import current_app
+from flask import current_app, has_app_context
 
 
 @dataclass 
@@ -431,6 +431,20 @@ class LobbyManager:
         self._db_loaded = False  # Flag to track if DB has been loaded
         self.start_cleanup_timer()
         # Don't load from DB in __init__ - will be loaded on first access within app context
+
+    @staticmethod
+    def _log_info(message: str):
+        if has_app_context() and hasattr(current_app, 'logger'):
+            current_app.logger.info(message)
+        else:
+            print(f"[INFO] {message}")
+
+    @staticmethod
+    def _log_error(message: str):
+        if has_app_context() and hasattr(current_app, 'logger'):
+            current_app.logger.error(message)
+        else:
+            print(f"[ERROR] {message}")
     
     def start_cleanup_timer(self):
         """Start periodic cleanup of inactive lobbies"""
@@ -441,7 +455,7 @@ class LobbyManager:
                 if self._persistence_enabled:
                     self._cleanup_old_db_lobbies()
             except Exception as e:
-                current_app.logger.error(f"Error in lobby cleanup: {e}")
+                self._log_error(f"Error in lobby cleanup: {e}")
             finally:
                 # Schedule next cleanup
                 self._cleanup_timer = threading.Timer(300, cleanup_task)  # Every 5 minutes
@@ -462,10 +476,7 @@ class LobbyManager:
                         self._db_loaded = True
                     except Exception as e:
                         # If loading fails, continue without persistence but log error
-                        if current_app:
-                            current_app.logger.error(f"❌ Error loading lobbies from database: {e}")
-                        else:
-                            print(f"❌ Error loading lobbies from database: {e}")
+                        self._log_error(f"[ERROR] Error loading lobbies from database: {e}")
     
     def _load_active_lobbies_from_db(self):
         """Load active lobbies from database on startup"""
@@ -506,10 +517,10 @@ class LobbyManager:
                         self.user_lobby_map[user_id] = lobby.id
             
             if active_lobbies:
-                current_app.logger.info(f"✅ Loaded {len(active_lobbies)} active lobbies from database")
+                self._log_info(f"[OK] Loaded {len(active_lobbies)} active lobbies from database")
         
         except Exception as e:
-            current_app.logger.error(f"❌ Error loading lobbies from database: {e}")
+            self._log_error(f"[ERROR] Error loading lobbies from database: {e}")
     
     def _save_lobby_to_db(self, lobby: TroubleshootingLobby):
         """Save lobby to database"""
@@ -525,7 +536,7 @@ class LobbyManager:
                 lobby_persistence.save_participant(lobby.id, user_id, participant_info)
             
         except Exception as e:
-            current_app.logger.error(f"❌ Error saving lobby {lobby.id} to database: {e}")
+            self._log_error(f"[ERROR] Error saving lobby {lobby.id} to database: {e}")
     
     def _cleanup_old_db_lobbies(self):
         """Clean up old lobbies from database"""
@@ -533,7 +544,7 @@ class LobbyManager:
             from services.lobby_persistence import lobby_persistence
             lobby_persistence.cleanup_old_lobbies(hours=24)
         except Exception as e:
-            current_app.logger.error(f"❌ Error cleaning up old database lobbies: {e}")
+            self._log_error(f"[ERROR] Error cleaning up old database lobbies: {e}")
     
     def create_lobby(self, creator_id: str, creator_name: str, lobby_config: dict, creator_profile_image: str = None) -> TroubleshootingLobby:
         """Create a new troubleshooting lobby"""
@@ -566,7 +577,7 @@ class LobbyManager:
             # Add system welcome message
             lobby.add_chat_message('system', f"Welcome to {lobby.name}! Session created successfully.", 'system')
             
-            current_app.logger.info(f"Created lobby {lobby_id} by user {creator_name}")
+            self._log_info(f"Created lobby {lobby_id} by user {creator_name}")
             
             # Save to database
             self._save_lobby_to_db(lobby)
@@ -609,7 +620,7 @@ class LobbyManager:
                 # Add system message
                 lobby.add_chat_message('system', f"{user_info['username']} joined the session", 'system')
                 
-                current_app.logger.info(f"User {user_info['username']} joined lobby {lobby_id}")
+                self._log_info(f"User {user_info['username']} joined lobby {lobby_id}")
                 
                 # Save to database
                 try:
@@ -617,7 +628,7 @@ class LobbyManager:
                     lobby_persistence.save_participant(lobby_id, user_id, lobby.participants[user_id])
                     lobby_persistence.save_chat_message(lobby_id, lobby.chat_history[-1])
                 except Exception as e:
-                    current_app.logger.error(f"Error saving participant to database: {e}")
+                    self._log_error(f"Error saving participant to database: {e}")
                 
                 return {'success': True, 'lobby': lobby}
             
@@ -643,22 +654,22 @@ class LobbyManager:
                     lobby_persistence.mark_participant_inactive(lobby_id, user_id)
                     lobby_persistence.save_chat_message(lobby_id, lobby.chat_history[-1])
                 except Exception as e:
-                    current_app.logger.error(f"Error updating participant in database: {e}")
+                    self._log_error(f"Error updating participant in database: {e}")
                 
                 # If lobby is empty or creator left, mark as inactive
                 if not lobby.participants or user_id == lobby.creator_id:
                     lobby.is_active = False
-                    current_app.logger.info(f"Lobby {lobby_id} marked as inactive")
+                    self._log_info(f"Lobby {lobby_id} marked as inactive")
                     
                     # Mark lobby as closed in database
                     try:
                         from services.lobby_persistence import lobby_persistence
                         lobby_persistence.close_lobby(lobby_id)
                     except Exception as e:
-                        current_app.logger.error(f"Error closing lobby in database: {e}")
+                        self._log_error(f"Error closing lobby in database: {e}")
             
             del self.user_lobby_map[user_id]
-            current_app.logger.info(f"User {user_id} left lobby {lobby_id}")
+            self._log_info(f"User {user_id} left lobby {lobby_id}")
             return True
     
     def get_public_lobbies(self) -> List[dict]:
@@ -675,10 +686,9 @@ class LobbyManager:
             public_lobbies.sort(key=lambda x: x['created_at'], reverse=True)
             
             # Debug logging
-            if hasattr(current_app, 'logger'):
-                current_app.logger.info(f"🔍 get_public_lobbies: Found {len(public_lobbies)} public lobbies")
-                for lobby in public_lobbies:
-                    current_app.logger.info(f"   📋 {lobby['name']} - {lobby['participant_count']}/{lobby['max_participants']} participants")
+            self._log_info(f"[DEBUG] get_public_lobbies: Found {len(public_lobbies)} public lobbies")
+            for lobby in public_lobbies:
+                self._log_info(f"   [DATA] {lobby['name']} - {lobby['participant_count']}/{lobby['max_participants']} participants")
             
             return public_lobbies
     
@@ -749,7 +759,7 @@ class LobbyManager:
                         del self.user_lobby_map[user_id]
                 
                 del self.lobbies[lobby_id]
-                current_app.logger.info(f"Cleaned up inactive lobby {lobby_id}")
+                self._log_info(f"Cleaned up inactive lobby {lobby_id}")
     
     def get_stats(self) -> dict:
         """Get lobby manager statistics"""
@@ -787,7 +797,7 @@ class LobbyManager:
             # Remove the lobby
             del self.lobbies[lobby_id]
             
-            current_app.logger.info(f"Admin closed lobby {lobby_id}")
+            self._log_info(f"Admin closed lobby {lobby_id}")
             return True
 
     def delete_lobby(self, lobby_id: str) -> bool:

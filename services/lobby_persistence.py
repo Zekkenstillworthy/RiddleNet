@@ -65,12 +65,12 @@ class LobbyPersistenceService:
                 db.session.add(db_lobby)
             
             db.session.commit()
-            current_app.logger.info(f"✅ Saved lobby {lobby_obj.id} to database")
+            current_app.logger.info(f"[OK] Saved lobby {lobby_obj.id} to database")
             return db_lobby
             
         except SQLAlchemyError as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ Error saving lobby {lobby_obj.id}: {e}")
+            current_app.logger.error(f"[ERROR] Error saving lobby {lobby_obj.id}: {e}")
             raise
     
     @staticmethod
@@ -137,7 +137,7 @@ class LobbyPersistenceService:
             
         except SQLAlchemyError as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ Error saving participant {user_id} in lobby {lobby_id}: {e}")
+            current_app.logger.error(f"[ERROR] Error saving participant {user_id} in lobby {lobby_id}: {e}")
             raise
     
     @staticmethod
@@ -169,7 +169,7 @@ class LobbyPersistenceService:
             
         except SQLAlchemyError as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ Error saving chat message in lobby {lobby_id}: {e}")
+            current_app.logger.error(f"[ERROR] Error saving chat message in lobby {lobby_id}: {e}")
             raise
     
     @staticmethod
@@ -208,7 +208,7 @@ class LobbyPersistenceService:
             
         except SQLAlchemyError as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ Error saving device lock for {device_id} in lobby {lobby_id}: {e}")
+            current_app.logger.error(f"[ERROR] Error saving device lock for {device_id} in lobby {lobby_id}: {e}")
             raise
     
     @staticmethod
@@ -223,7 +223,7 @@ class LobbyPersistenceService:
             
         except SQLAlchemyError as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ Error removing device lock for {device_id} in lobby {lobby_id}: {e}")
+            current_app.logger.error(f"[ERROR] Error removing device lock for {device_id} in lobby {lobby_id}: {e}")
     
     @staticmethod
     def save_cli_command(lobby_id, device_id, command_data):
@@ -255,7 +255,7 @@ class LobbyPersistenceService:
             
         except SQLAlchemyError as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ Error saving CLI command for {device_id} in lobby {lobby_id}: {e}")
+            current_app.logger.error(f"[ERROR] Error saving CLI command for {device_id} in lobby {lobby_id}: {e}")
             raise
     
     @staticmethod
@@ -365,7 +365,7 @@ class LobbyPersistenceService:
             }
             
         except SQLAlchemyError as e:
-            current_app.logger.error(f"❌ Error loading lobby {lobby_id}: {e}")
+            current_app.logger.error(f"[ERROR] Error loading lobby {lobby_id}: {e}")
             return None
     
     @staticmethod
@@ -381,7 +381,7 @@ class LobbyPersistenceService:
             return [LobbyPersistenceService.load_lobby(lobby.id) for lobby in active_lobbies]
             
         except SQLAlchemyError as e:
-            current_app.logger.error(f"❌ Error loading active lobbies: {e}")
+            current_app.logger.error(f"[ERROR] Error loading active lobbies: {e}")
             return []
     
     @staticmethod
@@ -400,7 +400,7 @@ class LobbyPersistenceService:
                 
         except SQLAlchemyError as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ Error marking participant {user_id} inactive: {e}")
+            current_app.logger.error(f"[ERROR] Error marking participant {user_id} inactive: {e}")
     
     @staticmethod
     def close_lobby(lobby_id):
@@ -414,7 +414,7 @@ class LobbyPersistenceService:
                 
         except SQLAlchemyError as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ Error closing lobby {lobby_id}: {e}")
+            current_app.logger.error(f"[ERROR] Error closing lobby {lobby_id}: {e}")
     
     @staticmethod
     def cleanup_old_lobbies(hours=24):
@@ -439,7 +439,7 @@ class LobbyPersistenceService:
             
         except SQLAlchemyError as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ Error cleaning up old lobbies: {e}")
+            current_app.logger.error(f"[ERROR] Error cleaning up old lobbies: {e}")
     
     @staticmethod
     def get_user_lobby_history(user_id, limit=10):
@@ -466,7 +466,7 @@ class LobbyPersistenceService:
             ]
             
         except SQLAlchemyError as e:
-            current_app.logger.error(f"❌ Error loading user lobby history: {e}")
+            current_app.logger.error(f"[ERROR] Error loading user lobby history: {e}")
             return []
 
 

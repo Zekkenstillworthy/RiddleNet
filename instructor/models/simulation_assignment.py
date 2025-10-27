@@ -1,4 +1,4 @@
-"""
+﻿"""
 SimulationAssignment Model for RiddleNet
 ========================================
 

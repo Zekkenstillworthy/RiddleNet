@@ -1,4 +1,4 @@
-"""
+﻿"""
 Enhanced Class Template Generation Service
 
 Extends the existing template generator with improved static template integration,
@@ -1826,14 +1826,14 @@ def simulation_{sim['id']}():
                 db.session.add(assignment)
                 db.session.commit()
                 assignments_created.append(assignment)
-                print(f"✅ Created assignment: {assignment.title}")
+                print(f"[OK] Created assignment: {assignment.title}")
                 
                 # Notify students about new assignment (WebSocket integration point)
                 self._notify_students_about_assignment(assignment)
                 
             except Exception as e:
                 db.session.rollback()
-                print(f"❌ Error creating assignment for {simulation.title}: {str(e)}")
+                print(f"[ERROR] Error creating assignment for {simulation.title}: {str(e)}")
         
         return assignments_created
     
@@ -1888,7 +1888,7 @@ def simulation_{sim['id']}():
         except Exception as e:
             error_msg = f"Error auto-assigning simulations: {str(e)}"
             results['errors'].append(error_msg)
-            print(f"❌ {error_msg}")
+            print(f"[ERROR] {error_msg}")
         
         return results
     
@@ -1998,12 +1998,12 @@ def regenerate_class_templates():
             try:
                 generator = EnhancedClassTemplateGenerator()
                 result = generator.generate_class_resources_from_object(class_obj)
-                print(f"✅ Generated template for {class_obj.name}: {result['template']}")
+                print(f"[OK] Generated template for {class_obj.name}: {result['template']}")
                 generated_count += 1
             except Exception as e:
-                print(f"❌ Failed to generate template for {class_obj.name}: {e}")
+                print(f"[ERROR] Failed to generate template for {class_obj.name}: {e}")
         
         return generated_count
     except Exception as e:
-        print(f"❌ Error in regenerate_class_templates: {e}")
+        print(f"[ERROR] Error in regenerate_class_templates: {e}")
         return 0

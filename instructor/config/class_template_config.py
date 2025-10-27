@@ -1,4 +1,4 @@
-"""
+﻿"""
 Class Template Configuration
 
 This configuration controls how class templates are generated and which system is used.

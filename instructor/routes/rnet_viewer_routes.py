@@ -1,4 +1,4 @@
-"""
+﻿"""
 RNet File Viewer Routes
 Handles displaying RNet files with embedded QR codes
 """
@@ -26,78 +26,78 @@ def view_rnet_file():
 def parse_rnet_file():
     """Parse uploaded RNet file and extract data"""
     print("\n" + "="*80)
-    print("🔍 RNET FILE PARSE REQUEST")
+    print("[DEBUG] RNET FILE PARSE REQUEST")
     print("="*80)
     
     try:
-        print(f"📋 Request method: {request.method}")
-        print(f"📋 Request content type: {request.content_type}")
-        print(f"📋 Request files: {list(request.files.keys())}")
-        print(f"📋 Request form: {list(request.form.keys())}")
+        print(f"[DATA] Request method: {request.method}")
+        print(f"[DATA] Request content type: {request.content_type}")
+        print(f"[DATA] Request files: {list(request.files.keys())}")
+        print(f"[DATA] Request form: {list(request.form.keys())}")
         
         if 'file' not in request.files:
-            print("❌ No 'file' key in request.files")
+            print("[ERROR] No 'file' key in request.files")
             print(f"   Available keys: {list(request.files.keys())}")
             return jsonify({'error': 'No file uploaded'}), 400
         
         file = request.files['file']
-        print(f"✅ File object received: {file}")
+        print(f"[OK] File object received: {file}")
         print(f"📄 Filename: {file.filename}")
         print(f"📄 Content type: {file.content_type}")
         
         if file.filename == '':
-            print("❌ Empty filename")
+            print("[ERROR] Empty filename")
             return jsonify({'error': 'No file selected'}), 400
         
         # Validate file extension
         if not file.filename.lower().endswith('.rnet'):
-            print(f"❌ Invalid file extension: {file.filename}")
+            print(f"[ERROR] Invalid file extension: {file.filename}")
             return jsonify({'error': 'Invalid file format. Please upload a .rnet file'}), 400
         
-        print("✅ File validation passed")
+        print("[OK] File validation passed")
         
         # Parse file content
         try:
             print("📖 Reading file content...")
             file_content = file.read().decode('utf-8')
-            print(f"✅ File read successfully, length: {len(file_content)} characters")
-            print(f"📋 First 200 chars: {file_content[:200]}...")
+            print(f"[OK] File read successfully, length: {len(file_content)} characters")
+            print(f"[DATA] First 200 chars: {file_content[:200]}...")
             
-            print("🔧 Parsing JSON...")
+            print("[FIX] Parsing JSON...")
             rnet_data = json.loads(file_content)
-            print(f"✅ JSON parsed successfully")
-            print(f"📋 Top-level keys: {list(rnet_data.keys())}")
+            print(f"[OK] JSON parsed successfully")
+            print(f"[DATA] Top-level keys: {list(rnet_data.keys())}")
             
         except UnicodeDecodeError as e:
-            print(f"❌ Unicode decode error: {str(e)}")
+            print(f"[ERROR] Unicode decode error: {str(e)}")
             return jsonify({'error': f'File encoding error: {str(e)}'}), 400
         except json.JSONDecodeError as e:
-            print(f"❌ JSON decode error: {str(e)}")
+            print(f"[ERROR] JSON decode error: {str(e)}")
             print(f"   Position: {e.pos}")
             print(f"   Line: {e.lineno}, Column: {e.colno}")
             return jsonify({'error': f'Invalid JSON format: {str(e)}'}), 400
         except Exception as e:
-            print(f"❌ Unexpected parsing error: {str(e)}")
+            print(f"[ERROR] Unexpected parsing error: {str(e)}")
             return jsonify({'error': f'Invalid file format: {str(e)}'}), 400
         
         # Validate RNet file format
         file_format = rnet_data.get('format')
-        print(f"📋 File format field: {file_format}")
+        print(f"[DATA] File format field: {file_format}")
         
         if file_format != 'rnetfile':
-            print(f"❌ Invalid RNet file format: {file_format}")
+            print(f"[ERROR] Invalid RNet file format: {file_format}")
             return jsonify({'error': 'Invalid RNet file format'}), 400
         
-        print("✅ RNet format validation passed")
+        print("[OK] RNet format validation passed")
         
         # Extract key information
         simulation = rnet_data.get('simulation', {})
         verification = rnet_data.get('verification', {})
         export_metadata = rnet_data.get('export_metadata', {})
         
-        print(f"📋 Simulation data keys: {list(simulation.keys())}")
-        print(f"📋 Verification data keys: {list(verification.keys())}")
-        print(f"📋 Export metadata keys: {list(export_metadata.keys())}")
+        print(f"[DATA] Simulation data keys: {list(simulation.keys())}")
+        print(f"[DATA] Verification data keys: {list(verification.keys())}")
+        print(f"[DATA] Export metadata keys: {list(export_metadata.keys())}")
         
         response_data = {
             'success': True,
@@ -125,17 +125,17 @@ def parse_rnet_file():
             'export_metadata': export_metadata
         }
         
-        print("✅ Response data prepared successfully")
-        print(f"📋 Response keys: {list(response_data.keys())}")
-        print(f"📋 QR code included: {response_data['verification_info']['qr_code_included']}")
+        print("[OK] Response data prepared successfully")
+        print(f"[DATA] Response keys: {list(response_data.keys())}")
+        print(f"[DATA] QR code included: {response_data['verification_info']['qr_code_included']}")
         print("="*80)
-        print("✅ PARSE SUCCESSFUL - Returning response")
+        print("[OK] PARSE SUCCESSFUL - Returning response")
         print("="*80 + "\n")
         
         return jsonify(response_data)
         
     except Exception as e:
-        print(f"\n❌ CRITICAL ERROR in parse_rnet_file:")
+        print(f"\n[ERROR] CRITICAL ERROR in parse_rnet_file:")
         print(f"   Type: {type(e).__name__}")
         print(f"   Message: {str(e)}")
         import traceback

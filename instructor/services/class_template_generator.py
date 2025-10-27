@@ -1,4 +1,4 @@
-"""
+﻿"""
 Dynamic Class Template Generation Service
 
 This service automatically creates HTML templates and backend routes
@@ -48,7 +48,7 @@ class ClassTemplateGenerator:
         DEPRECATED: Template generation disabled - using universal dynamic template
         All classes now use the single dynamic_class_universal.html template
         """
-        print(f"⚠️ Template generation disabled: Class {class_obj.name} will use universal dynamic template")
+        print(f"[WARNING] Template generation disabled: Class {class_obj.name} will use universal dynamic template")
         return "dynamic_class_universal.html"
     
     def generate_class_routes(self, class_obj: Class) -> str:
@@ -56,7 +56,7 @@ class ClassTemplateGenerator:
         DEPRECATED: Route generation disabled - using universal route handler
         All classes now use the universal_class_routes.py handler
         """
-        print(f"⚠️ Route generation disabled: Class {class_obj.name} will use universal route handler")
+        print(f"[WARNING] Route generation disabled: Class {class_obj.name} will use universal route handler")
         return "universal_class_routes.py"
     
     def _prepare_template_data(self, class_obj: Class) -> Dict[str, Any]:

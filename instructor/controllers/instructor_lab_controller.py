@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+﻿from flask import Blueprint, render_template
 from flask_login import login_required
 from utils.permission_decorators import teacher_required
 from instructor.models.lab import Lab

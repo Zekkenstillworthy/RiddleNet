@@ -1,4 +1,4 @@
-# ===== CRITICAL IMPORT ORDER =====
+﻿# ===== CRITICAL IMPORT ORDER =====
 # 1. Import eventlet initialization FIRST - this must happen before ANY other imports
 import eventlet_init
 
@@ -28,6 +28,7 @@ from user.quiz import QuizController
 from flask_login import current_user
 from flask import redirect, url_for, request, flash
 from flask_cors import CORS
+from utils.session_guard import register_session_guard
 import socket_events 
 
 # ===== APPLICATION CREATION AND CONTEXT SETUP =====
@@ -55,7 +56,7 @@ app.config.update(
 try:
     ctx = app.app_context()
     ctx.push()
-    print("✅ Application context initialized successfully")
+    print("[OK] Application context initialized successfully")
 except Exception as e:
     print(f"Warning: Application context setup failed: {e}")
     print("Continuing without explicit context push...")
@@ -65,12 +66,12 @@ if socketio:
     try:
         from socket_manager import init_socketio
         init_socketio(app)
-        print("✅ SocketIO initialized successfully")
+        print("[OK] SocketIO initialized successfully")
     except Exception as e:
         print(f"Warning: SocketIO initialization failed: {e}")
         print("WebSocket functionality may be limited")
 else:
-    print("⚠️ SocketIO not available - WebSocket functionality disabled")
+    print("[WARNING] SocketIO not available - WebSocket functionality disabled")
 
 # Configure structured logging
 import logging
@@ -85,13 +86,13 @@ if socketio:
     try:
         from instructor.controllers.notification_controller import set_socketio_instance
         set_socketio_instance(socketio)
-        logger.info("✅ SocketIO instance injected into notification controller")
+        logger.info("[OK] SocketIO instance injected into notification controller")
     except ImportError as e:
         logger.warning(f"Could not inject socketio into notification controller: {e}")
     except Exception as e:
         logger.error(f"Unexpected error injecting socketio: {e}", exc_info=True)
 else:
-    logger.warning("⚠️ SocketIO not available - notification controller injection skipped")
+    logger.warning("[WARNING] SocketIO not available - notification controller injection skipped")
 
 cors = CORS(app, resources={
     r"/admin/topology/*": {"origins": "*"},
@@ -152,9 +153,9 @@ quiz_controller = QuizController(app)
 # try:
 #     from user.dynamic_simulation_routes import register_dynamic_routes
 #     register_dynamic_routes(app)
-#     print("✅ Dynamic simulation routes registered")
+#     print("[OK] Dynamic simulation routes registered")
 # except ImportError as e:
-#     print(f"⚠️ Could not register dynamic routes: {e}")
+#     print(f"[WARNING] Could not register dynamic routes: {e}")
 
 login_manager.init_app(app)
 login_manager.login_view = 'user.login'  
@@ -170,31 +171,31 @@ def load_user(user_id):
     try:
         user_id_int = int(user_id)
     except (ValueError, TypeError):
-        print(f"❌ Invalid user_id: {user_id}")
+        print(f"[ERROR] Invalid user_id: {user_id}")
         return None
     
     # CRITICAL FIX: Check session namespace FIRST - this works for both HTTP and WebSocket
     auth_namespace = session.get('auth_namespace', 'unknown')
     request_path = getattr(request, 'path', '') if request else ''
     
-    print(f"🔍 User loader: ID={user_id_int}, namespace={auth_namespace}, path={request_path}")
+    print(f"[DEBUG] User loader: ID={user_id_int}, namespace={auth_namespace}, path={request_path}")
     
     # PRIORITY 1: Load instructor user if session indicates admin auth (works for WebSocket + HTTP)
     if auth_namespace == 'instructor':
         admin = db.session.get(Instructor, user_id_int)
         if admin:
-            print(f"🔐 Admin session: Loaded admin {admin.username} (ID: {user_id_int})")
+            print(f"[AUTH] Admin session: Loaded admin {admin.username} (ID: {user_id_int})")
             return admin
-        print(f"❌ Admin session: No admin found for ID {user_id_int}")
+        print(f"[ERROR] Admin session: No admin found for ID {user_id_int}")
         return None
     
     # PRIORITY 2: Load user if session indicates user auth
     elif auth_namespace == 'user':
         user = db.session.get(User, user_id_int)
         if user:
-            print(f"👤 User session: Loaded user {user.username} (ID: {user_id_int})")
+            print(f"[USER] User session: Loaded user {user.username} (ID: {user_id_int})")
             return user
-        print(f"❌ User session: No user found for ID {user_id_int}")
+        print(f"[ERROR] User session: No user found for ID {user_id_int}")
         return None
     
     # FALLBACK: Use path-based detection if no namespace in session (legacy support)
@@ -202,27 +203,30 @@ def load_user(user_id):
         # Try instructor table first for instructor/admin paths
         admin = db.session.get(Instructor, user_id_int)
         if admin:
-            print(f"🔐 Admin path fallback: Loaded admin {admin.username} (ID: {user_id_int})")
+            print(f"[AUTH] Admin path fallback: Loaded admin {admin.username} (ID: {user_id_int})")
             # Auto-fix the session namespace if missing
             if auth_namespace == 'unknown':
                 session['auth_namespace'] = 'instructor'
-                print(f"🔧 Auto-fixed instructor session namespace for {admin.username}")
+                print(f"[FIX] Auto-fixed instructor session namespace for {admin.username}")
             return admin
-        print(f"❌ Admin path fallback: No admin found for ID {user_id_int}")
+        print(f"[ERROR] Admin path fallback: No admin found for ID {user_id_int}")
         return None
     
     else:
         # Try user table as final fallback
         user = db.session.get(User, user_id_int)
         if user:
-            print(f"👤 User path fallback: Loaded user {user.username} (ID: {user_id_int})")
+            print(f"[USER] User path fallback: Loaded user {user.username} (ID: {user_id_int})")
             # Auto-fix the session namespace if missing
             if auth_namespace == 'unknown':
                 session['auth_namespace'] = 'user'
-                print(f"🔧 Auto-fixed user session namespace for {user.username}")
+                print(f"[FIX] Auto-fixed user session namespace for {user.username}")
             return user
-        print(f"❌ No user found in any table for ID {user_id_int}")
+        print(f"[ERROR] No user found in any table for ID {user_id_int}")
         return None
+
+# Register global session guard to enforce single-device logins before other middleware
+register_session_guard(app)
 
 # Consolidated before_request handler for better performance
 @app.before_request
@@ -251,16 +255,16 @@ def before_request_handler():
                 # Check if this is an Instructor by checking the class name
                 if current_user.__class__.__name__ == 'Instructor':
                     if current_namespace != 'instructor':
-                        print(f"🔧 BEFORE_REQUEST: Fixing auth_namespace from '{current_namespace}' to 'instructor'")
+                        print(f"[FIX] BEFORE_REQUEST: Fixing auth_namespace from '{current_namespace}' to 'instructor'")
                         session['auth_namespace'] = 'instructor'
                         session.modified = True
                 elif current_user.__class__.__name__ == 'User':
                     if current_namespace != 'user':
-                        print(f"🔧 BEFORE_REQUEST: Fixing auth_namespace from '{current_namespace}' to 'user'")
+                        print(f"[FIX] BEFORE_REQUEST: Fixing auth_namespace from '{current_namespace}' to 'user'")
                         session['auth_namespace'] = 'user'
                         session.modified = True
         except Exception as e:
-            print(f"⚠️ BEFORE_REQUEST: Error fixing namespace: {e}")
+            print(f"[WARNING] BEFORE_REQUEST: Error fixing namespace: {e}")
         
         if app.debug:  # Only log in debug mode
             logger.debug("="*80)
@@ -329,12 +333,16 @@ try:
         ('user.routes.notification_routes', 'notification_bp', None),
         ('user.routes.assignment_routes', 'user_assignment_bp', None),
         ('user.api.enhanced_simulation_api', 'enhanced_simulation_api', '/dynamic'),
+        ('api.live_quiz_api', 'live_quiz_bp', None),
     ]
     
     for module_path, blueprint_name, url_prefix in additional_blueprints:
         try:
             module = __import__(module_path, fromlist=[blueprint_name])
             blueprint = getattr(module, blueprint_name)
+            if blueprint.name in app.blueprints:
+                logger.info(f"Skipping {blueprint.name} from {module_path}; already registered")
+                continue
             app.register_blueprint(blueprint, url_prefix=url_prefix)
             logger.info(f"Registered {blueprint_name} from {module_path}")
         except (ImportError, AttributeError) as e:
@@ -370,6 +378,7 @@ try:
         ('instructor.controllers.tutorial_controller', 'tutorial_bp', None, None),
         ('instructor.controllers.rubric_controller', 'rubric_bp', None, None),
         ('instructor.controllers.admin_settings_controller', 'admin_settings_bp', None, None),
+        ('instructor.api.live_quiz_api', 'live_quiz_instructor_bp', None, 'live_quiz_instructor'),
         ('instructor.routes.api_routes', 'api_bp', None, 'admin_api_bp'),
         ('instructor.routes.topology_routes', 'topology_bp', None, None),
         ('instructor.routes.topology_api_routes', 'topology_api_bp', None, None),
@@ -440,13 +449,13 @@ print("\n=== Registering Progression API ===")
 try:
     from user.api.progression_api import progression_api
     app.register_blueprint(progression_api)
-    print("✅ Progression API registered successfully")
+    print("[OK] Progression API registered successfully")
     print("   • /api/progression/simulation/<id>/unlock-status - Check unlock status")
     print("   • /api/progression/learning-path/<id>/progress - Get progress")
     print("   • /api/progression/simulation/<id>/complete - Mark completed")
     print("   • /api/progression/user/achievements - Get achievements")
 except Exception as e:
-    print(f"❌ Error registering progression API: {e}")
+    print(f"[ERROR] Error registering progression API: {e}")
     import traceback
     traceback.print_exc()
 
@@ -455,14 +464,14 @@ print("\n=== Registering User Lesson Routes ===")
 try:
     from user.routes.lesson_routes import lesson_bp
     app.register_blueprint(lesson_bp)
-    print("✅ User lesson routes registered successfully")
+    print("[OK] User lesson routes registered successfully")
     print("   • /lesson/class/<id>/lesson/<id> - View lesson content")
     print("   • /lesson/class/<id>/lesson/<id>/complete - Mark lesson complete")
     print("   • /lesson/class/<id>/lesson/<id>/progress - Update reading progress")
     print("   • /lesson/class/<id>/lesson/<id>/start-simulation/<id> - Start simulation")
     print("   • /lesson/api/class/<id>/lesson/<id>/analytics - Get lesson analytics")
 except Exception as e:
-    print(f"❌ Error registering user lesson routes: {e}")
+    print(f"[ERROR] Error registering user lesson routes: {e}")
     import traceback
     traceback.print_exc()
 
@@ -471,7 +480,7 @@ print("\n=== Registering Enhanced User Simulation Routes ===")
 try:
     from user.routes.simulation_runner import user_simulation_bp
     app.register_blueprint(user_simulation_bp)
-    print("✅ Enhanced user simulation routes registered successfully")
+    print("[OK] Enhanced user simulation routes registered successfully")
     print("   • /simulation/dashboard - Simulation dashboard for users")
     print("   • /simulation/<id> - Run specific simulation")
     print("   • /simulation/<id>/results/<attempt_id> - View simulation results")
@@ -479,7 +488,7 @@ try:
     print("   • /simulation/api/<id>/complete - Complete simulation")
     print("   • /simulation/api/<id>/restart - Restart simulation")
 except Exception as e:
-    print(f"❌ Error registering enhanced user simulation routes: {e}")
+    print(f"[ERROR] Error registering enhanced user simulation routes: {e}")
     import traceback
     traceback.print_exc()
 
@@ -493,7 +502,7 @@ try:
     
     # Get statistics about registered routes
     stats = route_registry.get_statistics()
-    print(f"✅ Dynamic route registry initialized")
+    print(f"[OK] Dynamic route registry initialized")
     print(f"   Total classes: {stats.get('total_classes', 0)}")
     print(f"   Registered classes: {stats.get('registered_classes', 0)}")
     print(f"   Route files: {stats.get('route_files', 0)}")
@@ -503,8 +512,8 @@ try:
         print(f"   Registered class IDs: {stats['registered_class_ids']}")
     
 except Exception as e:
-    print(f"❌ Error initializing dynamic route registry: {e}")
-    print("✅ Continuing with universal template system only...")
+    print(f"[ERROR] Error initializing dynamic route registry: {e}")
+    print("[OK] Continuing with universal template system only...")
     # Universal template system should handle all classes
     # No need for class-specific route fallback
 
@@ -720,7 +729,7 @@ if __name__ == "__main__":
         )
     else:
         # Fallback to standard Flask server if SocketIO is not available
-        logger.warning("⚠️ Starting without SocketIO - WebSocket features disabled")
+        logger.warning("[WARNING] Starting without SocketIO - WebSocket features disabled")
         app.run(
             debug=debug_mode,
             host=chosen_host,

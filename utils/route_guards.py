@@ -1,4 +1,4 @@
-"""Route guard decorators to strictly separate instructor and user routes.
+﻿"""Route guard decorators to strictly separate instructor and user routes.
 
 These enforce:
  - Instructor routes: only Instructor model instances with session namespace 'instructor'.

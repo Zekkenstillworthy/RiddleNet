@@ -1,4 +1,4 @@
-"""
+﻿"""
 Admin Notification Controller
 Handles admin notification center functionality
 """
@@ -22,7 +22,7 @@ def set_socketio_instance(socketio_instance):
     """Set the socketio instance to avoid circular imports"""
     global _socketio_instance
     _socketio_instance = socketio_instance
-    print(f"✅ SocketIO instance set in notification controller: {socketio_instance is not None}")
+    print(f"[OK] SocketIO instance set in notification controller: {socketio_instance is not None}")
 
 def get_socketio_instance():
     """Get the socketio instance"""
@@ -43,40 +43,40 @@ def notification_center():
 def send_notification():
     """Send notification via API"""
     try:
-        print(f"🔔 Notification API called by user {current_user.username} at {datetime.now()}")
+        print(f"[NOTIF] Notification API called by user {current_user.username} at {datetime.now()}")
         
         data = request.get_json()
-        print(f"📋 Notification data: {data}")
+        print(f"[DATA] Notification data: {data}")
         
         # Validate required fields
         if not data.get('title') or not data.get('message'):
-            print(f"❌ Missing required fields - title: {data.get('title')}, message: {data.get('message')}")
+            print(f"[ERROR] Missing required fields - title: {data.get('title')}, message: {data.get('message')}")
             return jsonify({'error': 'Title and message are required'}), 400
         
         # Get notification service
         notification_service = get_notification_service(get_socketio_instance())
-        print(f"🔧 Notification service retrieved: {notification_service is not None}")
+        print(f"[FIX] Notification service retrieved: {notification_service is not None}")
         
         # Parse notification type and priority with validation
         try:
             notification_type = NotificationType(data.get('notification_type', 'admin_notice'))
-            print(f"📝 Notification type parsed: {notification_type}")
+            print(f"[NOTE] Notification type parsed: {notification_type}")
         except ValueError as e:
-            print(f"❌ Invalid notification type: {data.get('notification_type')} - {e}")
+            print(f"[ERROR] Invalid notification type: {data.get('notification_type')} - {e}")
             return jsonify({'error': f'Invalid notification type: {data.get("notification_type")}'}), 400
             
         try:
             priority = NotificationPriority(data.get('priority', 'normal'))
-            print(f"📝 Priority parsed: {priority}")
+            print(f"[NOTE] Priority parsed: {priority}")
         except ValueError as e:
-            print(f"❌ Invalid priority: {data.get('priority')} - {e}")
+            print(f"[ERROR] Invalid priority: {data.get('priority')} - {e}")
             return jsonify({'error': f'Invalid priority: {data.get("priority")}'}), 400
             
         try:
             channel = NotificationChannel(data.get('channel', 'both'))
-            print(f"📝 Channel parsed: {channel}")
+            print(f"[NOTE] Channel parsed: {channel}")
         except ValueError as e:
-            print(f"❌ Invalid channel: {data.get('channel')} - {e}")
+            print(f"[ERROR] Invalid channel: {data.get('channel')} - {e}")
             return jsonify({'error': f'Invalid channel: {data.get("channel")}'}), 400
         
         # Prepare sender info
@@ -91,7 +91,7 @@ def send_notification():
         
         # Determine recipients
         recipient_type = data.get('recipient_type', 'all_users')  # Default to all_users instead of all_admins
-        print(f"📋 Recipient type: {recipient_type}")
+        print(f"[DATA] Recipient type: {recipient_type}")
         
         if recipient_type == 'all_users':
             # Send to all regular users (not admins) using system announcement method
@@ -110,7 +110,7 @@ def send_notification():
             if not user_id:
                 return jsonify({'error': 'User ID required for specific user notifications'}), 400
             
-            print(f"👤 Sending user notification to user ID: {user_id}")
+            print(f"[USER] Sending user notification to user ID: {user_id}")
             final_result = notification_service.send_user_notification(
                 user_id=int(user_id),
                 notification_type=notification_type,
@@ -126,7 +126,7 @@ def send_notification():
             if not selected_users:
                 return jsonify({'error': 'At least one user must be selected for multiple users notifications'}), 400
             
-            print(f"👥 Sending to multiple users: {selected_users}")
+            print(f"[USERS] Sending to multiple users: {selected_users}")
             
             success_count = 0
             error_count = 0
@@ -156,7 +156,7 @@ def send_notification():
                     db.session.commit()
                     
                 except Exception as e:
-                    print(f"❌ Error sending to user {user_id}: {e}")
+                    print(f"[ERROR] Error sending to user {user_id}: {e}")
                     error_count += 1
                     db.session.rollback()
                     
@@ -170,7 +170,7 @@ def send_notification():
         else:
             return jsonify({'error': f'Invalid recipient type: {recipient_type}'}), 400
         
-        print(f"✅ Notification sent successfully: {final_result}")
+        print(f"[OK] Notification sent successfully: {final_result}")
         return jsonify(final_result)
         
     except Exception as e:

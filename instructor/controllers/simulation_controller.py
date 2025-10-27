@@ -1,4 +1,4 @@
-from flask import current_app, request, jsonify
+﻿from flask import current_app, request, jsonify
 from __init__ import db
 from instructor.models.simulation import Simulation, SimulationAttempt
 # Learning Path models removed - feature deprecated
@@ -528,7 +528,7 @@ class SimulationController:
             
             # If no simulations exist, create sample data
             if not simulations:
-                print("🔄 No simulations found, creating sample data...")
+                print("[REFRESH] No simulations found, creating sample data...")
                 self._create_sample_simulations()
                 simulations = query.order_by(Simulation.created_at.desc()).all()
             
@@ -544,20 +544,20 @@ class SimulationController:
     def get_simulation_by_id(self, simulation_id, include_steps=True):
         """Get simulation by ID with optional step details"""
         try:
-            print(f"🔍 GET_SIMULATION_BY_ID: Looking for simulation_id={simulation_id}")
+            print(f"[DEBUG] GET_SIMULATION_BY_ID: Looking for simulation_id={simulation_id}")
             current_app.logger.info(f"[GET_SIMULATION_BY_ID] Looking for simulation_id={simulation_id}")
             
             simulation = Simulation.query.get(simulation_id)
             
             if not simulation:
-                print(f"❌ GET_SIMULATION_BY_ID: Simulation {simulation_id} NOT FOUND in database")
+                print(f"[ERROR] GET_SIMULATION_BY_ID: Simulation {simulation_id} NOT FOUND in database")
                 current_app.logger.warning(f"[GET_SIMULATION_BY_ID] Simulation {simulation_id} not found in database")
                 return {'error': 'Simulation not found'}
             
-            print(f"✅ GET_SIMULATION_BY_ID: Found simulation {simulation_id}: '{simulation.title}'")
+            print(f"[OK] GET_SIMULATION_BY_ID: Found simulation {simulation_id}: '{simulation.title}'")
             current_app.logger.info(f"[GET_SIMULATION_BY_ID] Found simulation {simulation_id}: {simulation.title}")
             
-            print(f"🔍 GET_SIMULATION_BY_ID: Converting to dict (include_steps={include_steps})")
+            print(f"[DEBUG] GET_SIMULATION_BY_ID: Converting to dict (include_steps={include_steps})")
             sim_dict = simulation.to_dict(include_steps=include_steps, include_analytics=True)
             
             # Ensure ALL nested data is JSON-serializable
@@ -571,15 +571,15 @@ class SimulationController:
                 'simulation': sim_dict
             }
             
-            print(f"✅ GET_SIMULATION_BY_ID: Successfully converted to dict")
+            print(f"[OK] GET_SIMULATION_BY_ID: Successfully converted to dict")
             current_app.logger.info(f"[GET_SIMULATION_BY_ID] Successfully converted to dict")
             return result
             
         except Exception as e:
-            print(f"❌ GET_SIMULATION_BY_ID EXCEPTION: {str(e)}")
+            print(f"[ERROR] GET_SIMULATION_BY_ID EXCEPTION: {str(e)}")
             current_app.logger.error(f"Error getting simulation {simulation_id}: {str(e)}")
             import traceback
-            print(f"❌ TRACEBACK:\n{traceback.format_exc()}")
+            print(f"[ERROR] TRACEBACK:\n{traceback.format_exc()}")
             current_app.logger.error(f"Traceback: {traceback.format_exc()}")
             return {'error': 'Failed to retrieve simulation'}
     
@@ -928,12 +928,12 @@ class SimulationController:
                 db.session.add(simulation)
             
             db.session.commit()
-            print("✅ Sample simulations created successfully")
+            print("[OK] Sample simulations created successfully")
             
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Error creating sample simulations: {str(e)}")
-            print(f"❌ Error creating sample simulations: {str(e)}")
+            print(f"[ERROR] Error creating sample simulations: {str(e)}")
     
     def get_simulation_analytics(self, simulation_id):
         """Get detailed analytics for a specific simulation"""

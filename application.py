@@ -5,8 +5,8 @@ import sys
 # Ensure the application directory is in the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
-
+    import os
+    import sys
 # Set up environment for production
 os.environ.setdefault('FLASK_ENV', 'production')
 
@@ -49,6 +49,8 @@ try:
     print("✅ Session cleanup middleware initialized")
 except ImportError as e:
     print(f"⚠️ Could not initialize session cleanup middleware: {e}")
+
+from utils.session_guard import register_session_guard
 
 # Initialize login manager
 from flask_login import LoginManager
@@ -141,11 +143,31 @@ def register_blueprints():
     except Exception as e:
         print(f"⚠️ Error registering user blueprints: {e}")
     
+    # Register live quiz blueprint separately to avoid silent failures
+    try:
+        from user.routes.live_quiz_routes import live_quiz_bp
+        application.register_blueprint(live_quiz_bp)
+        print("✅ Live Quiz student routes registered")
+    except Exception as e:
+        print(f"⚠️ Error registering live quiz blueprint: {e}")
+    
+    # Register Live Quiz MVP API
+    try:
+        from api.live_quiz_api import live_quiz_bp as live_quiz_api_bp
+        if live_quiz_api_bp.name not in application.blueprints:
+            application.register_blueprint(live_quiz_api_bp)
+            print("✅ Live Quiz MVP API registered at /api/live-quiz-mvp")
+        else:
+            print("ℹ️ Live Quiz MVP API blueprint already registered")
+    except Exception as e:
+        print(f"⚠️ Error registering Live Quiz MVP API: {e}")
+    
     # Admin blueprints
     admin_blueprints = [
         ('instructor.controllers.auth_controller', 'auth_bp', '/admin'),
         ('instructor.controllers.dashboard_controller', 'dashboard_bp', '/admin'),
         ('instructor.controllers.user_controller', 'user_bp', '/admin'),
+        ('instructor.api.live_quiz_api', 'live_quiz_instructor_bp', None),
         ('instructor.controllers.score_controller', 'score_bp', '/admin'),
         ('instructor.controllers.essay_controller', 'essay_bp', '/admin'),
         ('instructor.controllers.question_group_controller', 'question_group_bp', '/admin/groups'),
@@ -193,6 +215,8 @@ def health_check():
 # Add before_request handlers
 from flask import request, redirect, url_for, flash, session
 from flask_login import current_user
+
+register_session_guard(application)
 
 @application.before_request
 def enforce_namespace_security():

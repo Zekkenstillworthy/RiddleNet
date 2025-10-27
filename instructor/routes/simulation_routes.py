@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template, flash, redirect, url_for, current_app
+﻿from flask import Blueprint, request, jsonify, render_template, flash, redirect, url_for, current_app
 from flask_login import login_required, current_user
 from instructor.controllers.simulation_controller import SimulationController
 # Learning controller removed - Learning Paths feature disabled
@@ -200,14 +200,14 @@ def edit_simulation(simulation_id):
 
         # DEFENSIVE CHECK: Ensure sim_config is a dict before using .get()
         if not isinstance(sim_config, dict):
-            print(f"⚠️ WARNING [INSTRUCTOR]: sim_config is type {type(sim_config)}, converting to dict")
+            print(f"[WARNING] WARNING [INSTRUCTOR]: sim_config is type {type(sim_config)}, converting to dict")
             if isinstance(sim_config, str):
                 try:
                     import json
                     sim_config = json.loads(sim_config)
-                    print(f"✅ Successfully parsed sim_config from string to dict")
+                    print(f"[OK] Successfully parsed sim_config from string to dict")
                 except Exception as parse_error:
-                    print(f"❌ Failed to parse sim_config: {parse_error}")
+                    print(f"[ERROR] Failed to parse sim_config: {parse_error}")
                     sim_config = {}
             else:
                 sim_config = {}
@@ -542,18 +542,18 @@ def create_simulation_from_troubleshooting_editor():
 def view_simulation(simulation_id):
     """Preview simulation"""
     try:
-        print(f"🔍 VIEW SIMULATION: Attempting to load simulation {simulation_id}")
-        print(f"🔍 VIEW SIMULATION: Current user = {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
+        print(f"[DEBUG] VIEW SIMULATION: Attempting to load simulation {simulation_id}")
+        print(f"[DEBUG] VIEW SIMULATION: Current user = {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
         
         simulation_data = simulation_controller.get_simulation_by_id(simulation_id, include_steps=True)
         
         if 'error' in simulation_data:
-            print(f"❌ VIEW SIMULATION ERROR: {simulation_data['error']}")
+            print(f"[ERROR] VIEW SIMULATION ERROR: {simulation_data['error']}")
             flash(simulation_data['error'], 'error')
             return redirect(url_for('class_controller.index'))
         
-        print(f"✅ VIEW SIMULATION: Successfully retrieved simulation data")
-        print(f"🔍 VIEW SIMULATION: Rendering template 'instructor/simulation_preview.html'")
+        print(f"[OK] VIEW SIMULATION: Successfully retrieved simulation data")
+        print(f"[DEBUG] VIEW SIMULATION: Rendering template 'instructor/simulation_preview.html'")
 
         simulation = simulation_data['simulation']
 
@@ -597,7 +597,7 @@ def view_simulation(simulation_id):
             tutorial_steps_json=tutorial_steps_json
         )
     except Exception as e:
-        print(f"❌ VIEW SIMULATION EXCEPTION: {str(e)}")
+        print(f"[ERROR] VIEW SIMULATION EXCEPTION: {str(e)}")
         import traceback
         traceback.print_exc()
         flash(f'Error loading simulation: {str(e)}', 'error')
@@ -1093,9 +1093,9 @@ def create_explicit_assignment():
     """Create an explicit assignment with custom settings"""
     try:
         data = request.get_json() or {}
-        print(f"🔍 Assignment endpoint called with data: {data}")
-        print(f"🔍 Current user: {current_user}")
-        print(f"🔍 Current user ID: {getattr(current_user, 'id', None)}")
+        print(f"[DEBUG] Assignment endpoint called with data: {data}")
+        print(f"[DEBUG] Current user: {current_user}")
+        print(f"[DEBUG] Current user ID: {getattr(current_user, 'id', None)}")
 
         # Required fields
         simulation_id = data.get('simulation_id')
@@ -1115,11 +1115,11 @@ def create_explicit_assignment():
                 else:
                     title = f"Assignment for Simulation {simulation_id}"
             except Exception as e_sim:
-                print(f"⚠️  Error getting simulation for title: {e_sim}")
+                print(f"[WARNING]  Error getting simulation for title: {e_sim}")
                 # Fallback if model lookup fails for any reason
                 title = f"Assignment for Simulation {simulation_id}"
 
-        print(f"🔍 About to call assignment_service.create_explicit_assignment")
+        print(f"[DEBUG] About to call assignment_service.create_explicit_assignment")
         assignment = assignment_service.create_explicit_assignment(
             simulation_id=simulation_id,
             class_id=class_id,
@@ -1131,7 +1131,7 @@ def create_explicit_assignment():
             assigned_by=getattr(current_user, 'id', None)
         )
         
-        print(f"✅ Assignment created successfully: {assignment}")
+        print(f"[OK] Assignment created successfully: {assignment}")
         # Generate appropriate success message
         assignment_target = "module" if data.get('module_id') else "class"
         
@@ -1143,9 +1143,9 @@ def create_explicit_assignment():
         })
         
     except Exception as e:
-        print(f"❌ Error in create_explicit_assignment: {type(e).__name__}: {str(e)}")
+        print(f"[ERROR] Error in create_explicit_assignment: {type(e).__name__}: {str(e)}")
         import traceback
-        print(f"❌ Full traceback: {traceback.format_exc()}")
+        print(f"[ERROR] Full traceback: {traceback.format_exc()}")
         return jsonify({'error': f'Failed to create explicit assignment: {str(e)}'}), 500
 
 @admin_simulation_bp.route('/api/assignments/auto-assign/<int:simulation_id>', methods=['POST'])
@@ -1766,7 +1766,7 @@ def get_task_configuration(simulation_id):
         
         simulation = Simulation.query.get_or_404(simulation_id)
         
-        # 🔧 FIX: Read from dedicated task_config column (not from simulation_config)
+        # [FIX] FIX: Read from dedicated task_config column (not from simulation_config)
         task_config = simulation.task_config or {}
         
         return jsonify({
@@ -1793,12 +1793,12 @@ def save_task_configuration(simulation_id):
         
         simulation = Simulation.query.get_or_404(simulation_id)
         
-        # 🔧 FIX: Save task_config to dedicated task_config column (not inside simulation_config)
+        # [FIX] FIX: Save task_config to dedicated task_config column (not inside simulation_config)
         # The Simulation model has a separate task_config JSON column for this purpose
         simulation.task_config = data
         db.session.commit()
         
-        print(f"✅ [task-config POST] Successfully saved task config for simulation {simulation_id}")
+        print(f"[OK] [task-config POST] Successfully saved task config for simulation {simulation_id}")
         
         # ===== REAL-TIME SYNC: Emit task config update to all viewers =====
         try:

@@ -9495,6 +9495,10 @@ function loadQuestionGroupsTabContent(container) {
                                             </div>
                                         </div>
                                         <div class="module-actions">
+                                            <button class="action-btn primary" onclick="showLiveQuizModal(${questionGroup.id}, '${questionGroup.name.replace(/'/g, "\\'")}')" title="Start Live Quiz">
+                                                <i class="fas fa-play-circle"></i>
+                                                Live Quiz
+                                            </button>
                                             <button class="action-btn icon-only" onclick="manageQuestions(${questionGroup.id})" title="Manage Questions">
                                                 <i class="fas fa-cog"></i>
                                             </button>
@@ -16004,6 +16008,497 @@ window.handleLobbyLeft = function(data) {
 };
 
 console.log('✅ [ADMIN] Global collaboration functions loaded');
+
+// ==================== LIVE QUIZ MANAGEMENT ====================
+
+let activeLiveQuizSession = null;
+let liveQuizSocket = null;
+
+function showLiveQuizModal(questionGroupId, questionGroupName) {
+    const overlayId = 'liveQuizModalOverlay';
+    
+    // Remove existing modal
+    const existing = document.getElementById(overlayId);
+    if (existing) existing.remove();
+    
+    // Get module ID from current context, or null if in Quiz tab
+    const moduleId = moduleBuilder.currentModule?.id || null;
+    
+    // Get modules for dropdown if no module context
+    const modules = moduleBuilder.classContent?.modules || [];
+    const moduleSelectHtml = !moduleId && modules.length > 0 ? `
+        <div class="form-group">
+            <label><i class="fas fa-book"></i> Select Module <span style="color: #ef4444;">*</span></label>
+            <select id="moduleSelect" class="form-input" required>
+                <option value="">-- Select a Module --</option>
+                ${modules.map(m => `<option value="${m.id}">Module ${m.module_number}: ${m.title}</option>`).join('')}
+            </select>
+        </div>
+    ` : '';
+    
+    const modalHtml = `
+        <div class="modal-overlay show" id="${overlayId}" onclick="if(event.target.id==='${overlayId}') closeLiveQuizModal()">
+            <div class="modal-content" style="max-width: 600px;" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h2><i class="fas fa-play-circle"></i> Live Quiz: ${questionGroupName}</h2>
+                    <button class="modal-close" onclick="closeLiveQuizModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-body" id="live-quiz-modal-body">
+                    <div class="live-quiz-setup">
+                        ${moduleSelectHtml}
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-users"></i> Maximum Participants</label>
+                            <input type="number" id="maxParticipants" class="form-input" value="100" min="1" max="500">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Time per Question (seconds)</label>
+                            <input type="number" id="timePerQuestion" class="form-input" value="30" min="10" max="300">
+                        </div>
+                        
+                        <button class="action-btn primary full-width" onclick="createLiveQuizSession(${questionGroupId}, ${moduleId}, '${questionGroupName.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-rocket"></i>
+                            Start Live Quiz
+                        </button>
+                    </div>
+                    
+                    <div class="live-quiz-active" id="live-quiz-active-panel" style="display: none;">
+                        <div class="session-info-card">
+                            <div class="session-code">
+                                <span class="label">Session Code:</span>
+                                <span class="code" id="session-code-display">------</span>
+                                <button class="copy-btn" onclick="copySessionCode()">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <div class="session-stats">
+                                <div class="stat">
+                                    <i class="fas fa-users"></i>
+                                    <span id="participant-count">0</span> Participants
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-question"></i>
+                                    Question <span id="current-question-num">0</span> / <span id="total-questions">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="quiz-controls">
+                            <button class="action-btn primary" id="start-quiz-btn" onclick="startLiveQuiz()">
+                                <i class="fas fa-play"></i>
+                                Start Quiz
+                            </button>
+                            <button class="action-btn success" id="next-question-btn" onclick="nextQuestion()" style="display: none;">
+                                <i class="fas fa-forward"></i>
+                                Next Question
+                            </button>
+                            <button class="action-btn danger" onclick="endLiveQuiz()">
+                                <i class="fas fa-stop"></i>
+                                End Quiz
+                            </button>
+                        </div>
+                        
+                        <div class="live-leaderboard">
+                            <h3><i class="fas fa-trophy"></i> Live Leaderboard</h3>
+                            <div id="instructor-leaderboard-list">
+                                <div class="empty-state-small">
+                                    <i class="fas fa-users"></i>
+                                    Waiting for participants...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeLiveQuizModal() {
+    if (activeLiveQuizSession) {
+        if (confirm('Are you sure you want to close this panel? The quiz will continue running.')) {
+            document.getElementById('liveQuizModalOverlay')?.remove();
+        }
+    } else {
+        document.getElementById('liveQuizModalOverlay')?.remove();
+    }
+}
+
+async function createLiveQuizSession(questionGroupId, moduleId, questionGroupName) {
+    const maxParticipants = document.getElementById('maxParticipants').value;
+    const timePerQuestion = document.getElementById('timePerQuestion').value;
+    
+    // Get module ID from selector if not provided
+    if (!moduleId) {
+        const moduleSelect = document.getElementById('moduleSelect');
+        if (moduleSelect) {
+            moduleId = moduleSelect.value;
+        }
+    }
+    
+    if (!moduleId) {
+        moduleBuilder?.showToast?.('Please select a module', 'warning') || alert('Please select a module');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/instructor/api/live-quiz/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question_group_id: questionGroupId,
+                class_id: moduleBuilder.currentClass.id,
+                module_id: parseInt(moduleId),
+                max_participants: parseInt(maxParticipants),
+                time_per_question: parseInt(timePerQuestion)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            activeLiveQuizSession = data.session;
+            
+            // Connect to socket for real-time updates
+            connectToLiveQuizSocket(data.session.id);
+            
+            // Show active panel
+            document.querySelector('.live-quiz-setup').style.display = 'none';
+            document.getElementById('live-quiz-active-panel').style.display = 'block';
+            
+            // Update UI
+            document.getElementById('session-code-display').textContent = data.session.session_code;
+            document.getElementById('total-questions').textContent = data.session.total_questions;
+            document.getElementById('current-question-num').textContent = '0';
+            
+            moduleBuilder?.showToast?.('Live quiz session created! Share code: ' + data.session.session_code, 'success');
+        } else {
+            moduleBuilder?.showToast?.(data.error || 'Failed to create session', 'error') || alert('Failed to create session');
+        }
+    } catch (error) {
+        console.error('Error creating live quiz session:', error);
+        moduleBuilder?.showToast?.('Error creating session', 'error') || alert('Error creating session');
+    }
+}
+
+function connectToLiveQuizSocket(sessionId) {
+    // Connect to socket if not already connected
+    if (!window.socket || !window.socket.connected) {
+        console.log('Connecting to socket for live quiz...');
+        window.socket = io();
+    }
+    
+    // Listen for participant updates
+    window.socket.on('participant_joined', (data) => {
+        if (data.session_id === sessionId) {
+            document.getElementById('participant-count').textContent = data.participant_count;
+            updateInstructorLeaderboard();
+        }
+    });
+    
+    // Listen for answer submissions
+    window.socket.on('answer_submitted', (data) => {
+        if (data.session_id === sessionId) {
+            updateInstructorLeaderboard();
+        }
+    });
+    
+    // Listen for leaderboard updates
+    window.socket.on('leaderboard_update', (data) => {
+        if (data.session_id === sessionId) {
+            displayInstructorLeaderboard(data.leaderboard);
+        }
+    });
+}
+
+async function startLiveQuiz() {
+    if (!activeLiveQuizSession) return;
+    
+    try {
+    const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/start`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('start-quiz-btn').style.display = 'none';
+            document.getElementById('next-question-btn').style.display = 'block';
+            document.getElementById('current-question-num').textContent = '1';
+            
+            moduleBuilder?.showToast?.('Quiz started!', 'success');
+        }
+    } catch (error) {
+        console.error('Error starting quiz:', error);
+    }
+}
+
+async function nextQuestion() {
+    if (!activeLiveQuizSession) return;
+    
+    try {
+    const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/next-question`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('current-question-num').textContent = data.current_question;
+            
+            if (data.quiz_completed) {
+                document.getElementById('next-question-btn').style.display = 'none';
+                moduleBuilder?.showToast?.('Quiz completed!', 'success');
+            }
+        }
+    } catch (error) {
+        console.error('Error moving to next question:', error);
+    }
+}
+
+async function endLiveQuiz() {
+    if (!activeLiveQuizSession) return;
+    
+    if (!confirm('Are you sure you want to end this live quiz session?')) {
+        return;
+    }
+    
+    try {
+    const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/end`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            moduleBuilder?.showToast?.('Live quiz ended', 'success');
+            activeLiveQuizSession = null;
+            closeLiveQuizModal();
+        }
+    } catch (error) {
+        console.error('Error ending quiz:', error);
+    }
+}
+
+async function updateInstructorLeaderboard() {
+    if (!activeLiveQuizSession) return;
+    
+    try {
+    const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/leaderboard`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayInstructorLeaderboard(data.leaderboard);
+        }
+    } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+    }
+}
+
+function displayInstructorLeaderboard(leaderboard) {
+    const container = document.getElementById('instructor-leaderboard-list');
+    
+    if (!leaderboard || leaderboard.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state-small">
+                <i class="fas fa-users"></i>
+                No responses yet...
+            </div>
+        `;
+        return;
+    }
+    
+    const formatText = (value, fallback = '') => {
+        if (value === null || value === undefined) return fallback;
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    };
+
+    container.innerHTML = leaderboard.map((participant, index) => {
+        const rank = participant.rank ?? (index + 1);
+        const displayName = formatText(participant.display_name || participant.username || participant.name || `Participant ${rank}`);
+        const totalScore = Number(participant.total_score ?? participant.total_points ?? 0);
+        const totalCorrect = Number(participant.total_correct ?? participant.correct_answers ?? 0);
+        const totalAnswered = Number(participant.total_answered ?? participant.answers_count ?? participant.questions_answered ?? 0);
+        const borderColor = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--accent-color)';
+
+        return `
+        <div class="leaderboard-item" style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--surface); border-radius: 8px; border-left: 3px solid ${borderColor};">
+            <span class="rank" style="font-size: 18px; font-weight: bold; color: var(--text-secondary); min-width: 30px;">
+                #${rank}
+            </span>
+            <div class="participant-info" style="flex: 1; margin-left: 12px;">
+                <div style="font-weight: bold; color: var(--text-primary);">${displayName}</div>
+                <div style="font-size: 12px; color: var(--text-muted);">
+                    ${totalCorrect} correct · ${totalAnswered} answered
+                </div>
+            </div>
+            <div class="score" style="font-size: 20px; font-weight: bold; color: var(--cyber-glow);">
+                ${totalScore}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function copySessionCode() {
+    const code = document.getElementById('session-code-display').textContent;
+    navigator.clipboard.writeText(code);
+    moduleBuilder?.showToast?.('Session code copied!', 'success');
+}
+
+// Add styles for live quiz modal
+const liveQuizStyles = document.createElement('style');
+liveQuizStyles.textContent = `
+    .live-quiz-setup .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .live-quiz-setup label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+    
+    .live-quiz-setup .form-input,
+    .live-quiz-setup select.form-input {
+        width: 100%;
+        padding: 12px;
+        background: var(--surface);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+    
+    .live-quiz-setup .form-input:focus,
+    .live-quiz-setup select.form-input:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .live-quiz-setup select.form-input option {
+        background: var(--surface);
+        color: var(--text-primary);
+        padding: 8px;
+    }
+    
+    .session-info-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+        border: 2px solid var(--accent-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .session-code {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .session-code .label {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+    
+    .session-code .code {
+        font-size: 32px;
+        font-weight: bold;
+        color: var(--cyber-glow);
+        letter-spacing: 4px;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .session-code .copy-btn {
+        background: var(--surface);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .session-code .copy-btn:hover {
+        background: var(--accent-color);
+        transform: scale(1.05);
+    }
+    
+    .session-stats {
+        display: flex;
+        gap: 24px;
+    }
+    
+    .session-stats .stat {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-primary);
+        font-size: 16px;
+    }
+    
+    .session-stats .stat i {
+        color: var(--accent-color);
+    }
+    
+    .quiz-controls {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    
+    .quiz-controls button {
+        flex: 1;
+    }
+    
+    .live-leaderboard h3 {
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .live-leaderboard h3 i {
+        color: #FFD700;
+    }
+    
+    .empty-state-small {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+    }
+    
+    .empty-state-small i {
+        font-size: 48px;
+        margin-bottom: 12px;
+        opacity: 0.5;
+    }
+    
+    .full-width {
+        width: 100%;
+    }
+`;
+document.head.appendChild(liveQuizStyles);
+
+console.log('✅ [ADMIN] Live Quiz management functions loaded');
+
 </script>
 
 <!-- Removed extra stray </script> tag -->

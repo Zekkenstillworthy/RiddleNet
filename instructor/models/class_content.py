@@ -1,4 +1,4 @@
-"""
+﻿"""
 Class Content Models for Dynamic Content Management
 Supports announcements, assignments, materials, and other class content
 """

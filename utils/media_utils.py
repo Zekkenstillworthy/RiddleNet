@@ -1,4 +1,4 @@
-"""
+﻿"""
 Utility functions for optimized media handling
 """
 import os

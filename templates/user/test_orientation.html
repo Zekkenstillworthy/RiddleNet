@@ -1,0 +1,112 @@
+{% extends "user/base.html" %}
+
+{% block head %}
+<title>Test Orientation Prompt | RiddleNet</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/force-landscape.css') }}">
+<style>
+    body {
+        background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Inter', sans-serif;
+        color: #e5f2ff;
+    }
+    
+    .test-container {
+        background: rgba(15, 23, 42, 0.8);
+        border: 2px solid rgba(0, 217, 255, 0.3);
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 600px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+    
+    .test-container h1 {
+        background: linear-gradient(135deg, #00D9FF, #39FF14);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 20px;
+    }
+    
+    .test-info {
+        background: rgba(0, 217, 255, 0.1);
+        border-left: 4px solid #00D9FF;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: left;
+        border-radius: 8px;
+    }
+    
+    .test-info p {
+        margin: 10px 0;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    
+    .test-info strong {
+        color: #00D9FF;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-container">
+    <h1>🎯 Orientation Test Page</h1>
+    
+    <div class="test-info">
+        <p><strong>📱 This page tests the orientation prompt system.</strong></p>
+        <p>On mobile devices, you should see:</p>
+        <ul style="margin-left: 20px; text-align: left;">
+            <li>✅ A prompt asking to choose Portrait or Landscape mode</li>
+            <li>✅ Your choice is remembered in localStorage</li>
+            <li>✅ Landscape mode triggers fullscreen on rotation</li>
+            <li>✅ Portrait mode allows normal usage</li>
+            <li>✅ Toggle button to change preference anytime</li>
+        </ul>
+    </div>
+    
+    <div class="test-info">
+        <p><strong>🖥️ On Desktop:</strong></p>
+        <p>The orientation prompt should NOT appear. Desktop users get the full layout automatically.</p>
+    </div>
+    
+    <div class="test-info">
+        <p><strong>🔧 Debug Info:</strong></p>
+        <p id="deviceInfo">Loading device info...</p>
+        <p id="orientationInfo">Loading orientation info...</p>
+        <p id="preferenceInfo">Loading preference info...</p>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/force-landscape.js') }}"></script>
+<script>
+  // Initialize landscape orientation helper for testing
+  if (typeof initForceLandscape === 'function') {
+    initForceLandscape({ 
+      pageKey: 'orientation-test', 
+      autoFullscreen: true,
+      rememberChoice: true,
+      showToggle: true
+    });
+    
+    // Display debug info
+    setTimeout(() => {
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      const isTablet = /(tablet|ipad|playbook|silk)|(android(?!.*mobile))/i.test(navigator.userAgent.toLowerCase());
+      const isLandscape = window.matchMedia ? window.matchMedia('(orientation: landscape)').matches : window.innerWidth > window.innerHeight;
+      const storedPref = localStorage.getItem('forceLandscapePreference_orientation-test');
+      
+      document.getElementById('deviceInfo').innerHTML = 
+        `Device: ${isMobile ? '📱 Mobile' : isTablet ? '📱 Tablet' : '🖥️ Desktop'}`;
+      document.getElementById('orientationInfo').innerHTML = 
+        `Current Orientation: ${isLandscape ? '🖼️ Landscape' : '📱 Portrait'}`;
+      document.getElementById('preferenceInfo').innerHTML = 
+        `Stored Preference: ${storedPref || 'None (first visit)'}`;
+    }, 500);
+  }
+</script>
+{% endblock %}

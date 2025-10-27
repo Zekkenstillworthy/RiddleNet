@@ -61,14 +61,14 @@ def process_file(file_path):
         if content != original_content:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
-            print(f"✅ {file_path.relative_to(BASE_DIR)}")
+            print(f"[OK] {file_path.relative_to(BASE_DIR)}")
             for change in changes:
                 print(f"   {change}")
             return True
         return False
     
     except Exception as e:
-        print(f"❌ Error: {file_path}: {e}")
+        print(f"[ERROR] Error: {file_path}: {e}")
         return False
 
 def main():

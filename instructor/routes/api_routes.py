@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, render_template, current_app, session
+﻿from flask import Blueprint, jsonify, request, render_template, current_app, session
 from flask_login import current_user
 from __init__ import db
 from instructor.models.class_model import Class
@@ -20,19 +20,19 @@ def instructor_api_write_guard():
     if request.method in ('GET', 'HEAD', 'OPTIONS'):
         return None
     # For mutating methods, enforce teacher/instructor access
-    print(f"🔐 API write guard: {request.method} {request.path}")
-    print(f"👤 Current user: {current_user}, authenticated: {current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False}")
-    print(f"🔑 Session namespace: {session.get('auth_namespace')}")
-    print(f"📋 User role: {getattr(current_user, 'role', None)}")
+    print(f"[AUTH] API write guard: {request.method} {request.path}")
+    print(f"[USER] Current user: {current_user}, authenticated: {current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False}")
+    print(f"[KEY] Session namespace: {session.get('auth_namespace')}")
+    print(f"[DATA] User role: {getattr(current_user, 'role', None)}")
     # The decorator returns a Flask response on failure; emulate that here
     @teacher_required
     def _noop():
         return None
     result = _noop()
     if result:
-        print(f"❌ Auth check failed: {result}")
+        print(f"[ERROR] Auth check failed: {result}")
     else:
-        print(f"✅ Auth check passed")
+        print(f"[OK] Auth check passed")
     return result
 
 @api_bp.route('/deadlines/<int:class_id>', methods=['GET'])
@@ -260,14 +260,14 @@ def create_class():
                     new_class.question_groups.append(group)
             db.session.commit()
         
-        # ✅ UNIVERSAL TEMPLATE: All classes use the same dynamic template
+        # [OK] UNIVERSAL TEMPLATE: All classes use the same dynamic template
         # No need to generate class-specific templates anymore
         try:
-            print(f"✅ Class created: {new_class.name} - will use universal dynamic template")
-            print(f"🎯 New class will be accessible at: /class/{new_class.id}")
+            print(f"[OK] Class created: {new_class.name} - will use universal dynamic template")
+            print(f"[TARGET] New class will be accessible at: /class/{new_class.id}")
             print(f"📄 Using universal template: dynamic_class_universal.html") 
         except Exception as log_error:
-            print(f"⚠️ Logging error: {log_error}")
+            print(f"[WARNING] Logging error: {log_error}")
             # Don't fail the class creation for logging issues
         
         return jsonify({
@@ -363,57 +363,57 @@ def get_question_groups():
 def assign_question_group_explicit():
     """Assign Quiz to class or module explicitly"""
     try:
-        print(f"\n🎯 assign_question_group_explicit called")
-        print(f"📋 Request method: {request.method}")
-        print(f"📋 Request headers: {dict(request.headers)}")
-        print(f"👤 Current user: {current_user}")
-        print(f"🔐 Is authenticated: {current_user.is_authenticated}")
+        print(f"\n[TARGET] assign_question_group_explicit called")
+        print(f"[DATA] Request method: {request.method}")
+        print(f"[DATA] Request headers: {dict(request.headers)}")
+        print(f"[USER] Current user: {current_user}")
+        print(f"[AUTH] Is authenticated: {current_user.is_authenticated}")
         
         data = request.get_json()
-        print(f"📋 Request data: {data}")
+        print(f"[DATA] Request data: {data}")
         
         question_group_id = data.get('question_group_id') if data else None
         class_id = data.get('class_id') if data else None
         module_id = data.get('module_id') if data else None  # Optional: assign to specific module
         
-        print(f"📋 Parsed fields: question_group_id={question_group_id}, class_id={class_id}, module_id={module_id}")
+        print(f"[DATA] Parsed fields: question_group_id={question_group_id}, class_id={class_id}, module_id={module_id}")
         
         if not question_group_id or not class_id:
-            print(f"❌ Missing required fields: question_group_id={question_group_id}, class_id={class_id}")
+            print(f"[ERROR] Missing required fields: question_group_id={question_group_id}, class_id={class_id}")
             return jsonify({'success': False, 'error': 'Missing required fields'}), 400
         
         # Get the Quiz
-        print(f"🔍 Querying Quiz with ID: {question_group_id}")
+        print(f"[DEBUG] Querying Quiz with ID: {question_group_id}")
         question_group = QuestionGroup.query.get(question_group_id)
         if not question_group:
-            print(f"❌ Quiz with ID {question_group_id} not found")
+            print(f"[ERROR] Quiz with ID {question_group_id} not found")
             return jsonify({'success': False, 'error': 'Quiz not found'}), 404
         
-        print(f"✅ Quiz found: {question_group.name} (ID: {question_group.id})")
+        print(f"[OK] Quiz found: {question_group.name} (ID: {question_group.id})")
         
         if module_id:
-            print(f"🎯 Assigning to specific module (module_id={module_id}, class_id={class_id})")
+            print(f"[TARGET] Assigning to specific module (module_id={module_id}, class_id={class_id})")
             # Assign to specific module
             from instructor.models.module import Module
-            print(f"🔍 Querying module with ID={module_id} and class_id={class_id}")
+            print(f"[DEBUG] Querying module with ID={module_id} and class_id={class_id}")
             module = Module.query.filter_by(id=module_id, class_id=class_id).first()
             if not module:
-                print(f"❌ Module with ID {module_id} not found in class {class_id}")
+                print(f"[ERROR] Module with ID {module_id} not found in class {class_id}")
                 # Let's check if module exists at all
                 all_modules = Module.query.filter_by(id=module_id).all()
-                print(f"🔍 Modules with ID {module_id} in any class: {[f'Module {m.id} in class {m.class_id}' for m in all_modules]}")
+                print(f"[DEBUG] Modules with ID {module_id} in any class: {[f'Module {m.id} in class {m.class_id}' for m in all_modules]}")
                 return jsonify({'success': False, 'error': 'Module not found'}), 404
             
-            print(f"✅ Module found: {module.title} (ID: {module.id}, Class ID: {module.class_id})")
-            print(f"📋 Module current question_groups: {[qg.name for qg in module.question_groups]}")
+            print(f"[OK] Module found: {module.title} (ID: {module.id}, Class ID: {module.class_id})")
+            print(f"[DATA] Module current question_groups: {[qg.name for qg in module.question_groups]}")
             
             # Check if already assigned
             if question_group not in module.question_groups:
-                print(f"✅ Quiz not already assigned, proceeding with assignment")
+                print(f"[OK] Quiz not already assigned, proceeding with assignment")
                 module.question_groups.append(question_group)
                 assignment_type = "module"
                 target_name = module.title
-                print(f"✅ Quiz '{question_group.name}' added to module '{module.title}'")
+                print(f"[OK] Quiz '{question_group.name}' added to module '{module.title}'")
             else:
                 # Idempotent behavior: treat duplicate assignment as success with info
                 print(f"ℹ️ Quiz '{question_group.name}' already assigned to module '{module.title}' - returning idempotent success")
@@ -425,25 +425,25 @@ def assign_question_group_explicit():
                     'message': f'Quiz "{question_group.name}" is already assigned to module: {module.title}. No changes made.'
                 }), 200
         else:
-            print(f"🎯 Assigning to entire class (class_id={class_id})")
+            print(f"[TARGET] Assigning to entire class (class_id={class_id})")
             # Assign to entire class
             from instructor.models.class_model import Class
-            print(f"🔍 Querying class with ID: {class_id}")
+            print(f"[DEBUG] Querying class with ID: {class_id}")
             class_obj = Class.query.get(class_id)
             if not class_obj:
-                print(f"❌ Class with ID {class_id} not found")
+                print(f"[ERROR] Class with ID {class_id} not found")
                 return jsonify({'success': False, 'error': 'Class not found'}), 404
             
-            print(f"✅ Class found: {class_obj.name} (ID: {class_obj.id})")
-            print(f"📋 Class current question_groups: {[qg.name for qg in class_obj.question_groups]}")
+            print(f"[OK] Class found: {class_obj.name} (ID: {class_obj.id})")
+            print(f"[DATA] Class current question_groups: {[qg.name for qg in class_obj.question_groups]}")
             
             # Check if already assigned
             if question_group not in class_obj.question_groups:
-                print(f"✅ Quiz not already assigned to class, proceeding with assignment")
+                print(f"[OK] Quiz not already assigned to class, proceeding with assignment")
                 class_obj.question_groups.append(question_group)
                 assignment_type = "class"
                 target_name = class_obj.name
-                print(f"✅ Quiz '{question_group.name}' added to class '{class_obj.name}'")
+                print(f"[OK] Quiz '{question_group.name}' added to class '{class_obj.name}'")
             else:
                 # Idempotent behavior: treat duplicate assignment as success with info
                 print(f"ℹ️ Quiz '{question_group.name}' already assigned to class '{class_obj.name}' - returning idempotent success")
@@ -455,12 +455,12 @@ def assign_question_group_explicit():
                     'message': f'Quiz "{question_group.name}" is already assigned to class: {class_obj.name}. No changes made.'
                 }), 200
         
-        print(f"💾 Attempting to commit database changes...")
+        print(f"[SAVE] Attempting to commit database changes...")
         try:
             db.session.commit()
-            print(f"✅ Database commit successful")
+            print(f"[OK] Database commit successful")
         except Exception as commit_error:
-            print(f"❌ Database commit failed: {commit_error}")
+            print(f"[ERROR] Database commit failed: {commit_error}")
             db.session.rollback()
             return jsonify({'success': False, 'error': f'Database commit failed: {str(commit_error)}'}), 500
         
@@ -481,12 +481,12 @@ def assign_question_group_explicit():
         try:
             from socket_events import emit_assignment_notification
             emit_assignment_notification(class_id, notification_data)
-            print(f"✅ Socket notification emitted successfully")
+            print(f"[OK] Socket notification emitted successfully")
         except Exception as socket_error:
-            print(f"⚠️ Socket notification failed (non-critical): {socket_error}")
+            print(f"[WARNING] Socket notification failed (non-critical): {socket_error}")
         
         success_message = f'Quiz "{question_group.name}" successfully assigned to {assignment_type}: {target_name}'
-        print(f"✅ Assignment successful: {success_message}")
+        print(f"[OK] Assignment successful: {success_message}")
         
         return jsonify({
             'success': True,
@@ -494,17 +494,17 @@ def assign_question_group_explicit():
         })
         
     except Exception as e:
-        print(f"❌ CRITICAL ERROR in assign_question_group_explicit: {e}")
-        print(f"📋 Error type: {type(e).__name__}")
+        print(f"[ERROR] CRITICAL ERROR in assign_question_group_explicit: {e}")
+        print(f"[DATA] Error type: {type(e).__name__}")
         import traceback
-        print(f"📋 Full traceback:")
+        print(f"[DATA] Full traceback:")
         traceback.print_exc()
         
         try:
             db.session.rollback()
-            print(f"🔄 Database rollback completed")
+            print(f"[REFRESH] Database rollback completed")
         except Exception as rollback_error:
-            print(f"❌ Database rollback failed: {rollback_error}")
+            print(f"[ERROR] Database rollback failed: {rollback_error}")
         
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -533,7 +533,7 @@ def render_module_preview():
 def get_module_preview_data(class_id, module_id):
     """Get detailed module data for preview"""
     print("=" * 60)
-    print("🔍 API PREVIEW ROUTE CALLED")
+    print("[DEBUG] API PREVIEW ROUTE CALLED")
     print(f"Route: /admin/api/classes/{class_id}/modules/{module_id}/preview")
     print(f"This is the API route, not the template route!")
     print(f"Method: {request.method}")
@@ -1073,36 +1073,36 @@ def download_collaboration_file(file_id):
 def get_class_grades(class_id):
     """Get comprehensive grade data for a class"""
     try:
-        print(f"🔍 DEBUG: Getting grades for class {class_id}")
+        print(f"[DEBUG] DEBUG: Getting grades for class {class_id}")
         from instructor.models.class_content import ClassAssignment
         from instructor.models.assignment_submission import AssignmentSubmission
         from user.models.user import User
         from instructor.models.class_model import Class
         
-        print(f"🔍 DEBUG: Fetching class object {class_id}")
+        print(f"[DEBUG] DEBUG: Fetching class object {class_id}")
         # Verify class exists and user has access
         class_obj = Class.query.get_or_404(class_id)
-        print(f"✅ DEBUG: Class found: {class_obj.name}")
+        print(f"[OK] DEBUG: Class found: {class_obj.name}")
         
-        print(f"🔍 DEBUG: Getting students for class {class_id}")
+        print(f"[DEBUG] DEBUG: Getting students for class {class_id}")
         # Get all students in the class using the relationship
         students = class_obj.students.all()
-        print(f"✅ DEBUG: Found {len(students)} students")
+        print(f"[OK] DEBUG: Found {len(students)} students")
         
-        print(f"🔍 DEBUG: Getting assignments for class {class_id}")
+        print(f"[DEBUG] DEBUG: Getting assignments for class {class_id}")
         # Get all assignments for this class
         assignments = ClassAssignment.query.filter_by(class_id=class_id).all()
-        print(f"✅ DEBUG: Found {len(assignments)} assignments")
+        print(f"[OK] DEBUG: Found {len(assignments)} assignments")
         
-        print(f"🔍 DEBUG: Getting submissions for assignments")
+        print(f"[DEBUG] DEBUG: Getting submissions for assignments")
         # Get all submissions for these assignments
         assignment_ids = [a.id for a in assignments]
         submissions = AssignmentSubmission.query.filter(
             AssignmentSubmission.assignment_id.in_(assignment_ids)
         ).all() if assignment_ids else []
-        print(f"✅ DEBUG: Found {len(submissions)} submissions")
+        print(f"[OK] DEBUG: Found {len(submissions)} submissions")
         
-        print(f"🔍 DEBUG: Processing submissions data")
+        print(f"[DEBUG] DEBUG: Processing submissions data")
         # Group submissions by student and assignment
         submission_map = {}
         grade_map = {}
@@ -1123,10 +1123,10 @@ def get_class_grades(class_id):
                         'graded_at': submission.graded_at.isoformat() if submission.graded_at else None
                     }
             except Exception as e:
-                print(f"❌ DEBUG: Error processing submission {submission.id}: {e}")
+                print(f"[ERROR] DEBUG: Error processing submission {submission.id}: {e}")
                 continue
         
-        print(f"🔍 DEBUG: Building student data")
+        print(f"[DEBUG] DEBUG: Building student data")
         # Prepare student data
         student_data = []
         for student in students:
@@ -1144,12 +1144,12 @@ def get_class_grades(class_id):
                                   for aid, sub in student_submissions.items()}
                 })
             except Exception as e:
-                print(f"❌ DEBUG: Error processing student {student.id}: {e}")
+                print(f"[ERROR] DEBUG: Error processing student {student.id}: {e}")
                 continue
         
-        print(f"✅ DEBUG: Built data for {len(student_data)} students")
+        print(f"[OK] DEBUG: Built data for {len(student_data)} students")
         
-        print(f"🔍 DEBUG: Building assignment statistics")
+        print(f"[DEBUG] DEBUG: Building assignment statistics")
         # Prepare assignment data with statistics
         assignment_data = []
         for assignment in assignments:
@@ -1169,10 +1169,10 @@ def get_class_grades(class_id):
                 }
                 assignment_data.append(stats)
             except Exception as e:
-                print(f"❌ DEBUG: Error processing assignment {assignment.id}: {e}")
+                print(f"[ERROR] DEBUG: Error processing assignment {assignment.id}: {e}")
                 continue
         
-        print(f"✅ DEBUG: Built data for {len(assignment_data)} assignments")
+        print(f"[OK] DEBUG: Built data for {len(assignment_data)} assignments")
         
         # TODO: Add simulation and quiz data when those models are available
         simulation_data = []
@@ -1190,11 +1190,11 @@ def get_class_grades(class_id):
             }
         }
         
-        print(f"✅ DEBUG: Successfully built grades response")
+        print(f"[OK] DEBUG: Successfully built grades response")
         return jsonify(response_data)
         
     except Exception as e:
-        print(f"❌ DEBUG: Fatal error in get_class_grades: {e}")
+        print(f"[ERROR] DEBUG: Fatal error in get_class_grades: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({
@@ -2001,7 +2001,7 @@ def get_module_content(module_id):
     state gracefully.
     """
     print(f"\n{'='*80}")
-    print(f"🔍 [GET_MODULE_CONTENT] CALLED FOR MODULE_ID={module_id}")
+    print(f"[DEBUG] [GET_MODULE_CONTENT] CALLED FOR MODULE_ID={module_id}")
     print(f"{'='*80}")
     try:
         from instructor.models.module import Module
@@ -2093,8 +2093,8 @@ def get_module_content(module_id):
 @api_bp.route('/modules/<int:module_id>/assign-simulation', methods=['POST'])
 def assign_simulation_to_module(module_id):
     """Assign a simulation to a module"""
-    print(f"\n🎯 assign_simulation_to_module called for module_id={module_id}")
-    print(f"👤 User: {current_user}, authenticated: {current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False}")
+    print(f"\n[TARGET] assign_simulation_to_module called for module_id={module_id}")
+    print(f"[USER] User: {current_user}, authenticated: {current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False}")
     try:
         from instructor.models.module import Module
         from instructor.models.simulation import Simulation
@@ -2102,24 +2102,24 @@ def assign_simulation_to_module(module_id):
         from datetime import datetime, timedelta
         
         data = request.get_json()
-        print(f"📋 Request data: {data}")
+        print(f"[DATA] Request data: {data}")
         simulation_id = data.get('simulation_id')
         due_date_str = data.get('due_date')
         
         if not simulation_id:
-            print(f"❌ No simulation_id provided")
+            print(f"[ERROR] No simulation_id provided")
             return jsonify({
                 'success': False,
                 'error': 'Simulation ID is required'
             }), 400
             
-        print(f"🔍 Looking up module {module_id}...")
+        print(f"[DEBUG] Looking up module {module_id}...")
         module = Module.query.get_or_404(module_id)
-        print(f"✅ Module found: {module.title} (class_id={module.class_id})")
+        print(f"[OK] Module found: {module.title} (class_id={module.class_id})")
         
-        print(f"🔍 Looking up simulation {simulation_id}...")
+        print(f"[DEBUG] Looking up simulation {simulation_id}...")
         simulation = Simulation.query.get_or_404(simulation_id)
-        print(f"✅ Simulation found: {simulation.title}")
+        print(f"[OK] Simulation found: {simulation.title}")
         
         # Parse due date
         due_date = None
@@ -2131,7 +2131,7 @@ def assign_simulation_to_module(module_id):
                 due_date = datetime.utcnow() + timedelta(days=7)
         
         # Check if an active assignment for this module already exists
-        print(f"🔍 Checking for existing assignment...")
+        print(f"[DEBUG] Checking for existing assignment...")
         existing_assignment = SimulationAssignment.query.filter_by(
             simulation_id=simulation_id,
             module_id=module_id,
@@ -2213,9 +2213,9 @@ def assign_simulation_to_module(module_id):
         )
         
         db.session.add(assignment)
-        print(f"💾 Committing to database...")
+        print(f"[SAVE] Committing to database...")
         db.session.commit()
-        print(f"✅ Assignment created successfully (id={assignment.id})")
+        print(f"[OK] Assignment created successfully (id={assignment.id})")
         
         # Emit WebSocket event to users viewing this module
         try:
@@ -2244,7 +2244,7 @@ def assign_simulation_to_module(module_id):
         })
         
     except Exception as e:
-        print(f"❌ Error in assign_simulation_to_module: {e}")
+        print(f"[ERROR] Error in assign_simulation_to_module: {e}")
         import traceback
         traceback.print_exc()
         db.session.rollback()
@@ -2308,8 +2308,8 @@ def assign_question_group_to_module(module_id):
             
         module = Module.query.get_or_404(module_id)
         question_group = QuestionGroup.query.get_or_404(question_group_id)
-        print(f"✅ Module found: {module.id} - {getattr(module, 'title', 'N/A')}")
-        print(f"✅ Quiz found: {question_group.id} - {getattr(question_group, 'name', 'N/A')}")
+        print(f"[OK] Module found: {module.id} - {getattr(module, 'title', 'N/A')}")
+        print(f"[OK] Quiz found: {question_group.id} - {getattr(question_group, 'name', 'N/A')}")
         
         # Check if already assigned
         already_assigned = module.question_groups.filter_by(id=question_group.id).first() is not None
@@ -2324,7 +2324,7 @@ def assign_question_group_to_module(module_id):
         # Add Quiz to module
         module.question_groups.append(question_group)
         db.session.commit()
-        print(f"🟢 Assigned Quiz {question_group.id} to module {module.id}")
+        print(f"[OK] Assigned Quiz {question_group.id} to module {module.id}")
         
         return jsonify({
             'success': True,
@@ -2333,7 +2333,7 @@ def assign_question_group_to_module(module_id):
         
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Error in assign_question_group_to_module: {e}")
+        print(f"[ERROR] Error in assign_question_group_to_module: {e}")
         return jsonify({
             'success': False,
             'error': str(e)

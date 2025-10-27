@@ -159,7 +159,7 @@ class TeamChatService:
             # Return message data
             message_data = message.to_dict()
             
-            print(f"📝 Team chat message saved: ID={message.id}, user={username}, session={simulation_session_id}")
+            print(f"[NOTE] Team chat message saved: ID={message.id}, user={username}, session={simulation_session_id}")
             
             return {
                 'success': True,
@@ -168,7 +168,7 @@ class TeamChatService:
             
         except Exception as e:
             db.session.rollback()
-            print(f"❌ Error saving team chat message: {str(e)}")
+            print(f"[ERROR] Error saving team chat message: {str(e)}")
             return {
                 'success': False,
                 'error': f'Failed to save message: {str(e)}'
@@ -222,7 +222,7 @@ class TeamChatService:
             }
             
         except Exception as e:
-            print(f"❌ Error fetching team chat messages: {str(e)}")
+            print(f"[ERROR] Error fetching team chat messages: {str(e)}")
             return {
                 'success': False,
                 'error': f'Failed to fetch messages: {str(e)}',
@@ -246,7 +246,7 @@ class TeamChatService:
             return query.count()
             
         except Exception as e:
-            print(f"❌ Error counting team chat messages: {str(e)}")
+            print(f"[ERROR] Error counting team chat messages: {str(e)}")
             return 0
     
     def soft_delete_message(self, message_id: int, user_id: int) -> Dict[str, any]:
@@ -267,7 +267,7 @@ class TeamChatService:
             
         except Exception as e:
             db.session.rollback()
-            print(f"❌ Error soft deleting message: {str(e)}")
+            print(f"[ERROR] Error soft deleting message: {str(e)}")
             return {'success': False, 'error': str(e)}
 
 

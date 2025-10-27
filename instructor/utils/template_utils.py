@@ -1,4 +1,4 @@
-"""
+﻿"""
 Admin-specific template utilities
 """
 from flask import render_template as flask_render_template, current_app

@@ -167,7 +167,7 @@ def process_file(file_path):
         if content != original_content:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
-            print(f"✅ Updated: {file_path.relative_to(BASE_DIR)}")
+            print(f"[OK] Updated: {file_path.relative_to(BASE_DIR)}")
             for change in changes_made:
                 print(f"   - {change}")
             return True
@@ -175,7 +175,7 @@ def process_file(file_path):
         return False
     
     except Exception as e:
-        print(f"❌ Error processing {file_path}: {e}")
+        print(f"[ERROR] Error processing {file_path}: {e}")
         return False
 
 def main():
@@ -190,7 +190,7 @@ def main():
     
     for directory in DIRECTORIES_TO_PROCESS:
         if not directory.exists():
-            print(f"⚠️  Directory not found: {directory}")
+            print(f"[WARNING]  Directory not found: {directory}")
             continue
         
         if directory.is_file():

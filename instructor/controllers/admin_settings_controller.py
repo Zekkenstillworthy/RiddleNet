@@ -1,4 +1,4 @@
-"""
+﻿"""
 Admin Settings Controller
 Centralized configuration management for admin settings
 """
@@ -254,9 +254,9 @@ def _load_defaults_overrides():
             with open(overrides_file, 'r') as f:
                 overrides = json.load(f)
             DEFAULTS.update(overrides)
-            print("✅ Loaded defaults overrides from file")
+            print("[OK] Loaded defaults overrides from file")
     except Exception as e:
-        print(f"⚠️ Could not load defaults overrides: {e}")
+        print(f"[WARNING] Could not load defaults overrides: {e}")
 
 
 # Load overrides when module is imported

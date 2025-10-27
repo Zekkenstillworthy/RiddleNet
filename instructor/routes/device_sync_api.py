@@ -1,4 +1,4 @@
-"""
+﻿"""
 Device Count Synchronization API
 Ensures consistent device counts between admin edit and dynamic simulation pages
 """

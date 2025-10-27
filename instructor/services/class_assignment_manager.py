@@ -1,4 +1,4 @@
-"""
+﻿"""
 Enhanced Class Template Generator for Dynamic Database Content
 =============================================================
 

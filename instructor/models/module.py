@@ -1,4 +1,4 @@
-"""
+﻿"""
 Module and Lesson Models for Dynamic Course Structure
 Supports hierarchical learning organization with sequential progression
 Includes user session tracking integration

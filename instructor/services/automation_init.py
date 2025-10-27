@@ -1,4 +1,4 @@
-"""
+﻿"""
 Initialization script for Enhanced Classroom Automation System
 
 Run this script to set up the enhanced automation system in your RiddleNet application.
@@ -35,7 +35,7 @@ def initialize_enhanced_automation(app: Flask):
                 with open(init_file, 'w') as f:
                     f.write('# Auto-generated package file\n')
         
-        print(f"✅ Created directories:")
+        print(f"[OK] Created directories:")
         print(f"   - {templates_dir}")
         print(f"   - {routes_dir}")
         
@@ -44,7 +44,7 @@ def initialize_enhanced_automation(app: Flask):
         route_registry.init_app(app)
         
         # 3. Validate static template mappings
-        print("🔍 Validating static template integrations...")
+        print("[DEBUG] Validating static template integrations...")
         static_templates = enhanced_template_generator.static_templates_map
         
         for class_type, config in static_templates.items():
@@ -54,17 +54,17 @@ def initialize_enhanced_automation(app: Flask):
             learning_template = config['learning_template']
             template_path = os.path.join(app.root_path, 'templates', learning_template)
             if os.path.exists(template_path):
-                print(f"     ✅ Learning template found: {learning_template}")
+                print(f"     [OK] Learning template found: {learning_template}")
             else:
-                print(f"     ⚠️  Learning template missing: {learning_template}")
+                print(f"     [WARNING]  Learning template missing: {learning_template}")
             
             # Check simulations template
             sim_template = config['simulations_template']
             sim_template_path = os.path.join(app.root_path, 'templates', sim_template)
             if os.path.exists(sim_template_path):
-                print(f"     ✅ Simulations template found: {sim_template}")
+                print(f"     [OK] Simulations template found: {sim_template}")
             else:
-                print(f"     ⚠️  Simulations template missing: {sim_template}")
+                print(f"     [WARNING]  Simulations template missing: {sim_template}")
         
         # 4. Create CSS file for enhanced templates
         print("🎨 Creating enhanced CSS styles...")
@@ -74,10 +74,10 @@ def initialize_enhanced_automation(app: Flask):
         css_file = os.path.join(css_dir, 'dynamic_class.css')
         if not os.path.exists(css_file):
             create_enhanced_css(css_file)
-            print(f"✅ Created enhanced CSS: {css_file}")
+            print(f"[OK] Created enhanced CSS: {css_file}")
         
         # 5. Get statistics
-        print("📊 System Statistics:")
+        print("[STATS] System Statistics:")
         try:
             from instructor.models.class_model import Class
             total_classes = Class.query.count()
@@ -281,16 +281,16 @@ def create_enhanced_css(css_file_path: str):
 
 def check_system_health():
     """Check the health of the automation system"""
-    print("🔍 Checking Enhanced Automation System Health...")
+    print("[DEBUG] Checking Enhanced Automation System Health...")
     
     try:
         # Check route registry
         stats = route_registry.get_statistics()
-        print(f"✅ Route Registry: {stats.get('registered_classes', 0)} classes registered")
+        print(f"[OK] Route Registry: {stats.get('registered_classes', 0)} classes registered")
         
         # Check template generator
         template_map = enhanced_template_generator.static_templates_map
-        print(f"✅ Template Generator: {len(template_map)} class types supported")
+        print(f"[OK] Template Generator: {len(template_map)} class types supported")
         
         # Check directories
         from flask import current_app
@@ -300,12 +300,12 @@ def check_system_health():
         template_files = len([f for f in os.listdir(templates_dir) if f.endswith('.html')]) if os.path.exists(templates_dir) else 0
         route_files = len([f for f in os.listdir(routes_dir) if f.endswith('.py')]) if os.path.exists(routes_dir) else 0
         
-        print(f"✅ Generated Files: {template_files} templates, {route_files} route files")
+        print(f"[OK] Generated Files: {template_files} templates, {route_files} route files")
         
         return True
         
     except Exception as e:
-        print(f"❌ System Health Check Failed: {e}")
+        print(f"[ERROR] System Health Check Failed: {e}")
         return False
 
 

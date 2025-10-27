@@ -1,4 +1,4 @@
-"""
+﻿"""
 Safe template rendering utilities
 """
 import os

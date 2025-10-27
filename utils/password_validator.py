@@ -1,4 +1,4 @@
-"""
+﻿"""
 Password Validation Utility Module
 Provides comprehensive password strength validation for RiddleNet application
 """

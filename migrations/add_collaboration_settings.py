@@ -25,7 +25,7 @@ def add_collaboration_settings_column():
                 """))
                 
                 if result.fetchone():
-                    print("✅ collaboration_settings column already exists")
+                    print("[OK] collaboration_settings column already exists")
                     return True
                 
                 # Add the column
@@ -36,11 +36,11 @@ def add_collaboration_settings_column():
                 
                 connection.commit()
             
-            print("✅ Successfully added collaboration_settings column to simulations table")
+            print("[OK] Successfully added collaboration_settings column to simulations table")
             return True
             
         except Exception as e:
-            print(f"❌ Error adding collaboration_settings column: {str(e)}")
+            print(f"[ERROR] Error adding collaboration_settings column: {str(e)}")
             return False
 
 if __name__ == "__main__":

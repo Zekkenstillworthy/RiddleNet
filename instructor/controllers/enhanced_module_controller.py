@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+﻿from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 from instructor.models.module import Module, Lesson
 from instructor.models.class_model import Class
@@ -35,7 +35,7 @@ def edit_module(class_id, module_id):
                              lessons=lessons)
         
     except Exception as e:
-        print(f"❌ DEBUG Exception: {e}")
+        print(f"[ERROR] DEBUG Exception: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 # DEBUG endpoint for testing actual delete (remove in production)
@@ -43,19 +43,19 @@ def edit_module(class_id, module_id):
 def debug_delete_module_now(module_id):
     """Debug endpoint to actually delete a module without auth"""
     try:
-        print(f"🔧 DEBUG: Actually deleting module {module_id}")
+        print(f"[FIX] DEBUG: Actually deleting module {module_id}")
         module = Module.query.get(module_id)
         if not module:
             return jsonify({'success': False, 'message': f'Module {module_id} not found'}), 404
             
-        print(f"✅ Found module to delete: {module.title} (is_active: {module.is_active})")
+        print(f"[OK] Found module to delete: {module.title} (is_active: {module.is_active})")
         
         # Perform soft delete
         module.is_active = False
         module.updated_at = datetime.utcnow()
         
         db.session.commit()
-        print(f"✅ Module soft-deleted successfully: {module.id}")
+        print(f"[OK] Module soft-deleted successfully: {module.id}")
         
         return jsonify({
             'success': True,
@@ -69,7 +69,7 @@ def debug_delete_module_now(module_id):
         })
         
     except Exception as e:
-        print(f"❌ DEBUG DELETE Exception: {e}")
+        print(f"[ERROR] DEBUG DELETE Exception: {e}")
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -225,11 +225,15 @@ def create_module(class_id):
         materials = request.form.getlist('materials[]')
         materials = [m.strip() for m in materials if m.strip()]
         
+        # Calculate the correct module number based on active modules count
+        active_modules_count = Module.query.filter_by(class_id=class_id, is_active=True).count()
+        next_module_number = active_modules_count + 1
+        
         # Create new module - NOTE: Module model doesn't have 'content' field
         module = Module(
             title=title,
             description=description,
-            module_number=str(order_index),  # Use order as module number
+            module_number=str(next_module_number),  # Sequential module number
             course_type=class_obj.name or 'General Course',  # Use class name as course type
             learning_objectives=learning_objectives.split('\n') if learning_objectives else [],
             estimated_duration=estimated_duration,
@@ -253,14 +257,14 @@ def create_module(class_id):
         # Use sequence synchronization to prevent duplicate key errors
         try:
             from utils.sequence_sync import commit_with_sequence_retry
-            print(f"🔧 Committing module with sequence retry...")
+            print(f"[FIX] Committing module with sequence retry...")
             commit_with_sequence_retry('modules', 'id')
         except ImportError:
             # Fallback if sequence_sync is not available
-            print(f"⚠️  sequence_sync not available, using regular commit")
+            print(f"[WARNING]  sequence_sync not available, using regular commit")
             db.session.commit()
         except Exception as seq_error:
-            print(f"❌ Error creating module: {seq_error}")
+            print(f"[ERROR] Error creating module: {seq_error}")
             raise
             
         logging.debug(f'Module created: id={module.id}')
@@ -316,13 +320,13 @@ def create_module(class_id):
         if 'lesson_titles' in locals() and any(title.strip() for title in lesson_titles):
             try:
                 from utils.sequence_sync import commit_with_sequence_retry
-                print(f"🔧 Committing lessons with sequence retry...")
+                print(f"[FIX] Committing lessons with sequence retry...")
                 commit_with_sequence_retry('lessons', 'id')
             except ImportError:
-                print(f"⚠️  sequence_sync not available for lessons, using regular commit")
+                print(f"[WARNING]  sequence_sync not available for lessons, using regular commit")
                 db.session.commit()
             except Exception as lesson_error:
-                print(f"❌ Error creating lessons: {lesson_error}")
+                print(f"[ERROR] Error creating lessons: {lesson_error}")
                 raise
         else:
             db.session.commit()
@@ -366,10 +370,10 @@ def create_module(class_id):
                 'timestamp': datetime.utcnow().isoformat()
             }, room=f'class_{class_id}')
             
-            print(f"✅ WebSocket events emitted successfully for new module {module.id}")
+            print(f"[OK] WebSocket events emitted successfully for new module {module.id}")
             
         except Exception as ws_error:
-            print(f"⚠️ WebSocket emit failed (non-critical): {ws_error}")
+            print(f"[WARNING] WebSocket emit failed (non-critical): {ws_error}")
             logging.warning(f'WebSocket emit failed for module creation: {ws_error}')
         
         # Check if this is an AJAX request
@@ -419,6 +423,9 @@ def delete_module(class_id, module_id):
         db.session.commit()
         logging.debug(f'Module soft-deleted: id={module.id}')
         
+        # Renumber remaining modules sequentially
+        renumber_modules(class_id)
+        
         flash('Module deleted successfully!', 'success')
         return redirect(url_for('dashboard.class_content_manager') + f'?class_id={class_id}')
         
@@ -429,6 +436,28 @@ def delete_module(class_id, module_id):
         return redirect(url_for('dashboard.class_content_manager') + f'?class_id={class_id}')
 
 # API Routes for AJAX operations
+@enhanced_module_bp.route('/api/classes/<int:class_id>/modules/renumber', methods=['POST'])
+@login_required
+@instructor_required
+def renumber_modules_api(class_id):
+    """API endpoint to renumber all modules in a class"""
+    try:
+        # Verify class exists
+        class_obj = Class.query.get_or_404(class_id)
+        
+        # Renumber all modules
+        renumber_modules(class_id)
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Modules renumbered successfully'
+        })
+        
+    except Exception as e:
+        logging.error(f'RENUMBER MODULES Exception: {e}')
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @enhanced_module_bp.route('/api/classes/<int:class_id>/modules/<int:module_id>/reorder', methods=['POST'])
 @login_required
 @instructor_required
@@ -443,6 +472,9 @@ def reorder_module(class_id, module_id):
             module.updated_at = datetime.utcnow()
             db.session.commit()
             
+            # Renumber all modules sequentially after reordering
+            renumber_modules(class_id)
+            
             return jsonify({'success': True, 'message': 'Module order updated'})
         
         return jsonify({'success': False, 'message': 'Invalid order index'}), 400
@@ -450,6 +482,28 @@ def reorder_module(class_id, module_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+def renumber_modules(class_id):
+    """Renumber all modules in a class sequentially based on order_index"""
+    try:
+        # Get all active modules for the class, ordered by order_index
+        modules = Module.query.filter_by(
+            class_id=class_id, 
+            is_active=True
+        ).order_by(Module.order_index.asc()).all()
+        
+        # Renumber them sequentially
+        for index, module in enumerate(modules, start=1):
+            module.module_number = str(index)
+        
+        db.session.commit()
+        print(f"[OK] Renumbered {len(modules)} modules for class {class_id}")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Error renumbering modules: {e}")
+        raise
 
 @enhanced_module_bp.route('/api/classes/<int:class_id>/modules/<int:module_id>/toggle', methods=['POST'])
 @login_required
@@ -622,10 +676,10 @@ def update_module_api(class_id, module_id):
                 'timestamp': datetime.utcnow().isoformat()
             }, room=f'class_{class_id}')
             
-            print(f"✅ WebSocket events emitted successfully for updated module {module.id}")
+            print(f"[OK] WebSocket events emitted successfully for updated module {module.id}")
             
         except Exception as ws_error:
-            print(f"⚠️ WebSocket emit failed (non-critical): {ws_error}")
+            print(f"[WARNING] WebSocket emit failed (non-critical): {ws_error}")
             logging.warning(f'WebSocket emit failed for module update: {ws_error}')
         
         return jsonify({'success': True, 'message': 'Module updated successfully'})
@@ -644,11 +698,11 @@ def update_module_api(class_id, module_id):
 def delete_module_api(class_id, module_id):
     """Delete module via API (for AJAX requests) with real-time WebSocket updates"""
     try:
-        print(f"🔧 DELETE MODULE API: class_id={class_id}, module_id={module_id}, user={getattr(current_user, 'id', None)}")
+        print(f"[FIX] DELETE MODULE API: class_id={class_id}, module_id={module_id}, user={getattr(current_user, 'id', None)}")
         logging.debug(f'DELETE MODULE API: class_id={class_id}, module_id={module_id}, user={getattr(current_user, "id", None)}')
         
         module = Module.query.filter_by(id=module_id, class_id=class_id).first_or_404()
-        print(f"✅ Found module: {module.title}")
+        print(f"[OK] Found module: {module.title}")
         
         # Store module data for WebSocket emit
         module_data = {
@@ -664,7 +718,7 @@ def delete_module_api(class_id, module_id):
         module.updated_at = datetime.utcnow()
         
         db.session.commit()
-        print(f"✅ Module soft-deleted successfully: {module.id}")
+        print(f"[OK] Module soft-deleted successfully: {module.id}")
         logging.debug(f'Module soft-deleted via API: id={module.id}')
         
         # Emit WebSocket event for real-time updates
@@ -681,16 +735,16 @@ def delete_module_api(class_id, module_id):
             # Emit to module builder room for real-time UI updates
             socketio.emit('module_deleted', module_data, room='module_builder')
             
-            print(f"✅ WebSocket events emitted successfully for module {module_id}")
+            print(f"[OK] WebSocket events emitted successfully for module {module_id}")
             
         except Exception as ws_error:
-            print(f"⚠️ WebSocket emit failed (non-critical): {ws_error}")
+            print(f"[WARNING] WebSocket emit failed (non-critical): {ws_error}")
             logging.warning(f'WebSocket emit failed for module deletion: {ws_error}')
         
         return jsonify({'success': True, 'message': 'Module deleted successfully', 'module': module_data})
         
     except Exception as e:
-        print(f"❌ DELETE MODULE API Exception: {e}")
+        print(f"[ERROR] DELETE MODULE API Exception: {e}")
         logging.error(f'DELETE MODULE API Exception: {e}')
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Error deleting module: {str(e)}'}), 500
@@ -700,12 +754,12 @@ def delete_module_api(class_id, module_id):
 def debug_test_delete_module(module_id):
     """Debug endpoint to test delete functionality without auth"""
     try:
-        print(f"🔧 DEBUG: Testing delete functionality for module {module_id}")
+        print(f"[FIX] DEBUG: Testing delete functionality for module {module_id}")
         module = Module.query.get(module_id)
         if not module:
             return jsonify({'success': False, 'message': f'Module {module_id} not found'}), 404
             
-        print(f"✅ Found module: {module.title} (is_active: {module.is_active})")
+        print(f"[OK] Found module: {module.title} (is_active: {module.is_active})")
         return jsonify({
             'success': True, 
             'message': f'Module {module_id} exists and can be deleted',
@@ -718,5 +772,5 @@ def debug_test_delete_module(module_id):
         })
         
     except Exception as e:
-        print(f"❌ DEBUG Exception: {e}")
+        print(f"[ERROR] DEBUG Exception: {e}")
         return jsonify({'success': False, 'message': f'Debug error: {str(e)}'}), 500

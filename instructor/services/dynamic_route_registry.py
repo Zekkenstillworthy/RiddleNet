@@ -1,4 +1,4 @@
-"""
+﻿"""
 Dynamic Route Registration Service
 
 This service automatically registers routes for dynamically generated class templates.

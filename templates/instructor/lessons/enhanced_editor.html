@@ -1340,6 +1340,185 @@
             border-bottom: none;
         }
     }
+
+    /* Media Picker Modal */
+    .media-picker-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .media-picker-modal.show {
+        display: flex;
+    }
+
+    .media-picker-content {
+        background: var(--surface);
+        border: 2px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 32px;
+        max-width: 800px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-glow);
+    }
+
+    .media-picker-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .media-picker-header h3 {
+        color: var(--cyber-glow);
+        font-size: 1.5rem;
+        margin: 0;
+    }
+
+    .media-picker-close {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .media-picker-close:hover {
+        color: var(--danger-color);
+        transform: rotate(90deg);
+    }
+
+    .media-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+    }
+
+    .media-picker-item {
+        background: rgba(26, 43, 71, 0.6);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .media-picker-item:hover {
+        border-color: var(--cyber-glow);
+        box-shadow: var(--glow-cyan);
+        transform: translateY(-4px);
+    }
+
+    .media-picker-item img,
+    .media-picker-item video {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+
+    .media-picker-item .media-icon {
+        font-size: 3rem;
+        color: var(--cyber-glow);
+        margin-bottom: 8px;
+    }
+
+    .media-picker-item .media-name {
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        word-break: break-word;
+        margin-top: 8px;
+    }
+
+    /* Editable Media Controls */
+    .editable-media {
+        position: relative;
+        display: inline-block;
+        margin: 20px auto;
+        max-width: 100%;
+    }
+
+    .editable-media img,
+    .editable-media video {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .editable-media:hover img,
+    .editable-media:hover video {
+        border-color: var(--cyber-glow);
+    }
+
+    .media-controls {
+        display: none;
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        gap: 8px;
+    }
+
+    .editable-media:hover .media-controls {
+        display: flex;
+    }
+
+    .media-control-btn {
+        background: rgba(0, 0, 0, 0.8);
+        border: 1px solid var(--cyber-glow);
+        color: var(--text-primary);
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .media-control-btn:hover {
+        background: var(--cyber-glow);
+        color: var(--background);
+        box-shadow: var(--glow-cyan);
+    }
+
+    .media-control-btn.delete {
+        background: rgba(255, 71, 87, 0.8);
+        border-color: var(--danger-color);
+    }
+
+    .media-control-btn.delete:hover {
+        background: var(--danger-color);
+    }
+
+    /* Content editor improvements */
+    .content-editor img,
+    .content-editor video {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .content-editor img:hover,
+    .content-editor video:hover {
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    }
 </style>
 </head>
 
@@ -1486,15 +1665,17 @@
                     <div style="color: var(--text-secondary); font-size: 0.9rem;">
                         <i class="fas fa-home"></i> {{ selected_lesson.module.class_obj.name }}
                         <span style="margin: 0 8px;">></span>
-                        <span style="color: var(--cyber-glow);">{{ selected_lesson.title }}</span>
+                        <span style="color: var(--cyber-glow);" id="breadcrumbTitle">{{ selected_lesson.title }}</span>
                     </div>
                 </div>
                 
-                <h1 class="module-title">{{ selected_lesson.title }}</h1>
+                <h1 class="module-title" id="lessonTitle" contenteditable="true" style="outline: none; cursor: text; transition: all 0.3s ease;" 
+                    onfocus="this.style.background='rgba(0, 212, 255, 0.05)'; this.style.padding='8px'; this.style.borderRadius='8px';"
+                    onblur="this.style.background='transparent'; this.style.padding='0'; saveLessonTitleAndDescription();">{{ selected_lesson.title }}</h1>
                 
-                {% if selected_lesson.description %}
-                <p class="module-subtitle">{{ selected_lesson.description }}</p>
-                {% endif %}
+                <p class="module-subtitle" id="lessonDescription" contenteditable="true" style="outline: none; cursor: text; transition: all 0.3s ease; min-height: 24px;"
+                    onfocus="this.style.background='rgba(0, 212, 255, 0.05)'; this.style.padding='8px'; this.style.borderRadius='8px';"
+                    onblur="this.style.background='transparent'; this.style.padding='0'; saveLessonTitleAndDescription();">{% if selected_lesson.description %}{{ selected_lesson.description }}{% else %}Click to add description...{% endif %}</p>
                 
                 <div class="module-meta">
                     <div class="meta-item">
@@ -1668,15 +1849,15 @@
                 <!-- Editor Toolbar -->
                 <div class="editor-toolbar">
                     <div class="toolbar-group">
-                        <button class="toolbar-btn" onclick="insertMedia('video')">
+                        <button class="toolbar-btn" onclick="showMediaPicker('video')">
                             <i class="fas fa-video"></i>
                             Insert Video
                         </button>
-                        <button class="toolbar-btn" onclick="insertMedia('image')">
+                        <button class="toolbar-btn" onclick="showMediaPicker('image')">
                             <i class="fas fa-image"></i>
                             Insert Image
                         </button>
-                        <button class="toolbar-btn" onclick="insertMedia('document')">
+                        <button class="toolbar-btn" onclick="showMediaPicker('document')">
                             <i class="fas fa-file"></i>
                             Insert Document
                         </button>
@@ -1698,6 +1879,21 @@
                     </div>
                     
                     <div class="toolbar-group">
+                        <button class="toolbar-btn" onclick="alignText('left')">
+                            <i class="fas fa-align-left"></i>
+                            Left
+                        </button>
+                        <button class="toolbar-btn" onclick="alignText('center')">
+                            <i class="fas fa-align-center"></i>
+                            Center
+                        </button>
+                        <button class="toolbar-btn" onclick="alignText('right')">
+                            <i class="fas fa-align-right"></i>
+                            Right
+                        </button>
+                    </div>
+                    
+                    <div class="toolbar-group">
                         <button class="toolbar-btn" onclick="insertHeading()">
                             <i class="fas fa-heading"></i>
                             Heading
@@ -1710,9 +1906,9 @@
                             <i class="fas fa-link"></i>
                             Link
                         </button>
-                        <button class="toolbar-btn" onclick="insertDropdown()">
-                            <i class="fas fa-caret-down"></i>
-                            Insert Dropdown
+                        <button class="toolbar-btn" onclick="deleteSelected()">
+                            <i class="fas fa-trash"></i>
+                            Delete
                         </button>
                     </div>
                 </div>
@@ -1798,6 +1994,21 @@
         <span>Notification message</span>
     </div>
 
+    <!-- Media Picker Modal -->
+    <div id="mediaPickerModal" class="media-picker-modal" onclick="if(event.target === this) closeMediaPicker()">
+        <div class="media-picker-content">
+            <div class="media-picker-header">
+                <h3><i class="fas fa-images"></i> Select Media</h3>
+                <button class="media-picker-close" onclick="closeMediaPicker()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="mediaPickerGrid" class="media-picker-grid">
+                <!-- Media items will be populated here -->
+            </div>
+        </div>
+    </div>
+
     <script>
     // Global variables
     const currentLessonIdRaw = document.body.getAttribute('data-current-lesson-id');
@@ -1826,7 +2037,151 @@
             loadExistingMedia();
             initializeLayoutDesigner();
             loadLayoutConfiguration();
+            makeExistingMediaEditable();
+            setupKeyboardShortcuts();
+            setupContentObserver();
         }
+    }
+
+    // Setup observer to watch for new media additions
+    function setupContentObserver() {
+        const editor = document.getElementById('contentEditor');
+        if (!editor) return;
+
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1) { // Element node
+                            // Check for images and videos
+                            const images = node.querySelectorAll ? node.querySelectorAll('img:not(.editable-media img)') : [];
+                            const videos = node.querySelectorAll ? node.querySelectorAll('video:not(.editable-media video)') : [];
+                            
+                            images.forEach(img => {
+                                if (!img.closest('.editable-media')) {
+                                    setTimeout(() => makeExistingMediaEditable(), 100);
+                                }
+                            });
+                            
+                            videos.forEach(video => {
+                                if (!video.closest('.editable-media')) {
+                                    setTimeout(() => makeExistingMediaEditable(), 100);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        observer.observe(editor, {
+            childList: true,
+            subtree: true
+        });
+    }
+
+    // Make existing images and videos in content editable
+    function makeExistingMediaEditable() {
+        const editor = document.getElementById('contentEditor');
+        if (!editor) return;
+
+        // Wrap existing images
+        const images = editor.querySelectorAll('img:not(.editable-media img)');
+        images.forEach(img => {
+            if (!img.closest('.editable-media')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'editable-media';
+                wrapper.id = `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                wrapper.style.textAlign = img.style.textAlign || 'center';
+                wrapper.style.margin = '20px 0';
+                
+                img.parentNode.insertBefore(wrapper, img);
+                wrapper.appendChild(img);
+                
+                const controls = document.createElement('div');
+                controls.className = 'media-controls';
+                controls.innerHTML = `
+                    <button class="media-control-btn" onclick="centerMedia('${wrapper.id}')"><i class="fas fa-align-center"></i> Center</button>
+                    <button class="media-control-btn" onclick="resizeMedia('${wrapper.id}', 50)">50%</button>
+                    <button class="media-control-btn" onclick="resizeMedia('${wrapper.id}', 75)">75%</button>
+                    <button class="media-control-btn" onclick="resizeMedia('${wrapper.id}', 100)">100%</button>
+                    <button class="media-control-btn delete" onclick="deleteMedia('${wrapper.id}')"><i class="fas fa-trash"></i> Delete</button>
+                `;
+                wrapper.appendChild(controls);
+            }
+        });
+
+        // Wrap existing videos
+        const videos = editor.querySelectorAll('video:not(.editable-media video)');
+        videos.forEach(video => {
+            if (!video.closest('.editable-media')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'editable-media';
+                wrapper.id = `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                wrapper.style.textAlign = video.style.textAlign || 'center';
+                wrapper.style.margin = '20px 0';
+                
+                video.parentNode.insertBefore(wrapper, video);
+                wrapper.appendChild(video);
+                
+                const controls = document.createElement('div');
+                controls.className = 'media-controls';
+                controls.innerHTML = `
+                    <button class="media-control-btn" onclick="centerMedia('${wrapper.id}')"><i class="fas fa-align-center"></i> Center</button>
+                    <button class="media-control-btn delete" onclick="deleteMedia('${wrapper.id}')"><i class="fas fa-trash"></i> Delete</button>
+                `;
+                wrapper.appendChild(controls);
+            }
+        });
+    }
+
+    // Setup keyboard shortcuts
+    function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + S to save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveLessonContent();
+            }
+            
+            // Ctrl/Cmd + B for bold
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                e.preventDefault();
+                formatText('bold');
+            }
+            
+            // Ctrl/Cmd + I for italic
+            if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                e.preventDefault();
+                formatText('italic');
+            }
+            
+            // Ctrl/Cmd + U for underline
+            if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+                e.preventDefault();
+                formatText('underline');
+            }
+            
+            // Delete key to delete selected content
+            if (e.key === 'Delete' && window.getSelection().toString()) {
+                // Default behavior handles this, but we can add confirmation for media
+                const selection = window.getSelection();
+                if (selection.anchorNode) {
+                    const media = selection.anchorNode.closest?.('.editable-media');
+                    if (media && confirm('Delete this media?')) {
+                        media.remove();
+                        e.preventDefault();
+                    }
+                }
+            }
+        });
+
+        // Close modal on Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeMediaPicker();
+            }
+        });
     }
 
     // Layout Designer Functions
@@ -2426,10 +2781,51 @@
         document.getElementById('contentEditor').focus();
     }
 
+    // Text alignment function
+    function alignText(alignment) {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            let element = range.commonAncestorContainer;
+            
+            // Get the closest block-level element
+            while (element && element.nodeType !== 1) {
+                element = element.parentNode;
+            }
+            
+            if (element && element !== document.getElementById('contentEditor')) {
+                // Find the closest block element (p, div, h1-h6, etc.)
+                while (element && !['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI'].includes(element.tagName)) {
+                    element = element.parentNode;
+                    if (element === document.getElementById('contentEditor')) break;
+                }
+                
+                if (element && element !== document.getElementById('contentEditor')) {
+                    element.style.textAlign = alignment;
+                    showToast(`Text aligned ${alignment}`, 'success');
+                }
+            }
+        }
+        document.getElementById('contentEditor').focus();
+    }
+
+    // Delete selected content or element
+    function deleteSelected() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0 && !selection.isCollapsed) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            showToast('Content deleted', 'success');
+        } else {
+            showToast('Select content to delete', 'error');
+        }
+        document.getElementById('contentEditor').focus();
+    }
+
     function insertHeading() {
         const text = prompt('Enter heading text:');
         if (text) {
-            document.execCommand('insertHTML', false, `<h3>${text}</h3>`);
+            document.execCommand('insertHTML', false, `<h3 style="color: var(--cyber-glow); margin: 20px 0 10px 0;">${text}</h3>`);
         }
     }
 
@@ -2442,50 +2838,165 @@
         const url = prompt('Enter URL:');
         if (url) {
             const text = prompt('Enter link text:') || url;
-            document.execCommand('createLink', false, url);
+            const selection = window.getSelection();
+            if (selection.toString()) {
+                document.execCommand('createLink', false, url);
+            } else {
+                document.execCommand('insertHTML', false, `<a href="${url}" style="color: var(--cyber-glow);">${text}</a>`);
+            }
         }
     }
 
-    // Insert a collapsible dropdown section
-    function insertDropdown() {
+    // Media Picker Modal Functions
+    let currentMediaType = 'image';
+
+    function showMediaPicker(type) {
+        currentMediaType = type;
+        const modal = document.getElementById('mediaPickerModal');
+        const grid = document.getElementById('mediaPickerGrid');
+        
+        // Clear existing content
+        grid.innerHTML = '';
+        
+        // Get media items of the selected type
+        const category = type + 's';
+        const items = mediaItems[category] || [];
+        
+        if (items.length === 0) {
+            grid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                    <i class="fas fa-${type === 'video' ? 'video' : type === 'image' ? 'image' : 'file'}" style="font-size: 3rem; color: var(--border-color); margin-bottom: 16px;"></i>
+                    <p style="color: var(--text-secondary);">No ${type} files available. Upload some first!</p>
+                </div>
+            `;
+        } else {
+            items.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'media-picker-item';
+                itemDiv.onclick = () => insertMediaIntoContent(item, type);
+                
+                if (type === 'image') {
+                    itemDiv.innerHTML = `
+                        <img src="${item.url}" alt="${item.filename}">
+                        <div class="media-name">${item.filename}</div>
+                    `;
+                } else if (type === 'video') {
+                    itemDiv.innerHTML = `
+                        <video src="${item.url}"></video>
+                        <div class="media-name">${item.filename}</div>
+                    `;
+                } else {
+                    itemDiv.innerHTML = `
+                        <div class="media-icon"><i class="fas fa-file-alt"></i></div>
+                        <div class="media-name">${item.filename}</div>
+                    `;
+                }
+                
+                grid.appendChild(itemDiv);
+            });
+        }
+        
+        modal.classList.add('show');
+    }
+
+    function closeMediaPicker() {
+        const modal = document.getElementById('mediaPickerModal');
+        modal.classList.remove('show');
+    }
+
+    function insertMediaIntoContent(item, type) {
         const editor = document.getElementById('contentEditor');
         const selection = window.getSelection();
-        const dropdownHTML = `
-<details class="lesson-dropdown">
-  <summary><strong>New Section</strong> — click to expand</summary>
-  <div class="dropdown-body"><p>Write details here…</p></div>
-</details>`;
-
-        // Prefer inserting into a selected text block when in layout mode
-        const target = (typeof selectedBlock !== 'undefined' && selectedBlock && selectedBlock.classList.contains('text-block'))
-            ? selectedBlock
-            : editor;
-
-        if (selection && selection.rangeCount > 0 && target.contains(selection.anchorNode)) {
-            const range = selection.getRangeAt(0);
-            range.deleteContents();
-            range.insertNode(range.createContextualFragment(dropdownHTML));
-        } else {
-            target.insertAdjacentHTML('beforeend', dropdownHTML);
+        
+        let insertHTML = '';
+        const mediaId = `media_${Date.now()}`;
+        
+        switch(type) {
+            case 'video':
+                insertHTML = `
+                    <div class="editable-media" id="${mediaId}" style="text-align: center; margin: 20px 0;">
+                        <video controls style="max-width: 100%; border-radius: 8px;">
+                            <source src="${item.url}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                        <div class="media-controls">
+                            <button class="media-control-btn" onclick="centerMedia('${mediaId}')"><i class="fas fa-align-center"></i> Center</button>
+                            <button class="media-control-btn delete" onclick="deleteMedia('${mediaId}')"><i class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    </div>`;
+                break;
+            case 'image':
+                insertHTML = `
+                    <div class="editable-media" id="${mediaId}" style="text-align: center; margin: 20px 0;">
+                        <img src="${item.url}" alt="${item.filename}" style="max-width: 100%; border-radius: 8px;">
+                        <div class="media-controls">
+                            <button class="media-control-btn" onclick="centerMedia('${mediaId}')"><i class="fas fa-align-center"></i> Center</button>
+                            <button class="media-control-btn" onclick="resizeMedia('${mediaId}', 50)">50%</button>
+                            <button class="media-control-btn" onclick="resizeMedia('${mediaId}', 75)">75%</button>
+                            <button class="media-control-btn" onclick="resizeMedia('${mediaId}', 100)">100%</button>
+                            <button class="media-control-btn delete" onclick="deleteMedia('${mediaId}')"><i class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    </div>`;
+                break;
+            case 'document':
+                insertHTML = `
+                    <div class="document-embed" style="border: 2px solid var(--border-color); border-radius: 12px; padding: 20px; margin: 20px 0; background: rgba(26, 43, 71, 0.6);">
+                        <i class="fas fa-file-alt" style="color: var(--cyber-glow); font-size: 2rem; margin-right: 12px;"></i>
+                        <strong style="color: var(--text-primary); font-size: 1.1rem;">${item.filename}</strong>
+                        <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">Document - ${formatFileSize(item.size)}</p>
+                    </div>`;
+                break;
         }
 
-        target.focus();
-        showToast('Dropdown inserted', 'success');
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            const fragment = range.createContextualFragment(insertHTML);
+            range.insertNode(fragment);
+        } else {
+            editor.insertAdjacentHTML('beforeend', insertHTML);
+        }
+        
+        closeMediaPicker();
+        showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} inserted`, 'success');
+    }
+
+    // Media control functions
+    function centerMedia(mediaId) {
+        const mediaElement = document.getElementById(mediaId);
+        if (mediaElement) {
+            mediaElement.style.textAlign = 'center';
+            mediaElement.style.display = 'block';
+            mediaElement.style.marginLeft = 'auto';
+            mediaElement.style.marginRight = 'auto';
+            showToast('Media centered', 'success');
+        }
+    }
+
+    function resizeMedia(mediaId, percentage) {
+        const mediaElement = document.getElementById(mediaId);
+        if (mediaElement) {
+            const img = mediaElement.querySelector('img');
+            if (img) {
+                img.style.maxWidth = `${percentage}%`;
+                showToast(`Media resized to ${percentage}%`, 'success');
+            }
+        }
+    }
+
+    function deleteMedia(mediaId) {
+        if (confirm('Are you sure you want to delete this media?')) {
+            const mediaElement = document.getElementById(mediaId);
+            if (mediaElement) {
+                mediaElement.remove();
+                showToast('Media deleted', 'success');
+            }
+        }
     }
 
     function insertMedia(type) {
-        const category = type + 's';
-        const availableItems = mediaItems[category];
-        
-        if (availableItems.length === 0) {
-            showToast(`No ${type} files available. Upload some first!`, 'error');
-            return;
-        }
-
-        // For simplicity, insert the first available item
-        // In a full implementation, you'd show a selection modal
-        const item = availableItems[0];
-        insertIntoContent(item.id, type);
+        // Redirect to new media picker
+        showMediaPicker(type);
     }
 
     function insertIntoContent(itemId, type) {
@@ -2531,6 +3042,52 @@
             if (item) return item;
         }
         return null;
+    }
+
+    // Save lesson title and description
+    function saveLessonTitleAndDescription() {
+        if (!currentLessonId) {
+            return;
+        }
+
+        const titleElement = document.getElementById('lessonTitle');
+        const descriptionElement = document.getElementById('lessonDescription');
+        const breadcrumbElement = document.getElementById('breadcrumbTitle');
+        
+        const newTitle = titleElement.textContent.trim();
+        const newDescription = descriptionElement.textContent.trim();
+        
+        // Skip if placeholder text
+        if (newDescription === 'Click to add description...') {
+            descriptionElement.textContent = '';
+        }
+        
+        fetch(`/instructor/api/lessons/${currentLessonId}/update`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: newTitle,
+                description: newDescription === 'Click to add description...' ? '' : newDescription
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update breadcrumb
+                if (breadcrumbElement) {
+                    breadcrumbElement.textContent = newTitle;
+                }
+                showToast('Lesson title and description saved', 'success');
+            } else {
+                showToast('Error saving lesson details', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving lesson details:', error);
+            showToast('Error saving lesson details', 'error');
+        });
     }
 
     // Save lesson content

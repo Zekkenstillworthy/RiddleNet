@@ -771,7 +771,7 @@ def update_task_progress(simulation_id):
                 status='pending'
             )
             db.session.add(assignment)
-            current_app.logger.info(f"📋 Created new task assignment for user {current_user.id} on simulation {simulation_id}")
+            current_app.logger.info(f"[DATA] Created new task assignment for user {current_user.id} on simulation {simulation_id}")
         
         # Update progress
         assignment.update_progress(
@@ -886,7 +886,7 @@ def get_simulation_task_config(simulation_id):
         simulation = Simulation.query.get_or_404(simulation_id)
         task_config = simulation.task_config or {}
         
-        # 🔧 FIX: Handle case where task_config might be stored as JSON string
+        # [FIX] FIX: Handle case where task_config might be stored as JSON string
         if isinstance(task_config, str):
             import json
             try:
@@ -894,7 +894,7 @@ def get_simulation_task_config(simulation_id):
             except:
                 task_config = {}
         
-        print(f"📋 [STUDENT TASK-CONFIG] Simulation {simulation_id}: enabled={task_config.get('enabled')}, devices={len(task_config.get('device_requirements', []))}, connections={len(task_config.get('connection_requirements', []))}")
+        print(f"[DATA] [STUDENT TASK-CONFIG] Simulation {simulation_id}: enabled={task_config.get('enabled')}, devices={len(task_config.get('device_requirements', []))}, connections={len(task_config.get('connection_requirements', []))}")
         
         # Only return if task mode is enabled
         if not task_config.get('enabled'):

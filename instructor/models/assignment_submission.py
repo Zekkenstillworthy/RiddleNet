@@ -1,4 +1,4 @@
-"""
+﻿"""
 Assignment Submission Models
 Handles student assignment submissions, file uploads, and grading
 """

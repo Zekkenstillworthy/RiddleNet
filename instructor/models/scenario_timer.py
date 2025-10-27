@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+﻿from datetime import datetime, timedelta
 import json
 from __init__ import db
 
@@ -210,9 +210,9 @@ class ScenarioTimer(db.Model):
         seconds = remaining_seconds % 60
         
         if remaining_seconds <= 60:
-            return f"⚠️ Only {remaining_seconds} seconds remaining!"
+            return f"[WARNING] Only {remaining_seconds} seconds remaining!"
         elif remaining_seconds <= 300:  # 5 minutes
-            return f"⚠️ {minutes} minutes {seconds} seconds remaining!"
+            return f"[WARNING] {minutes} minutes {seconds} seconds remaining!"
         elif remaining_seconds <= 600:  # 10 minutes
             return f"⏰ {minutes} minutes remaining - consider reviewing your progress"
         else:

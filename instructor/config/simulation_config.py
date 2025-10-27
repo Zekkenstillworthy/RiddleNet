@@ -1,4 +1,4 @@
-"""
+﻿"""
 Enhanced Simulation Configuration
 Centralized configuration for network validation across all simulation editors
 """

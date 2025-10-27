@@ -1,4 +1,4 @@
-"""
+﻿"""
 Authentication utilities for handling both instructor and user access
 """
 
@@ -70,11 +70,11 @@ def get_current_user_context():
         'profile_img': None  # Add profile_img to the context
     }
     
-    print(f"🔍 get_current_user_context: Starting with default context")
+    print(f"[DEBUG] get_current_user_context: Starting with default context")
     
     # Check Flask-Login authentication (instructor or user)
     if current_user.is_authenticated:
-        print(f"🔍 Flask-Login user authenticated: {current_user.username}")
+        print(f"[DEBUG] Flask-Login user authenticated: {current_user.username}")
         user_context['is_authenticated'] = True
         user_context['user_id'] = current_user.id
         user_context['username'] = current_user.username
@@ -82,7 +82,7 @@ def get_current_user_context():
         # STRICT instructor check - only Instructor model instances are instructors
         from instructor.models.user import Instructor
         if isinstance(current_user, Instructor):
-            print(f"🔍 Instructor user detected: {current_user.username}")
+            print(f"[DEBUG] Instructor user detected: {current_user.username}")
             user_context['is_instructor'] = True
             # CRITICAL FIX: Do NOT pass instructor object as 'user' to prevent contamination
             # Instructor templates can use current_user directly
@@ -93,25 +93,25 @@ def get_current_user_context():
             from user.models.user import User
             regular_user = User.query.filter_by(username=current_user.username).first()
             if regular_user and regular_user.profile_img:
-                print(f"🔍 Found matching regular user with profile: {regular_user.profile_img}")
+                print(f"[DEBUG] Found matching regular user with profile: {regular_user.profile_img}")
                 user_context['profile_img'] = regular_user.profile_img
             else:
-                print(f"🔍 No matching regular user or no profile image")
+                print(f"[DEBUG] No matching regular user or no profile image")
                 user_context['profile_img'] = getattr(current_user, 'profile_img', None)
         else:
-            print(f"🔍 Regular user detected: {current_user.username}")
+            print(f"[DEBUG] Regular user detected: {current_user.username}")
             # Regular user - safe to pass user object
             user_context['user'] = current_user
             user_context['profile_img'] = getattr(current_user, 'profile_img', None)
-            print(f"🔍 Regular user profile_img: {user_context['profile_img']}")
+            print(f"[DEBUG] Regular user profile_img: {user_context['profile_img']}")
     
     # Check session-based authentication (user only)
     elif 'user_id' in session:
-        print(f"🔍 Session-based authentication found: user_id={session['user_id']}")
+        print(f"[DEBUG] Session-based authentication found: user_id={session['user_id']}")
         from user.models.user import User
         user = User.query.get(session['user_id'])
         if user:
-            print(f"🔍 Session user found: {user.username}, profile_img: {user.profile_img}")
+            print(f"[DEBUG] Session user found: {user.username}, profile_img: {user.profile_img}")
             user_context['is_authenticated'] = True
             user_context['user'] = user
             user_context['user_id'] = user.id
@@ -119,7 +119,7 @@ def get_current_user_context():
             user_context['profile_img'] = getattr(user, 'profile_img', None)
             user_context['is_instructor'] = False
     else:
-        print(f"🔍 No authentication found")
+        print(f"[DEBUG] No authentication found")
     
-    print(f"🔍 Final user_context: {user_context}")
+    print(f"[DEBUG] Final user_context: {user_context}")
     return user_context

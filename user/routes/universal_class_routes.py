@@ -12,7 +12,6 @@ from instructor.models.class_model import Class
 from instructor.models.module import Module, Lesson, LessonProgress
 from instructor.models.simulation import Simulation, SimulationAttempt
 from instructor.models.question_group import QuestionGroup
-from instructor.models.question import Question, StandardQuestion
 from instructor.models.simulation import Simulation
 from instructor.models.simulation_assignment import SimulationAssignment
 from instructor.models.module import Module, Lesson
@@ -239,7 +238,7 @@ def dynamic_class_detail(class_id):
         now = datetime.now()
         
         # DEBUG: Print assignment info
-        print(f"🔍 DEBUG: Class {class_id} assignments query:")
+        print(f"[DEBUG] DEBUG: Class {class_id} assignments query:")
         print(f"   - Found {len(assignments)} published assignments")
         print(f"   - User ID: {user_id}")
         print(f"   - User authenticated: {user_context['is_authenticated']}")
@@ -437,16 +436,17 @@ def module_detail(class_id, module_id):
         
         # Get simulations related to this module
         module_simulations = []
+        module_simulation_assignments = []  # Cache assignments for later lesson-level usage
         seen_simulation_ids = set()  # Track unique simulation IDs to prevent duplicates
         try:
             # Get simulations assigned to this class that might be related to this module
             # Only consider assignments that are active and published
-            simulation_assignments = SimulationAssignment.query.filter_by(
+            module_simulation_assignments = SimulationAssignment.query.filter_by(
                 class_id=class_id,
                 is_active=True,
                 is_published=True
             ).all()
-            for assignment in simulation_assignments:
+            for assignment in module_simulation_assignments:
                 # Ensure assignment is actually available now and simulation is usable
                 if not assignment.is_available:
                     continue
@@ -508,9 +508,31 @@ def module_detail(class_id, module_id):
             elif assignment.due_date and assignment.due_date < datetime.utcnow():
                 status = 'overdue'
             
+            # Convert assignment to dictionary for JSON serialization
+            assignment_dict = {
+                'id': assignment.id,
+                'title': assignment.title,
+                'description': assignment.description,
+                'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                'points': assignment.points,
+                'assignment_type': assignment.assignment_type,
+                'is_published': assignment.is_published,
+                'created_at': assignment.created_at.isoformat() if assignment.created_at else None
+            }
+            
+            submission_dict = None
+            if submission:
+                submission_dict = {
+                    'id': submission.id,
+                    'status': submission.status,
+                    'submitted_at': submission.submitted_at.isoformat() if submission.submitted_at else None,
+                    'grade': submission.grade,
+                    'feedback': submission.feedback
+                }
+            
             assignment_data.append({
-                'assignment': assignment,
-                'submission': submission,
+                'assignment': assignment_dict,
+                'submission': submission_dict,
                 'status': status
             })
         
@@ -620,6 +642,44 @@ def module_detail(class_id, module_id):
                     next_lesson = lessons[current_index + 1]
                 
                 # Get lesson-specific simulations
+                seen_lesson_simulation_ids = set()
+
+                def add_simulation_to_lesson(sim_obj):
+                    """Attach a simulation to the active lesson response with progress metadata."""
+                    if not sim_obj:
+                        return
+                    if sim_obj.id in seen_lesson_simulation_ids:
+                        return
+                    if not getattr(sim_obj, 'is_active', True):
+                        return
+                    if hasattr(sim_obj, 'is_published') and not sim_obj.is_published:
+                        return
+
+                    user_sim_progress = SimulationAttempt.query.filter_by(
+                        user_id=user_id,
+                        simulation_id=sim_obj.id,
+                        is_completed=True
+                    ).first()
+                    simulation_progress[sim_obj.id] = {
+                        'completed': user_sim_progress is not None,
+                        'score': user_sim_progress.total_score if user_sim_progress else 0,
+                        'attempts': SimulationAttempt.query.filter_by(
+                            user_id=user_id,
+                            simulation_id=sim_obj.id
+                        ).count()
+                    }
+
+                    lesson_simulations.append({
+                        'id': sim_obj.id,
+                        'title': sim_obj.title,
+                        'description': sim_obj.description,
+                        'difficulty': getattr(sim_obj, 'difficulty', None),
+                        'estimated_duration': getattr(sim_obj, 'estimated_duration', None),
+                        'simulation_type': getattr(sim_obj, 'simulation_type', 'Interactive'),
+                        'icon': getattr(sim_obj, 'icon', 'network-wired')
+                    })
+                    seen_lesson_simulation_ids.add(sim_obj.id)
+
                 if hasattr(active_lesson, 'simulation_ids') and active_lesson.simulation_ids:
                     from instructor.models.simulation import Simulation
                     # Safely normalize simulation_ids (may be stored as list, JSON string, python repr, or comma-separated)
@@ -654,7 +714,7 @@ def module_detail(class_id, module_id):
                                     candidates = [c for token in s_clean.split(' ') for c in token.split(',')]
                                     normalized_ids = [int(x) for x in candidates if x.isdigit()]
                     except Exception as parse_err:
-                        print(f"⚠️ Failed to parse simulation_ids '{raw_ids}': {parse_err}")
+                        print(f"[WARNING] Failed to parse simulation_ids '{raw_ids}': {parse_err}")
                         normalized_ids = []
 
                     # Deduplicate & preserve order
@@ -666,83 +726,156 @@ def module_detail(class_id, module_id):
                             ordered_ids.append(_id)
 
                     if ordered_ids:
-                        lesson_simulations = Simulation.query.filter(
+                        lesson_simulations_objs = Simulation.query.filter(
                             Simulation.id.in_(ordered_ids),
                             Simulation.is_active == True,
                             Simulation.is_published == True
                         ).all()
-                    else:
-                        lesson_simulations = []
-                    
-                    # Get simulation progress for each lesson simulation
-                    for sim in lesson_simulations:
-                        user_sim_progress = SimulationAttempt.query.filter_by(
-                            user_id=user_id,
-                            simulation_id=sim.id,
-                            is_completed=True
-                        ).first()
-                        simulation_progress[sim.id] = {
-                            'completed': user_sim_progress is not None,
-                            'score': user_sim_progress.total_score if user_sim_progress else 0,
-                            'attempts': SimulationAttempt.query.filter_by(
-                                user_id=user_id,
-                                simulation_id=sim.id
-                            ).count()
-                        }
+
+                        for sim in lesson_simulations_objs:
+                            add_simulation_to_lesson(sim)
+
+                # Merge in simulations sourced from assignments when not explicitly listed on the lesson
+                if module_simulation_assignments:
+                    lesson_title_lower = (active_lesson.title or '').lower()
+                    lesson_number_lower = (active_lesson.lesson_number or '').lower() if active_lesson.lesson_number else ''
+
+                    for assignment in module_simulation_assignments:
+                        if not assignment.is_available:
+                            continue
+                        sim_obj = assignment.simulation
+                        if not sim_obj:
+                            continue
+
+                        matches_lesson = False
+                        # Direct module linkage takes priority
+                        if assignment.module_id == module_id:
+                            matches_lesson = True
+
+                        # Lesson-specific assignments (by title/number match)
+                        if not matches_lesson and assignment.assignment_type == 'lesson':
+                            lesson_name_lower = (assignment.lesson_name or '').lower()
+                            if lesson_name_lower:
+                                if lesson_title_lower and lesson_title_lower in lesson_name_lower:
+                                    matches_lesson = True
+                                elif lesson_number_lower and lesson_number_lower in lesson_name_lower:
+                                    matches_lesson = True
+
+                        if matches_lesson:
+                            add_simulation_to_lesson(sim_obj)
         
-        # Get questions from database with module-specific filtering
+        # Get questions assigned to this module/lesson via Quiz associations
         lesson_questions = []
         try:
-            # Determine question category based on module characteristics
-            question_category = None
-            
-            # Module-based category mapping logic
+            assigned_question_groups = []
+            seen_question_group_ids = set()
+
             if module:
-                module_title_lower = module.title.lower()
-                course_type_lower = module.course_type.lower()
-                
-                # Networking modules get networking questions
-                if ('network' in module_title_lower or 
-                    'networking' in course_type_lower or 
-                    'tcp' in module_title_lower or 
-                    'osi' in module_title_lower or
-                    'ethernet' in module_title_lower or
-                    'routing' in module_title_lower):
-                    question_category = 'networking'
-                # Default to riddle questions for other modules
-                else:
-                    question_category = 'riddle'
-                
-                print(f"Module '{module.title}' mapped to question category: '{question_category}'")
-            else:
-                # Fallback to networking if no module found
-                question_category = 'networking'
+                try:
+                    module_question_groups = module.question_groups.filter(QuestionGroup.is_active == True).all()
+                except Exception:
+                    module_question_groups = list(module.question_groups) if hasattr(module, 'question_groups') else []
+
+                for qg in module_question_groups:
+                    if not qg or getattr(qg, 'id', None) is None:
+                        continue
+                    if qg.id in seen_question_group_ids:
+                        continue
+                    if hasattr(qg, 'is_active') and not qg.is_active:
+                        continue
+                    assigned_question_groups.append(qg)
+                    seen_question_group_ids.add(qg.id)
+
+            # Include quiz-type class assignments that belong to this module
+            for assignment in assignments:
+                if not getattr(assignment, 'question_group_id', None):
+                    continue
+                if assignment.module_id and module and assignment.module_id != module.id:
+                    continue
+                qg = getattr(assignment, 'question_group', None)
+                if not qg or getattr(qg, 'id', None) is None:
+                    continue
+                if qg.id in seen_question_group_ids:
+                    continue
+                if hasattr(qg, 'is_active') and not qg.is_active:
+                    continue
+                assigned_question_groups.append(qg)
+                seen_question_group_ids.add(qg.id)
+
+            for qg in assigned_question_groups:
+                questions_in_group = getattr(qg, 'questions', []) or []
+                for question in questions_in_group:
+                    if not question:
+                        continue
+                    if hasattr(question, 'to_dict'):
+                        question_dict = question.to_dict()
+                    else:
+                        options = []
+                        if hasattr(question, 'options'):
+                            try:
+                                options = list(question.options)
+                            except Exception:
+                                options = []
+                        question_dict = {
+                            'id': getattr(question, 'id', None),
+                            'question': getattr(question, 'question', ''),
+                            'answer': getattr(question, 'answer', ''),
+                            'options': options,
+                            'explanation': getattr(question, 'explanation', None),
+                            'numb': getattr(question, 'numb', None),
+                            'category': getattr(question, 'category', None)
+                        }
+
+                    question_dict['question_group_id'] = qg.id
+                    question_dict['question_group_name'] = getattr(qg, 'name', '')
+                    lesson_questions.append(question_dict)
+
+            lesson_questions.sort(key=lambda x: (
+                (x.get('question_group_name') or '').lower(),
+                x.get('numb', 0) if x.get('numb') is not None else 0,
+                x.get('id', 0) if x.get('id') is not None else 0
+            ))
+
+            print(
+                f"Found {len(lesson_questions)} assigned questions for module {module_id} "
+                f"(lesson {active_lesson.id if active_lesson else 'n/a'})"
+            )
+
+        except Exception as e:
+            print(f"Error fetching lesson questions: {e}")
+            lesson_questions = []
+        
+        # Get active live quiz sessions for this module/lesson
+        live_quiz_sessions = []
+        try:
+            from user.models.live_quiz import LiveQuizSession
             
-            # Get questions from the 'question' table (Question model) with category filter
-            questions_1 = Question.query.filter_by(category=question_category).all()
-            # Get questions from the 'questions' table (StandardQuestion model) with category filter
-            questions_2 = StandardQuestion.query.filter_by(category=question_category).all()
+            # Find active quiz sessions for this module
+            active_sessions = LiveQuizSession.query.filter_by(
+                class_id=class_id,
+                module_id=module_id,
+                status='active'
+            ).all()
             
-            # Combine questions and convert to dict format
-            all_questions = []
-            for q in questions_1:
-                question_dict = q.to_dict()
-                question_dict['source_table'] = 'question'
-                all_questions.append(question_dict)
-            for q in questions_2:
-                question_dict = q.to_dict()
-                question_dict['source_table'] = 'questions'
-                all_questions.append(question_dict)
+            # Also check for waiting sessions
+            waiting_sessions = LiveQuizSession.query.filter_by(
+                class_id=class_id,
+                module_id=module_id,
+                status='waiting'
+            ).all()
             
-            # Sort by question number if available
-            all_questions.sort(key=lambda x: x.get('numb', 0))
-            lesson_questions = all_questions
+            all_sessions = active_sessions + waiting_sessions
             
-            print(f"Found {len(lesson_questions)} questions for category '{question_category}' in module {module_id}")
+            for session in all_sessions:
+                live_quiz_sessions.append(session.to_dict())
+            
+            print(f"Found {len(live_quiz_sessions)} live quiz sessions for module {module_id}")
             
         except Exception as e:
-            print(f"Error fetching questions: {e}")
-            lesson_questions = []
+            print(f"Error fetching live quiz sessions: {e}")
+            import traceback
+            traceback.print_exc()
+            live_quiz_sessions = []
 
         # Render using the module detail template with sidebar navigation
         return render_template('user/module_detail.html',
@@ -766,6 +899,7 @@ def module_detail(class_id, module_id):
                              simulation_progress=simulation_progress,
                              # Questions data
                              lesson_questions=lesson_questions,
+                             live_quiz_sessions=live_quiz_sessions,
                              is_student_view=True,
                              now=datetime.now())
     

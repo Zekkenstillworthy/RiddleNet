@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+﻿from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from __init__ import db
 from instructor.models.rubric import Rubric, RubricCriterion

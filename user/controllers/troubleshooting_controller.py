@@ -41,11 +41,11 @@ class TroubleshootingController:
         print("\n" + "="*80)
         print("🚀 BACKEND: SOLUTION SUBMISSION RECEIVED")
         print("="*80)
-        print(f"👤 User ID: {user_id}")
+        print(f"[USER] User ID: {user_id}")
         print(f"📦 Data keys: {list(data.keys()) if data else 'None'}")
         
         if not data or 'scenario_id' not in data or 'user_solution' not in data:
-            print("❌ ERROR: Missing required fields!")
+            print("[ERROR] ERROR: Missing required fields!")
             print(f"   - Has scenario_id: {'scenario_id' in data if data else False}")
             print(f"   - Has user_solution: {'user_solution' in data if data else False}")
             return {"error": "Missing required fields"}, 400
@@ -54,7 +54,7 @@ class TroubleshootingController:
         user_solution = data['user_solution']
         time_taken = data.get('time_taken', 0)
         
-        print(f"🔑 Scenario ID: '{scenario_id}'")
+        print(f"[KEY] Scenario ID: '{scenario_id}'")
         print(f"⏱️  Time Taken: {time_taken} seconds")
         print(f"📊 Solution has {len(user_solution.get('devices', []))} devices")
         print("="*80 + "\n")
@@ -68,11 +68,11 @@ class TroubleshootingController:
 
         # Get the scenario from database (for integer IDs only)
         try:
-            print(f"🔍 Looking up database scenario with ID: {scenario_id}")
+            print(f"[DEBUG] Looking up database scenario with ID: {scenario_id}")
             scenario = Troubleshooting.query.get(scenario_id)
         except Exception as e:
             # If any error occurs during DB lookup, fall back to hardcoded submission path
-            print(f"⚠️ DB lookup error for scenario_id={scenario_id}: {e}")
+            print(f"[WARNING] DB lookup error for scenario_id={scenario_id}: {e}")
             import traceback
             traceback.print_exc()
             return self._submit_hardcoded_challenge(user_id, scenario_id, user_solution, time_taken)
@@ -319,7 +319,7 @@ class TroubleshootingController:
             
             total_score = base_score + time_bonus
             
-            # 🔧 FIX: Normalize score to 0-100 percentage for leaderboard consistency
+            # [FIX] FIX: Normalize score to 0-100 percentage for leaderboard consistency
             # Convert raw score (which can be 100-320) to percentage (0-100)
             # Easy challenges: base_score=100, max=120 -> normalize to 100%
             # Medium challenges: base_score=200, max=220 -> normalize to 100%
@@ -389,7 +389,7 @@ class TroubleshootingController:
             return response
             
         except Exception as e:
-            print(f"❌ Error submitting hardcoded challenge: {e}")
+            print(f"[ERROR] Error submitting hardcoded challenge: {e}")
             import traceback
             traceback.print_exc()
             return {"error": f"Error processing challenge: {str(e)}"}, 500
@@ -397,7 +397,7 @@ class TroubleshootingController:
     def _validate_linkup_solution(self, scenario_id, user_solution):
         """Validate Link Up challenge solutions"""
         try:
-            print(f"🔍 Validating {scenario_id} solution...")
+            print(f"[DEBUG] Validating {scenario_id} solution...")
             print(f"📦 User solution: {json.dumps(user_solution, indent=2)}")
             
             devices = user_solution.get('devices', [])
@@ -422,11 +422,11 @@ class TroubleshootingController:
             elif scenario_id == 'sd-wan-overlay':
                 return self._validate_sd_wan_overlay(devices, connections)
             else:
-                print(f"⚠️ Unknown scenario: {scenario_id}, returning 0%")
+                print(f"[WARNING] Unknown scenario: {scenario_id}, returning 0%")
                 return 0
                 
         except Exception as e:
-            print(f"❌ Validation error: {e}")
+            print(f"[ERROR] Validation error: {e}")
             import traceback
             traceback.print_exc()
             return 0
@@ -439,10 +439,10 @@ class TroubleshootingController:
         # Find Gateway Router
         router = next((d for d in devices if d.get('type') == 'router' and d.get('label') == 'Gateway Router'), None)
         if not router:
-            print("❌ Gateway Router not found")
+            print("[ERROR] Gateway Router not found")
             return 0
         
-        print(f"✅ Found Gateway Router: {router.get('label')}")
+        print(f"[OK] Found Gateway Router: {router.get('label')}")
         
         # Check router interface configuration
         interfaces = router.get('interfaces', {})
@@ -450,20 +450,20 @@ class TroubleshootingController:
         
         if gi00.get('ip') == '192.168.1.1' and gi00.get('subnet') == '255.255.255.0':
             score += 30
-            print("✅ Router IP configured: 192.168.1.1/24 (+30 points)")
+            print("[OK] Router IP configured: 192.168.1.1/24 (+30 points)")
         else:
-            print(f"❌ Router IP incorrect: {gi00.get('ip')}/{gi00.get('subnet')}")
+            print(f"[ERROR] Router IP incorrect: {gi00.get('ip')}/{gi00.get('subnet')}")
             return score
         
         if gi00.get('status') == 'up':
             score += 20
-            print("✅ Router interface is up (+20 points)")
+            print("[OK] Router interface is up (+20 points)")
         else:
-            print(f"❌ Router interface status: {gi00.get('status')}")
+            print(f"[ERROR] Router interface status: {gi00.get('status')}")
         
         # Check PCs
         pcs = [d for d in devices if d.get('type') == 'pc']
-        print(f"📍 Found {len(pcs)} PCs")
+        print(f"[PIN] Found {len(pcs)} PCs")
         
         correctly_configured_pcs = 0
         for pc in pcs:
@@ -478,14 +478,14 @@ class TroubleshootingController:
                 subnet == '255.255.255.0' and 
                 gateway == '192.168.1.1'):
                 correctly_configured_pcs += 1
-                print(f"   ✅ {pc_name} correctly configured")
+                print(f"   [OK] {pc_name} correctly configured")
             else:
-                print(f"   ❌ {pc_name} incorrect configuration")
+                print(f"   [ERROR] {pc_name} incorrect configuration")
         
         # Award points for each correctly configured PC (50 points total / 3 PCs ≈ 16.67 each)
         pc_score = int((correctly_configured_pcs / len(pcs)) * 50) if pcs else 0
         score += pc_score
-        print(f"✅ {correctly_configured_pcs}/{len(pcs)} PCs configured (+{pc_score} points)")
+        print(f"[OK] {correctly_configured_pcs}/{len(pcs)} PCs configured (+{pc_score} points)")
         
         print(f"📊 Final score: {score}/100")
         return score
@@ -498,19 +498,19 @@ class TroubleshootingController:
         # Find DHCP Server router
         router = next((d for d in devices if d.get('type') == 'router' and d.get('label') == 'DHCP Server'), None)
         if not router:
-            print("❌ DHCP Server router not found")
+            print("[ERROR] DHCP Server router not found")
             return 0
         
-        print(f"✅ Found DHCP Server: {router.get('label')}")
+        print(f"[OK] Found DHCP Server: {router.get('label')}")
         
         # Check DHCP pool configuration
         dhcp_pools = router.get('dhcpPools', {})
         if not dhcp_pools:
-            print("❌ No DHCP pools configured")
+            print("[ERROR] No DHCP pools configured")
             return 0
         
         score += 20
-        print(f"✅ DHCP pool exists (+20 points)")
+        print(f"[OK] DHCP pool exists (+20 points)")
         
         # Check pool configuration
         pool_name = list(dhcp_pools.keys())[0]
@@ -518,27 +518,27 @@ class TroubleshootingController:
         
         if pool.get('network', '').startswith('192.168.1.'):
             score += 15
-            print(f"✅ Network configured: {pool.get('network')} (+15 points)")
+            print(f"[OK] Network configured: {pool.get('network')} (+15 points)")
         else:
-            print(f"❌ Network incorrect: {pool.get('network')}")
+            print(f"[ERROR] Network incorrect: {pool.get('network')}")
         
         if pool.get('defaultRouter') == '192.168.1.1':
             score += 15
-            print(f"✅ Default router configured: 192.168.1.1 (+15 points)")
+            print(f"[OK] Default router configured: 192.168.1.1 (+15 points)")
         else:
-            print(f"❌ Default router incorrect: {pool.get('defaultRouter')}")
+            print(f"[ERROR] Default router incorrect: {pool.get('defaultRouter')}")
         
         # Check excluded addresses
         excluded = router.get('dhcpExcluded', [])
         if excluded:
             score += 10
-            print(f"✅ Excluded addresses configured (+10 points)")
+            print(f"[OK] Excluded addresses configured (+10 points)")
         else:
-            print("❌ No excluded addresses")
+            print("[ERROR] No excluded addresses")
         
         # Check PCs have DHCP addresses
         pcs = [d for d in devices if d.get('type') == 'pc']
-        print(f"📍 Found {len(pcs)} PCs")
+        print(f"[PIN] Found {len(pcs)} PCs")
         
         correctly_configured_pcs = 0
         for pc in pcs:
@@ -553,14 +553,14 @@ class TroubleshootingController:
                 not ip.startswith('169.254.') and 
                 gateway == '192.168.1.1'):
                 correctly_configured_pcs += 1
-                print(f"   ✅ {pc_name} has DHCP address")
+                print(f"   [OK] {pc_name} has DHCP address")
             else:
-                print(f"   ❌ {pc_name} does not have DHCP address")
+                print(f"   [ERROR] {pc_name} does not have DHCP address")
         
         # Award points for PCs with DHCP addresses (40 points total)
         pc_score = int((correctly_configured_pcs / len(pcs)) * 40) if pcs else 0
         score += pc_score
-        print(f"✅ {correctly_configured_pcs}/{len(pcs)} PCs with DHCP (+{pc_score} points)")
+        print(f"[OK] {correctly_configured_pcs}/{len(pcs)} PCs with DHCP (+{pc_score} points)")
         
         print(f"📊 Final score: {score}/100")
         return score
@@ -573,16 +573,16 @@ class TroubleshootingController:
         # Find switch
         switch = next((d for d in devices if d.get('type') == 'switch'), None)
         if not switch:
-            print("❌ Switch not found")
+            print("[ERROR] Switch not found")
             return 0
         
         # Check VLANs exist
         vlans = switch.get('vlans', {})
         if '10' in vlans and '20' in vlans:
             score += 40
-            print("✅ VLANs 10 and 20 created (+40 points)")
+            print("[OK] VLANs 10 and 20 created (+40 points)")
         else:
-            print(f"❌ VLANs missing: {list(vlans.keys())}")
+            print(f"[ERROR] VLANs missing: {list(vlans.keys())}")
             return score
         
         # Check port assignments
@@ -601,7 +601,7 @@ class TroubleshootingController:
         
         port_score = int((correct_ports / 4) * 60)
         score += port_score
-        print(f"✅ {correct_ports}/4 ports correctly configured (+{port_score} points)")
+        print(f"[OK] {correct_ports}/4 ports correctly configured (+{port_score} points)")
         
         print(f"📊 Final score: {score}/100")
         return score
@@ -614,10 +614,10 @@ class TroubleshootingController:
         # Count switches (should be 8: 4 in Ring1, 3 in Ring2, 1 Bridge)
         switches = [d for d in devices if d.get('type') == 'switch']
         if len(switches) != 8:
-            print(f"❌ Expected 8 switches, found {len(switches)}")
+            print(f"[ERROR] Expected 8 switches, found {len(switches)}")
             return 0
         
-        print(f"✅ Found 8 switches (+20 points)")
+        print(f"[OK] Found 8 switches (+20 points)")
         score += 20
         
         # Identify Ring 1 switches (4 switches)
@@ -628,22 +628,22 @@ class TroubleshootingController:
         bridge_switch = next((s for s in switches if 'Bridge' in s.get('label', '')), None)
         
         if len(ring1_switches) == 4:
-            print(f"✅ Found 4 Ring1 switches (+10 points)")
+            print(f"[OK] Found 4 Ring1 switches (+10 points)")
             score += 10
         else:
-            print(f"❌ Expected 4 Ring1 switches, found {len(ring1_switches)}")
+            print(f"[ERROR] Expected 4 Ring1 switches, found {len(ring1_switches)}")
         
         if len(ring2_switches) == 3:
-            print(f"✅ Found 3 Ring2 switches (+10 points)")
+            print(f"[OK] Found 3 Ring2 switches (+10 points)")
             score += 10
         else:
-            print(f"❌ Expected 3 Ring2 switches, found {len(ring2_switches)}")
+            print(f"[ERROR] Expected 3 Ring2 switches, found {len(ring2_switches)}")
         
         if bridge_switch:
-            print(f"✅ Found Bridge switch (+10 points)")
+            print(f"[OK] Found Bridge switch (+10 points)")
             score += 10
         else:
-            print(f"❌ Bridge switch not found")
+            print(f"[ERROR] Bridge switch not found")
         
         # Check Ring 1 forms a complete ring
         if len(ring1_switches) == 4:
@@ -660,10 +660,10 @@ class TroubleshootingController:
             # Each switch in Ring1 should have exactly 2 connections within the ring
             correct_ring1 = sum(1 for name in ring1_names if len(ring1_connections[name]) == 2)
             if correct_ring1 == 4:
-                print("✅ Ring1 forms complete ring topology (+20 points)")
+                print("[OK] Ring1 forms complete ring topology (+20 points)")
                 score += 20
             else:
-                print(f"⚠️ Ring1 incomplete: {correct_ring1}/4 switches correctly connected")
+                print(f"[WARNING] Ring1 incomplete: {correct_ring1}/4 switches correctly connected")
         
         # Check Ring 2 forms a complete ring
         if len(ring2_switches) == 3:
@@ -680,10 +680,10 @@ class TroubleshootingController:
             # Each switch in Ring2 should have exactly 2 connections within the ring
             correct_ring2 = sum(1 for name in ring2_names if len(ring2_connections[name]) == 2)
             if correct_ring2 == 3:
-                print("✅ Ring2 forms complete ring topology (+15 points)")
+                print("[OK] Ring2 forms complete ring topology (+15 points)")
                 score += 15
             else:
-                print(f"⚠️ Ring2 incomplete: {correct_ring2}/3 switches correctly connected")
+                print(f"[WARNING] Ring2 incomplete: {correct_ring2}/3 switches correctly connected")
         
         # Check bridge connections (Bridge should connect to both rings)
         if bridge_switch:
@@ -701,10 +701,10 @@ class TroubleshootingController:
             connects_ring2 = any(conn in [s.get('id') or s.get('label') for s in ring2_switches] for conn in bridge_connections)
             
             if connects_ring1 and connects_ring2:
-                print("✅ Bridge connects both rings (+15 points)")
+                print("[OK] Bridge connects both rings (+15 points)")
                 score += 15
             else:
-                print(f"❌ Bridge missing connections (Ring1: {connects_ring1}, Ring2: {connects_ring2})")
+                print(f"[ERROR] Bridge missing connections (Ring1: {connects_ring1}, Ring2: {connects_ring2})")
         
         print(f"📊 Final score: {score}/100")
         return score
@@ -719,14 +719,14 @@ class TroubleshootingController:
         pcs = [d for d in devices if d.get('type') == 'pc']
         
         if len(switches) != 4:
-            print(f"❌ Expected 4 switches, found {len(switches)}")
+            print(f"[ERROR] Expected 4 switches, found {len(switches)}")
             return 0
         
         if len(pcs) != 4:
-            print(f"❌ Expected 4 PCs, found {len(pcs)}")
+            print(f"[ERROR] Expected 4 PCs, found {len(pcs)}")
             return 0
         
-        print(f"✅ Found correct device count: 4 switches, 4 PCs (+20 points)")
+        print(f"[OK] Found correct device count: 4 switches, 4 PCs (+20 points)")
         score += 20
         
         # Identify star topology devices
@@ -739,7 +739,7 @@ class TroubleshootingController:
         
         # Validate star section
         if core_star:
-            print(f"✅ Found central star switch (+10 points)")
+            print(f"[OK] Found central star switch (+10 points)")
             score += 10
             
             # Check star connections (central switch to star PCs)
@@ -753,14 +753,14 @@ class TroubleshootingController:
                     connected_star_pcs += 1
             
             if connected_star_pcs == 2:
-                print(f"✅ Star topology correct: 2 PCs connected to central switch (+20 points)")
+                print(f"[OK] Star topology correct: 2 PCs connected to central switch (+20 points)")
                 score += 20
             else:
-                print(f"⚠️ Star connections incomplete: {connected_star_pcs}/2 PCs connected")
+                print(f"[WARNING] Star connections incomplete: {connected_star_pcs}/2 PCs connected")
         
         # Validate ring section (3 switches forming a ring)
         if len(ring_switches) == 3:
-            print(f"✅ Found 3 ring switches (+10 points)")
+            print(f"[OK] Found 3 ring switches (+10 points)")
             score += 10
             
             ring_names = {s.get('id') or s.get('label') for s in ring_switches}
@@ -776,10 +776,10 @@ class TroubleshootingController:
             # Each switch in ring should have exactly 2 connections within the ring
             correct_ring = sum(1 for name in ring_names if len(ring_connections[name]) == 2)
             if correct_ring == 3:
-                print("✅ Ring topology correct: all 3 switches properly connected (+20 points)")
+                print("[OK] Ring topology correct: all 3 switches properly connected (+20 points)")
                 score += 20
             else:
-                print(f"⚠️ Ring incomplete: {correct_ring}/3 switches correctly connected")
+                print(f"[WARNING] Ring incomplete: {correct_ring}/3 switches correctly connected")
         
         # Validate ring PCs are connected to ring switches
         ring_pc_names = [p.get('id') or p.get('label') for p in ring_pcs]
@@ -792,7 +792,7 @@ class TroubleshootingController:
                 connected_ring_pcs += 1
         
         if connected_ring_pcs >= 2:
-            print(f"✅ Ring PCs properly connected (+10 points)")
+            print(f"[OK] Ring PCs properly connected (+10 points)")
             score += 10
         
         # Validate hybrid connection (star center to ring network)
@@ -807,10 +807,10 @@ class TroubleshootingController:
                     hybrid_connections += 1
             
             if hybrid_connections >= 1:
-                print(f"✅ Hybrid connection present: star connected to ring (+10 points)")
+                print(f"[OK] Hybrid connection present: star connected to ring (+10 points)")
                 score += 10
             else:
-                print(f"❌ Missing hybrid connection between star and ring")
+                print(f"[ERROR] Missing hybrid connection between star and ring")
         
         print(f"📊 Final score: {score}/100")
         return score
@@ -824,10 +824,10 @@ class TroubleshootingController:
         routers = [d for d in devices if d.get('type') == 'router']
         
         if len(routers) != 5:
-            print(f"❌ Expected 5 routers, found {len(routers)}")
+            print(f"[ERROR] Expected 5 routers, found {len(routers)}")
             return 0
         
-        print(f"✅ Found 5 routers (+20 points)")
+        print(f"[OK] Found 5 routers (+20 points)")
         score += 20
         
         # Identify Area 0 routers (backbone)
@@ -839,25 +839,25 @@ class TroubleshootingController:
         
         # Validate router distribution
         if len(area0_routers) >= 2:
-            print(f"✅ Found Area 0 routers (+10 points)")
+            print(f"[OK] Found Area 0 routers (+10 points)")
             score += 10
         
         if len(area1_routers) >= 2:
-            print(f"✅ Found Area 1 routers (+10 points)")
+            print(f"[OK] Found Area 1 routers (+10 points)")
             score += 10
         
         if abr:
-            print(f"✅ Found ABR (Area Border Router) (+15 points)")
+            print(f"[OK] Found ABR (Area Border Router) (+15 points)")
             score += 15
         
         # Validate connections (partial mesh = not all routers directly connected)
         total_connections = len(connections)
         
         if total_connections >= 6 and total_connections <= 8:
-            print(f"✅ Good partial mesh connectivity: {total_connections} connections (+15 points)")
+            print(f"[OK] Good partial mesh connectivity: {total_connections} connections (+15 points)")
             score += 15
         elif total_connections > 0:
-            print(f"⚠️ Suboptimal connectivity: {total_connections} connections (+5 points)")
+            print(f"[WARNING] Suboptimal connectivity: {total_connections} connections (+5 points)")
             score += 5
         
         # Validate Area 0 internal connections
@@ -870,7 +870,7 @@ class TroubleshootingController:
                     area0_connections += 1
             
             if area0_connections >= 1:
-                print(f"✅ Area 0 routers interconnected (+10 points)")
+                print(f"[OK] Area 0 routers interconnected (+10 points)")
                 score += 10
         
         # Validate Area 1 internal connections
@@ -883,7 +883,7 @@ class TroubleshootingController:
                     area1_connections += 1
             
             if area1_connections >= 1:
-                print(f"✅ Area 1 routers interconnected (+10 points)")
+                print(f"[OK] Area 1 routers interconnected (+10 points)")
                 score += 10
         
         # Validate ABR connections to both areas
@@ -905,10 +905,10 @@ class TroubleshootingController:
             )
             
             if connects_area0 and connects_area1:
-                print(f"✅ ABR connects both areas (+10 points)")
+                print(f"[OK] ABR connects both areas (+10 points)")
                 score += 10
             else:
-                print(f"❌ ABR not properly connecting areas (Area0: {connects_area0}, Area1: {connects_area1})")
+                print(f"[ERROR] ABR not properly connecting areas (Area0: {connects_area0}, Area1: {connects_area1})")
         
         print(f"📊 Final score: {score}/100")
         return score
@@ -922,10 +922,10 @@ class TroubleshootingController:
             routers = [d for d in devices if d.get('type') == 'router']
             
             if len(routers) < 6:
-                print(f"❌ Insufficient routers: {len(routers)}/6+ required")
+                print(f"[ERROR] Insufficient routers: {len(routers)}/6+ required")
                 return 0
             
-            print(f"✅ Found {len(routers)} routers (+20 points)")
+            print(f"[OK] Found {len(routers)} routers (+20 points)")
             score += 20
             
             # Identify router types by label (with safe string handling)
@@ -934,15 +934,15 @@ class TroubleshootingController:
             ce_routers = [r for r in routers if r.get('label', '').startswith('CE')]
             
             if len(p_routers) >= 2:
-                print(f"✅ Found {len(p_routers)} P routers (core) (+15 points)")
+                print(f"[OK] Found {len(p_routers)} P routers (core) (+15 points)")
                 score += 15
             
             if len(pe_routers) >= 2:
-                print(f"✅ Found {len(pe_routers)} PE routers (edge) (+15 points)")
+                print(f"[OK] Found {len(pe_routers)} PE routers (edge) (+15 points)")
                 score += 15
             
             if len(ce_routers) >= 2:
-                print(f"✅ Found {len(ce_routers)} CE routers (customer) (+15 points)")
+                print(f"[OK] Found {len(ce_routers)} CE routers (customer) (+15 points)")
                 score += 15
             
             # Build device ID to label mapping for safe connection validation
@@ -962,10 +962,10 @@ class TroubleshootingController:
                     mpls_core_connections += 1
             
             if mpls_core_connections >= 3:
-                print(f"✅ MPLS core properly connected ({mpls_core_connections} links) (+20 points)")
+                print(f"[OK] MPLS core properly connected ({mpls_core_connections} links) (+20 points)")
                 score += 20
             elif mpls_core_connections > 0:
-                print(f"⚠️ Partial MPLS core connectivity (+10 points)")
+                print(f"[WARNING] Partial MPLS core connectivity (+10 points)")
                 score += 10
             
             # Validate CE-to-PE connections (customer access)
@@ -981,17 +981,17 @@ class TroubleshootingController:
                     ce_connections += 1
             
             if ce_connections >= len(ce_routers):
-                print(f"✅ All CE routers connected to PE (+15 points)")
+                print(f"[OK] All CE routers connected to PE (+15 points)")
                 score += 15
             elif ce_connections > 0:
-                print(f"⚠️ Some CE connections present (+5 points)")
+                print(f"[WARNING] Some CE connections present (+5 points)")
                 score += 5
             
             print(f"📊 Final score: {score}/100")
             return score
             
         except Exception as e:
-            print(f"❌ Error in MPLS VPN validation: {e}")
+            print(f"[ERROR] Error in MPLS VPN validation: {e}")
             import traceback
             traceback.print_exc()
             return 0
@@ -1009,17 +1009,17 @@ class TroubleshootingController:
         leaf_switches = [s for s in switches if 'leaf' in s.get('label', '').lower()]
         
         if len(spine_switches) >= 2:
-            print(f"✅ Found {len(spine_switches)} spine switches (+20 points)")
+            print(f"[OK] Found {len(spine_switches)} spine switches (+20 points)")
             score += 20
         elif len(spine_switches) > 0:
-            print(f"⚠️ At least 1 spine switch present (+10 points)")
+            print(f"[WARNING] At least 1 spine switch present (+10 points)")
             score += 10
         
         if len(leaf_switches) >= 2:
-            print(f"✅ Found {len(leaf_switches)} leaf switches (+20 points)")
+            print(f"[OK] Found {len(leaf_switches)} leaf switches (+20 points)")
             score += 20
         elif len(leaf_switches) > 0:
-            print(f"⚠️ At least 1 leaf switch present (+10 points)")
+            print(f"[WARNING] At least 1 leaf switch present (+10 points)")
             score += 10
         
         # Validate spine-leaf connections (every leaf should connect to every spine)
@@ -1037,15 +1037,15 @@ class TroubleshootingController:
                 spine_leaf_connections += 1
         
         if spine_leaf_connections >= expected_spine_leaf_connections:
-            print(f"✅ Full mesh spine-leaf connectivity ({spine_leaf_connections} links) (+30 points)")
+            print(f"[OK] Full mesh spine-leaf connectivity ({spine_leaf_connections} links) (+30 points)")
             score += 30
         elif spine_leaf_connections >= expected_spine_leaf_connections * 0.5:
-            print(f"⚠️ Partial spine-leaf connectivity ({spine_leaf_connections}/{expected_spine_leaf_connections} links) (+15 points)")
+            print(f"[WARNING] Partial spine-leaf connectivity ({spine_leaf_connections}/{expected_spine_leaf_connections} links) (+15 points)")
             score += 15
         
         # Validate server connections to leaf switches
         if len(servers) >= 2:
-            print(f"✅ Found {len(servers)} servers (+10 points)")
+            print(f"[OK] Found {len(servers)} servers (+10 points)")
             score += 10
             
             server_connections = 0
@@ -1059,10 +1059,10 @@ class TroubleshootingController:
                     server_connections += 1
             
             if server_connections >= len(servers):
-                print(f"✅ All servers connected to leaf switches (+20 points)")
+                print(f"[OK] All servers connected to leaf switches (+20 points)")
                 score += 20
             elif server_connections > 0:
-                print(f"⚠️ Some server connections present (+10 points)")
+                print(f"[WARNING] Some server connections present (+10 points)")
                 score += 10
         
         print(f"📊 Final score: {score}/100")
@@ -1082,20 +1082,20 @@ class TroubleshootingController:
         hub_routers = [r for r in routers if 'hub' in r.get('label', '').lower()]
         
         if len(controllers) >= 1:
-            print(f"✅ Found SD-WAN controller (+25 points)")
+            print(f"[OK] Found SD-WAN controller (+25 points)")
             score += 25
         else:
-            print(f"❌ No SD-WAN controller found")
+            print(f"[ERROR] No SD-WAN controller found")
         
         if len(edge_routers) >= 2:
-            print(f"✅ Found {len(edge_routers)} edge routers (+20 points)")
+            print(f"[OK] Found {len(edge_routers)} edge routers (+20 points)")
             score += 20
         elif len(edge_routers) > 0:
-            print(f"⚠️ Found {len(edge_routers)} edge router (+10 points)")
+            print(f"[WARNING] Found {len(edge_routers)} edge router (+10 points)")
             score += 10
         
         if len(hub_routers) >= 1:
-            print(f"✅ Found {len(hub_routers)} hub router(s) (+15 points)")
+            print(f"[OK] Found {len(hub_routers)} hub router(s) (+15 points)")
             score += 15
         
         # Validate controller connections to edge/hub routers
@@ -1110,10 +1110,10 @@ class TroubleshootingController:
                     controller_connections += 1
             
             if controller_connections >= 2:
-                print(f"✅ Controller connected to multiple devices (+15 points)")
+                print(f"[OK] Controller connected to multiple devices (+15 points)")
                 score += 15
             elif controller_connections > 0:
-                print(f"⚠️ Controller has at least one connection (+5 points)")
+                print(f"[WARNING] Controller has at least one connection (+5 points)")
                 score += 5
         
         # Validate overlay topology (edge-to-hub or edge-to-edge connections)
@@ -1127,15 +1127,15 @@ class TroubleshootingController:
                 overlay_connections += 1
         
         if overlay_connections >= 3:
-            print(f"✅ Good SD-WAN overlay connectivity ({overlay_connections} links) (+15 points)")
+            print(f"[OK] Good SD-WAN overlay connectivity ({overlay_connections} links) (+15 points)")
             score += 15
         elif overlay_connections > 0:
-            print(f"⚠️ Some overlay connectivity present (+5 points)")
+            print(f"[WARNING] Some overlay connectivity present (+5 points)")
             score += 5
         
         # Validate client connections
         if len(pcs) >= 2:
-            print(f"✅ Found {len(pcs)} client devices (+10 points)")
+            print(f"[OK] Found {len(pcs)} client devices (+10 points)")
             score += 10
         
         print(f"📊 Final score: {score}/100")

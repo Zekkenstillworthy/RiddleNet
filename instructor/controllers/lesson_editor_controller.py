@@ -1,4 +1,4 @@
-"""
+﻿"""
 Advanced Lesson Editor API Controller
 Provides comprehensive lesson editing functionality with rich media support
 """

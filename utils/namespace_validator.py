@@ -1,4 +1,4 @@
-"""
+﻿"""
 Namespace Validator - Session Poisoning Prevention
 ====================================================
 This module provides decorators and utilities to enforce strict namespace

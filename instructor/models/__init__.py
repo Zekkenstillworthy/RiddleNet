@@ -1,4 +1,4 @@
-# Models package initialization
+﻿# Models package initialization
 from instructor.models.user import InstructorUser, Instructor
 from instructor.models.question import Question
 from instructor.models.question_group import QuestionGroup

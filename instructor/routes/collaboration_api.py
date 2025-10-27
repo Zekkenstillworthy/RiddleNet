@@ -1,4 +1,4 @@
-"""
+﻿"""
 Admin API routes for collaboration lobby management
 Only admins/teachers can create and manage collaboration lobbies
 """
@@ -21,7 +21,7 @@ admin_collaboration_api_bp = Blueprint(
     url_prefix='/instructor/api/collaboration'
 )
 
-print("🔧 Admin Collaboration API Blueprint created with prefix: /admin/api/collaboration")
+print("[FIX] Admin Collaboration API Blueprint created with prefix: /admin/api/collaboration")
 
 @admin_collaboration_api_bp.route('/lobby', methods=['POST'])
 @login_required
@@ -511,7 +511,7 @@ def get_team_assignments(class_id):
 @teacher_required
 def save_simulation_collaboration_settings(simulation_id):
     """Save collaboration settings for a specific simulation"""
-    print(f"🔧 POST /simulation/{simulation_id}/collaboration route called")
+    print(f"[FIX] POST /simulation/{simulation_id}/collaboration route called")
     try:
         data = request.get_json()
         
@@ -576,7 +576,7 @@ def save_simulation_collaboration_settings(simulation_id):
 @teacher_required
 def get_simulation_collaboration_settings(simulation_id):
     """Get collaboration settings for a specific simulation"""
-    print(f"🔧 GET /simulation/{simulation_id}/collaboration route called")
+    print(f"[FIX] GET /simulation/{simulation_id}/collaboration route called")
     try:
         simulation = Simulation.query.get_or_404(simulation_id)
         
@@ -714,6 +714,6 @@ def start_collaboration_lobby(simulation_id):
         }), 500
 
 
-print("🔧 Admin Collaboration API routes defined successfully!")
-print(f"🔧 Blueprint name: {admin_collaboration_api_bp.name}")
-print(f"🔧 Blueprint URL prefix: {admin_collaboration_api_bp.url_prefix}")
+print("[FIX] Admin Collaboration API routes defined successfully!")
+print(f"[FIX] Blueprint name: {admin_collaboration_api_bp.name}")
+print(f"[FIX] Blueprint URL prefix: {admin_collaboration_api_bp.url_prefix}")

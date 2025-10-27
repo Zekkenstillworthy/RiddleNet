@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+﻿from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from utils.auth_decorators import instructor_required
 from instructor.models.class_model import Class
@@ -26,7 +26,7 @@ def _require_class_owner(class_id):
     is_super_admin = _is_super_admin()
     
     # Debug logging
-    print(f"🔍 _require_class_owner DEBUG:")
+    print(f"[DEBUG] _require_class_owner DEBUG:")
     print(f"   class_id: {class_id}")
     print(f"   cls.created_by: {cls.created_by}")
     print(f"   current_user: {current_user}")
@@ -35,10 +35,10 @@ def _require_class_owner(class_id):
     print(f"   is_super_admin: {is_super_admin}")
     
     if is_super_admin or cls.created_by == current_user_id:
-        print(f"✅ Access granted for class {class_id}")
+        print(f"[OK] Access granted for class {class_id}")
         return cls
     
-    print(f"❌ Access denied for class {class_id}")
+    print(f"[ERROR] Access denied for class {class_id}")
     return None
 
 @class_content_controller_old.route('/class-content-manager')
@@ -56,11 +56,11 @@ def class_content_manager_redirect():
 @instructor_required
 def manage_content(class_id):
     """Display class content manager interface for managing modules, simulations, assignments, etc."""
-    print(f"🔍 MANAGE_CONTENT ROUTE HIT for class_id: {class_id}")
+    print(f"[DEBUG] MANAGE_CONTENT ROUTE HIT for class_id: {class_id}")
     try:
         # Get the class details
         cls = Class.query.get_or_404(class_id)
-        print(f"🔍 Found class: {cls.name} ({cls.code})")
+        print(f"[DEBUG] Found class: {cls.name} ({cls.code})")
 
         # Ownership check: only the creator or super_admin can manage content
         if not (hasattr(current_user, 'role') and current_user.role == 'super_admin') and cls.created_by != getattr(current_user, 'id', None):
@@ -103,7 +103,7 @@ def manage_content(class_id):
         # Get enrolled students and their details
         enrolled_students = cls.students.all() if cls.students else []
         student_count = len(enrolled_students)
-        print(f"🔍 Found {student_count} students in class {cls.name}")
+        print(f"[DEBUG] Found {student_count} students in class {cls.name}")
         
         # Prepare class content data structure for the template
         class_content = {
@@ -932,7 +932,7 @@ def get_class_assignments(class_id):
             return jsonify({'error': 'Permission denied'}), 403
         assignments = ClassAssignment.query.filter_by(class_id=class_id).order_by(ClassAssignment.sort_order).all()
         
-        print(f"🔍 DEBUG: Found {len(assignments)} assignments for class {class_id}")
+        print(f"[DEBUG] DEBUG: Found {len(assignments)} assignments for class {class_id}")
         for assignment in assignments:
             print(f"   - Assignment {assignment.id}: {assignment.title}")
         
@@ -959,7 +959,7 @@ def get_class_assignments(class_id):
         return jsonify(result)
         
     except Exception as e:
-        print(f"❌ DEBUG: Error in get_class_assignments: {str(e)}")
+        print(f"[ERROR] DEBUG: Error in get_class_assignments: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
@@ -1758,7 +1758,7 @@ def remove_question_from_group(group_id, question_id):
 def get_student_progress(class_id, student_id):
     """Get student progress for a specific class"""
     try:
-        print(f"🔍 DEBUG: Getting progress for student {student_id} in class {class_id}")
+        print(f"[DEBUG] DEBUG: Getting progress for student {student_id} in class {class_id}")
         
         # Simple test - just return success for now to verify API auth works
         return jsonify({
@@ -1782,33 +1782,33 @@ def get_student_progress(class_id, student_id):
         
         cls = _require_class_owner(class_id)
         if not cls:
-            print(f"❌ DEBUG: Permission denied for class {class_id}")
+            print(f"[ERROR] DEBUG: Permission denied for class {class_id}")
             return jsonify({'error': 'Permission denied'}), 403
         
-        print(f"✅ DEBUG: Class access granted for {class_id}")
+        print(f"[OK] DEBUG: Class access granted for {class_id}")
         
         # Import User model to get student info
         from user.models.user import User
         from instructor.models.module import Module, ModuleProgress, Lesson, LessonProgress
         from instructor.models.class_content import ClassAssignment
         
-        print(f"🔍 DEBUG: Fetching student {student_id}")
+        print(f"[DEBUG] DEBUG: Fetching student {student_id}")
         student = User.query.get_or_404(student_id)
-        print(f"✅ DEBUG: Student found: {student.username}")
+        print(f"[OK] DEBUG: Student found: {student.username}")
         
-        print(f"🔍 DEBUG: Checking if student is enrolled in class")
+        print(f"[DEBUG] DEBUG: Checking if student is enrolled in class")
         
         # Verify student is enrolled in this class
         if student not in cls.students:
-            print(f"❌ DEBUG: Student {student_id} not enrolled in class {class_id}")
+            print(f"[ERROR] DEBUG: Student {student_id} not enrolled in class {class_id}")
             return jsonify({'error': 'Student not enrolled in this class'}), 404
         
-        print(f"✅ DEBUG: Student is enrolled in class")
+        print(f"[OK] DEBUG: Student is enrolled in class")
         
-        print(f"🔍 DEBUG: Fetching modules for class {class_id}")
+        print(f"[DEBUG] DEBUG: Fetching modules for class {class_id}")
         # Get all modules for this class
         modules = Module.query.filter_by(class_id=class_id, is_active=True).order_by(Module.order_index).all()
-        print(f"✅ DEBUG: Found {len(modules)} modules")
+        print(f"[OK] DEBUG: Found {len(modules)} modules")
         
         # Calculate overall progress
         total_modules = len(modules)

@@ -1,4 +1,4 @@
-"""Split session interface to isolate instructor and user sessions.
+﻿"""Split session interface to isolate instructor and user sessions.
 
 This prevents *session poisoning* where logging in as a user overwrites
 the instructor login (and vice‑versa) because both share the same Flask
@@ -24,7 +24,7 @@ logout endpoint in each namespace (or clear both cookies manually).
 """
 
 import os
-import logging
+from typing import Optional
 from flask.sessions import SecureCookieSessionInterface
 from itsdangerous import URLSafeTimedSerializer, BadSignature
 from flask import request
@@ -41,6 +41,11 @@ class SplitSessionInterface(SecureCookieSessionInterface):
     path or, for WebSocket handshakes, on stored namespace.
     """
 
+    @staticmethod
+    def _expected_namespace(cookie_name: Optional[str]) -> str:
+        """Return the namespace that should live inside a given cookie."""
+        return "instructor" if cookie_name == INSTRUCTOR_COOKIE else "user"
+
     def get_signing_serializer(self, app):
         """Override to add better error handling and fallback"""
         secret_key = app.secret_key
@@ -48,75 +53,89 @@ class SplitSessionInterface(SecureCookieSessionInterface):
         if not secret_key:
             # Generate a temporary key for this session
             temp_key = os.urandom(32)
-            app.logger.error("🔑 No SECRET_KEY configured! Using temporary key - sessions will not persist!")
+            app.logger.error("[KEY] No SECRET_KEY configured! Using temporary key - sessions will not persist!")
             secret_key = temp_key
         
         if isinstance(secret_key, str) and len(secret_key) < 16:
-            app.logger.warning(f"🔑 SECRET_KEY is too short ({len(secret_key)} chars). Minimum 16 chars recommended.")
+            app.logger.warning(f"[KEY] SECRET_KEY is too short ({len(secret_key)} chars). Minimum 16 chars recommended.")
         
         try:
             serializer = URLSafeTimedSerializer(secret_key)
-            app.logger.debug("🔑 Session serializer created successfully")
+            app.logger.debug("[KEY] Session serializer created successfully")
             return serializer
         except Exception as e:
-            app.logger.error(f"🔑 Failed to create session serializer: {str(e)}")
+            app.logger.error(f"[KEY] Failed to create session serializer: {str(e)}")
             return None
 
     def _select_cookie_for_request(self):
         path = (request.path or "").lower()
-        print(f"🍪 SplitSession: _select_cookie_for_request called for path: {path}")
+        print(f"[COOKIE] SplitSession: _select_cookie_for_request called for path: {path}")
         
         # INSTRUCTOR PATHS: /instructor* AND /admin* both use instructor_session
         if path.startswith("/instructor") or path.startswith("/admin"):
-            print(f"🍪 SplitSession: Instructor/Admin path detected, returning INSTRUCTOR_COOKIE ({INSTRUCTOR_COOKIE})")
+            print(f"[COOKIE] SplitSession: Instructor/Admin path detected, returning INSTRUCTOR_COOKIE ({INSTRUCTOR_COOKIE})")
             return INSTRUCTOR_COOKIE
         
         if path.startswith("/socket.io"):
-            print(f"🍪 SplitSession: Socket.io path detected, returning None for later decision")
+            print(f"[COOKIE] SplitSession: Socket.io path detected, returning None for later decision")
             # WebSocket handshake: we don't know original page path; we will
             # decide later in open_session by inspecting both cookies.
             return None
         
-        print(f"🍪 SplitSession: User path, returning USER_COOKIE ({USER_COOKIE})")
+        print(f"[COOKIE] SplitSession: User path, returning USER_COOKIE ({USER_COOKIE})")
         return USER_COOKIE
 
     # ---------- OPEN SESSION ----------
     def open_session(self, app, request):  # type: ignore[override]
         serializer = self.get_signing_serializer(app)
         if not serializer:
-            print(f"🍪 SplitSession: No serializer available for path: {request.path}")
+            print(f"[COOKIE] SplitSession: No serializer available for path: {request.path}")
             return self.session_class()
 
         chosen = self._select_cookie_for_request()
-        print(f"🍪 SplitSession: Chosen cookie: {chosen}")
+        print(f"[COOKIE] SplitSession: Chosen cookie: {chosen}")
 
         # Normal HTTP request that maps cleanly to a cookie name
         if chosen:
             raw = request.cookies.get(chosen)
-            print(f"🍪 SplitSession: Raw cookie value for {chosen}: {raw[:50] if raw else 'None'}...")
+            print(f"[COOKIE] SplitSession: Raw cookie value for {chosen}: {raw[:50] if raw else 'None'}...")
             if not raw:
-                print(f"🍪 SplitSession: No cookie found for {chosen}, returning empty session")
+                print(f"[COOKIE] SplitSession: No cookie found for {chosen}, returning empty session")
                 return self.session_class()
             try:
                 max_age = int(app.permanent_session_lifetime.total_seconds())
                 data = serializer.loads(raw, max_age=max_age)
-                print(f"🍪 SplitSession: Successfully loaded session data, keys: {list(data.keys())}")
+                expected_ns = self._expected_namespace(chosen)
+                actual_ns = data.get("auth_namespace")
+
+                if actual_ns and actual_ns != expected_ns:
+                    app.logger.warning(
+                        "[COOKIE] SplitSession: Detected namespace mismatch (%s) in %s cookie; purging cross-namespace data",
+                        actual_ns,
+                        chosen,
+                    )
+                    # Drop identity related keys to prevent session poisoning
+                    data = {"auth_namespace": expected_ns}
+                else:
+                    if not actual_ns:
+                        data["auth_namespace"] = expected_ns
+                print(f"[COOKIE] SplitSession: Successfully loaded session data, keys: {list(data.keys())}")
                 return self.session_class(data)
             except BadSignature:
-                print(f"🍪 SplitSession: Bad signature for {chosen}")
+                print(f"[COOKIE] SplitSession: Bad signature for {chosen}")
                 return self.session_class()
             except Exception as e:
-                print(f"🍪 SplitSession: Error loading session: {str(e)}")
+                print(f"[COOKIE] SplitSession: Error loading session: {str(e)}")
                 return self.session_class()
 
         # WebSocket (or ambiguous) – inspect both cookies and pick the most appropriate
         # First, try to determine context from Referer header (for Socket.IO handshakes)
         referer = request.headers.get('Referer', '').lower()
-        print(f"🍪 SplitSession: WebSocket/ambiguous path, Referer: {referer}")
+        print(f"[COOKIE] SplitSession: WebSocket/ambiguous path, Referer: {referer}")
         
         # If Referer indicates instructor context, prefer instructor cookie
         prefer_instructor = '/instructor' in referer
-        print(f"🍪 SplitSession: Prefer instructor based on Referer: {prefer_instructor}")
+        print(f"[COOKIE] SplitSession: Prefer instructor based on Referer: {prefer_instructor}")
         
         sessions = []
         max_age = int(app.permanent_session_lifetime.total_seconds())
@@ -126,34 +145,48 @@ class SplitSessionInterface(SecureCookieSessionInterface):
                 continue
             try:
                 data = serializer.loads(raw, max_age=max_age)
+                expected_ns = self._expected_namespace(name)
+                actual_ns = data.get("auth_namespace")
+
+                if actual_ns and actual_ns != expected_ns:
+                    app.logger.warning(
+                        "[COOKIE] SplitSession: Skipping %s cookie due to namespace mismatch (%s)",
+                        name,
+                        actual_ns,
+                    )
+                    continue
+
+                if not actual_ns:
+                    data["auth_namespace"] = expected_ns
+
                 sessions.append((name, data))
-                print(f"🍪 SplitSession: Loaded {name} with namespace: {data.get('auth_namespace')}")
+                print(f"[COOKIE] SplitSession: Loaded {name} with namespace: {data.get('auth_namespace')}")
             except BadSignature:
-                print(f"🍪 SplitSession: Bad signature for {name}")
+                print(f"[COOKIE] SplitSession: Bad signature for {name}")
                 continue
             except Exception as e:
-                app.logger.warning(f"🍪 Error loading {name}: {str(e)}")
+                app.logger.warning(f"[COOKIE] Error loading {name}: {str(e)}")
                 continue
 
         # If referer indicates instructor context, prefer instructor session
         if prefer_instructor:
             for name, data in sessions:
                 if name == INSTRUCTOR_COOKIE or data.get("auth_namespace") == "instructor":
-                    print(f"🍪 SplitSession: Returning instructor session based on Referer")
+                    print(f"[COOKIE] SplitSession: Returning instructor session based on Referer")
                     return self.session_class(data)
         
         # Otherwise prefer user session (for non-instructor contexts)
         for name, data in sessions:
             if name == USER_COOKIE or data.get("auth_namespace") != "instructor":
-                print(f"🍪 SplitSession: Returning user session (default)")
+                print(f"[COOKIE] SplitSession: Returning user session (default)")
                 return self.session_class(data)
         
         # Fallback: return first available session
         if sessions:
-            print(f"🍪 SplitSession: Fallback - returning first available session")
+            print(f"[COOKIE] SplitSession: Fallback - returning first available session")
             return self.session_class(sessions[0][1])
         
-        print(f"🍪 SplitSession: No valid sessions found, returning empty")
+        print(f"[COOKIE] SplitSession: No valid sessions found, returning empty")
         return self.session_class()
 
     # ---------- SAVE SESSION ----------
@@ -185,7 +218,28 @@ class SplitSessionInterface(SecureCookieSessionInterface):
         serializer = self.get_signing_serializer(app)
         if not serializer:
             return
-        signed = serializer.dumps(dict(session))
+
+        session_payload = dict(session)
+        expected_ns = self._expected_namespace(cookie_name)
+        actual_ns = session_payload.get("auth_namespace")
+
+        if actual_ns and actual_ns != expected_ns:
+            app.logger.warning(
+                "[COOKIE] SplitSession: Preventing cross-namespace write (%s into %s); sanitising payload",
+                actual_ns,
+                cookie_name,
+            )
+            # Preserve only non-auth data and enforce expected namespace
+            session_payload = {
+                key: value
+                for key, value in session_payload.items()
+                if key in {"_flashes", "_permanent"}
+            }
+            session_payload["auth_namespace"] = expected_ns
+        else:
+            session_payload.setdefault("auth_namespace", expected_ns)
+
+        signed = serializer.dumps(session_payload)
 
         response.set_cookie(
             cookie_name,

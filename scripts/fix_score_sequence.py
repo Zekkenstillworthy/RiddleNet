@@ -45,7 +45,7 @@ def fix_score_sequence():
         cursor.execute(f"ALTER SEQUENCE score_id_seq RESTART WITH {new_seq_value}")
         conn.commit()
         
-        print(f"✅ Sequence reset to: {new_seq_value}")
+        print(f"[OK] Sequence reset to: {new_seq_value}")
         
         # Verify the fix
         cursor.execute('SELECT last_value FROM score_id_seq')
@@ -56,7 +56,7 @@ def fix_score_sequence():
         conn.close()
         
     except Exception as e:
-        print(f"❌ Error fixing sequence: {e}")
+        print(f"[ERROR] Error fixing sequence: {e}")
         import traceback
         traceback.print_exc()
 

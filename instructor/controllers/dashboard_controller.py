@@ -1,4 +1,4 @@
-
+﻿
 from flask import Blueprint, redirect, url_for, flash, jsonify, request, render_template, send_file, current_app
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc, and_, extract, or_
@@ -52,11 +52,11 @@ def decimal_to_float(obj):
 def index():
     """Admin dashboard root - accessible via /admin/"""
     print("=" * 80)
-    print("🔍 INSTRUCTOR DASHBOARD INDEX: Route accessed at /instructor/")
-    print(f"🔍 Current user: {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
-    print(f"🔍 User type: {type(current_user)}")
+    print("[DEBUG] INSTRUCTOR DASHBOARD INDEX: Route accessed at /instructor/")
+    print(f"[DEBUG] Current user: {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
+    print(f"[DEBUG] User type: {type(current_user)}")
     from flask import session
-    print(f"🔍 Auth namespace: {session.get('auth_namespace', 'unknown')}")
+    print(f"[DEBUG] Auth namespace: {session.get('auth_namespace', 'unknown')}")
     print("=" * 80)
     
     # MVP FIX: Ensure new admin/instructor accounts start with zero data
@@ -515,15 +515,15 @@ def class_content_manager():
     try:
         # Get class ID from query parameters for direct class management
         class_id = request.args.get('class_id', type=int)
-        print(f"🔍 Dashboard route: class_id parameter = {class_id}")
-        print(f"🔍 Dashboard route: All query args = {dict(request.args)}")
+        print(f"[DEBUG] Dashboard route: class_id parameter = {class_id}")
+        print(f"[DEBUG] Dashboard route: All query args = {dict(request.args)}")
         
         # Don't redirect - keep the original URL and load the class content directly
         if class_id:
-            print(f"✅ Loading Class Content Manager for class_id: {class_id}")
+            print(f"[OK] Loading Class Content Manager for class_id: {class_id}")
             current_app.logger.info(f"Loading Class Content Manager for class_id: {class_id}")
         else:
-            print("❌ No class_id provided, showing class selection interface")
+            print("[ERROR] No class_id provided, showing class selection interface")
         
         # Get classes available to this admin (owner) for selection dropdown
         from instructor.models.class_model import Class
@@ -618,7 +618,7 @@ def class_content_manager():
                 class_modules = []
                 
             # Always log module loading status for debugging
-            current_app.logger.info(f"🔍 Module loading status: {len(class_modules)} modules loaded for class {selected_class.id}")
+            current_app.logger.info(f"[DEBUG] Module loading status: {len(class_modules)} modules loaded for class {selected_class.id}")
             
             # Get class-specific content (NEW: Dynamic content from database)
             try:
@@ -767,7 +767,7 @@ def class_content_manager():
             }
             
             # Log module count for debugging
-            current_app.logger.info(f"🔧 Built class_content with {len(class_content['modules'])} modules")
+            current_app.logger.info(f"[FIX] Built class_content with {len(class_content['modules'])} modules")
             
             # Build comprehensive statistics
             class_statistics = {
@@ -816,7 +816,7 @@ def class_content_manager():
             }
         
         # Log module count for debugging
-        current_app.logger.info(f"🔧 Built class_content with {len(class_content['modules'])} modules")
+        current_app.logger.info(f"[FIX] Built class_content with {len(class_content['modules'])} modules")
         
         # Debug what we're passing to template
         current_app.logger.info(f"Template context: all_classes={len(all_classes)}, selected_class={'Yes' if selected_class else 'No'}")
@@ -984,7 +984,7 @@ def get_class_content(class_id):
             modules = []
             
         # Log API module loading status
-        current_app.logger.info(f"🔍 API Module status: Returning {len(modules)} modules for class {class_id}")
+        current_app.logger.info(f"[DEBUG] API Module status: Returning {len(modules)} modules for class {class_id}")
         
         # Get student information
         student_count = cls.students.count() if cls.students else 0

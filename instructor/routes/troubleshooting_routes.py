@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
+﻿from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 from instructor.controllers.troubleshooting_controller import TroubleshootingController
 from flask_cors import cross_origin

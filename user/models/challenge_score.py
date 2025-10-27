@@ -101,7 +101,7 @@ class ChallengeScore(db.Model):
                 merged_challenge_data = {**existing_challenge_data, **new_challenge_data}
                 
                 # DEBUG: Log merge process
-                print(f"🔍 DEEP MERGE DEBUG:")
+                print(f"[DEBUG] DEEP MERGE DEBUG:")
                 print(f"  Existing: {existing_challenge_data}")
                 print(f"  New: {new_challenge_data}")
                 print(f"  Merged: {merged_challenge_data}")
@@ -172,7 +172,7 @@ class ChallengeScore(db.Model):
     @staticmethod
     def get_user_stats(user_id):
         """Get aggregated stats for a user across all challenges"""
-        # ✅ FIX: Define the 4 main challenge types for dashboard statistics
+        # [OK] MVP: Define the 4 main challenge types for dashboard statistics
         # Note: 'troubleshooting' and 'linkup' refer to the same challenge (Link Up!)
         MAIN_CHALLENGE_TYPES = ['crimping', 'osi', 'troubleshooting', 'quiz']
         
@@ -184,28 +184,32 @@ class ChallengeScore(db.Model):
         if not challenges:
             return {
                 'total_challenges_completed': 0,
-                'total_challenges': 4,  # ✅ FIX: Updated to 4 challenges (crimping, osi, troubleshooting/linkup, quiz)
+                'total_challenges': 4,  # [OK] MVP: 4 challenges (crimping, osi, troubleshooting/linkup, quiz)
                 'average_score': 0.0,
                 'total_attempts': 0,
                 'completion_rate': 0.0
             }
         
-        # Count only completed challenges from the main 4 types
-        completed = sum(1 for c in challenges if c.is_completed)
+        # [OK] MVP FIX: Count only completed challenges (is_completed == True)
+        completed_challenges = [c for c in challenges if c.is_completed]
+        completed_count = len(completed_challenges)
         
-        # Calculate average score correctly: sum of best scores / 4 (max possible)
-        total_score = sum(c.best_score for c in challenges)
-        average_score = total_score / 4  # ✅ FIX: Always divide by 4 (total challenges)
-        
-        # Cap display average at 100% for cleaner UI (individual scores can still exceed 100%)
-        display_average = min(average_score, 100.0)
+        # [OK] MVP FIX: Calculate average score from COMPLETED challenges only
+        # If no challenges are completed, show 0.0
+        if completed_count > 0:
+            total_score = sum(c.best_score for c in completed_challenges)
+            average_score = total_score / completed_count
+            # Cap display average at 100% for cleaner UI
+            display_average = min(average_score, 100.0)
+        else:
+            display_average = 0.0
         
         total_attempts = sum(c.total_attempts for c in challenges)
         
         return {
-            'total_challenges_completed': completed,
-            'total_challenges': 4,  # ✅ FIX: crimping, osi, troubleshooting (Link Up!), quiz
-            'average_score': display_average,  # Capped at 100% for display
+            'total_challenges_completed': completed_count,
+            'total_challenges': 4,  # [OK] MVP: crimping, osi, troubleshooting (Link Up!), quiz
+            'average_score': display_average,  # [OK] MVP: Average of completed challenges only
             'total_attempts': total_attempts,
-            'completion_rate': (completed / 4) * 100  # ✅ FIX: Updated to 4
+            'completion_rate': (completed_count / 4) * 100  # [OK] MVP: Percentage of 4 challenges completed
         }

@@ -21,12 +21,12 @@ def fix_score_normalization():
         high_scores = ChallengeScore.query.filter(ChallengeScore.best_score > 100).all()
         
         print(f"\n{'='*80}")
-        print(f"🔧 FIXING LEADERBOARD SCORE NORMALIZATION")
+        print(f"[FIX] FIXING LEADERBOARD SCORE NORMALIZATION")
         print(f"{'='*80}\n")
         print(f"Found {len(high_scores)} scores above 100% that need normalization\n")
         
         if not high_scores:
-            print("✅ All scores are already properly normalized!")
+            print("[OK] All scores are already properly normalized!")
             return
         
         fixed_count = 0
@@ -65,7 +65,7 @@ def fix_score_normalization():
             if challenge_score.total_score and challenge_score.total_score > 100 * challenge_score.total_attempts:
                 challenge_score.total_score = (challenge_score.total_score / max_score) * 100
             
-            print(f"✅ Fixed {challenge_score.user.username} - {challenge_score.challenge_type}")
+            print(f"[OK] Fixed {challenge_score.user.username} - {challenge_score.challenge_type}")
             print(f"   Best Score: {old_score:.1f} → {challenge_score.best_score:.1f}%")
             print(f"   Latest Score: {old_latest:.1f} → {challenge_score.latest_score:.1f}%")
             print(f"   Average Score: {old_avg:.1f} → {challenge_score.average_score:.1f}%")
@@ -77,11 +77,11 @@ def fix_score_normalization():
         try:
             db.session.commit()
             print(f"{'='*80}")
-            print(f"✅ Successfully normalized {fixed_count} challenge scores!")
+            print(f"[OK] Successfully normalized {fixed_count} challenge scores!")
             print(f"{'='*80}\n")
         except Exception as e:
             db.session.rollback()
-            print(f"❌ Error committing changes: {e}")
+            print(f"[ERROR] Error committing changes: {e}")
             import traceback
             traceback.print_exc()
 

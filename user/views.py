@@ -1,4 +1,4 @@
-from flask import render_template, session, Blueprint, request, redirect, url_for, flash, jsonify
+﻿from flask import render_template, session, Blueprint, request, redirect, url_for, flash, jsonify
 from flask_login import current_user, login_required
 from sqlalchemy import func
 import os
@@ -126,7 +126,7 @@ def dashboard():
     from user.models.challenge_score import ChallengeScore
     from user.models.user_badge import UserBadge
     
-    # ✅ FIX: Get all 4 challenge types (troubleshooting = Link Up!)
+    # [OK] FIX: Get all 4 challenge types (troubleshooting = Link Up!)
     crimping_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='crimping').first()
     osi_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='osi').first()
     troubleshooting_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='troubleshooting').first()
@@ -539,7 +539,7 @@ def crimping_simulation():
 @user_bp.route('/challenges')
 @user_login_required
 def challenges():
-    """Challenges Hub - MVP with Dynamic Badge Progress"""
+    """Challenges Hub - MVP with Accurate Progress Tracking"""
     from user.models.challenge_score import ChallengeScore
     
     user = UserModel.query.get(session['user_id'])
@@ -547,7 +547,7 @@ def challenges():
     # Calculate progress for each challenge type
     challenge_progress = {}
     
-    # Crimping Challenge Progress
+    # [OK] MVP: Crimping Challenge Progress (score-based)
     crimping_score = ChallengeScore.query.filter_by(
         user_id=user.id, 
         challenge_type='crimping'
@@ -558,18 +558,40 @@ def challenges():
         'badge_image': 'Cable_Badge.png'
     }
     
-    # OSI Model Challenge Progress
+    # [OK] MVP: OSI Model Challenge Progress (metadata-based with fallback)
     osi_score = ChallengeScore.query.filter_by(
         user_id=user.id,
         challenge_type='osi'
     ).first()
+    
+    # Calculate OSI progress from metadata if available
+    osi_progress = 0.0
+    if osi_score:
+        metadata = osi_score.challenge_metadata or {}
+        challenge_data = metadata.get('challenge_data', {})
+        
+        # Check if we have submodule completion data (level1 and level2)
+        if challenge_data:
+            completed_submodules = 0
+            total_submodules = 2  # OSI has 2 levels
+            
+            if challenge_data.get('level1_score', 0) > 0:
+                completed_submodules += 1
+            if challenge_data.get('level2_score', 0) > 0:
+                completed_submodules += 1
+            
+            osi_progress = completed_submodules / total_submodules
+        else:
+            # Fallback to score-based progress
+            osi_progress = min((osi_score.best_score or 0) / 100, 1.0)
+    
     challenge_progress['osi'] = {
         'completed': osi_score.is_completed if osi_score else False,
-        'progress': min((osi_score.best_score or 0) / 100, 1.0) if osi_score else 0.0,
+        'progress': osi_progress,
         'badge_image': 'OSI_Badge.png'
     }
     
-    # Troubleshooting Challenge Progress
+    # [OK] MVP: Troubleshooting Challenge Progress (score-based, 100% when solved)
     troubleshoot_score = ChallengeScore.query.filter_by(
         user_id=user.id,
         challenge_type='troubleshooting'
@@ -580,14 +602,30 @@ def challenges():
         'badge_image': 'Troubleshoot_Badge.png'
     }
     
-    # Quiz Challenge Progress
+    # [OK] MVP: Quiz Challenge Progress (metadata-based with fallback)
     quiz_score = ChallengeScore.query.filter_by(
         user_id=user.id,
         challenge_type='quiz'
     ).first()
+    
+    # Calculate Quiz progress from metadata if available
+    quiz_progress = 0.0
+    if quiz_score:
+        metadata = quiz_score.challenge_metadata or {}
+        progress_data = metadata.get('progress', {})
+        
+        # Check if we have question progress data
+        if progress_data and 'currentQuestion' in progress_data and 'totalQuestions' in progress_data:
+            current = progress_data.get('currentQuestion', 0)
+            total = progress_data.get('totalQuestions', 1)
+            quiz_progress = min(current / total, 1.0) if total > 0 else 0.0
+        else:
+            # Fallback to score-based progress
+            quiz_progress = min((quiz_score.best_score or 0) / 100, 1.0)
+    
     challenge_progress['quiz'] = {
         'completed': quiz_score.is_completed if quiz_score else False,
-        'progress': min((quiz_score.best_score or 0) / 100, 1.0) if quiz_score else 0.0,
+        'progress': quiz_progress,
         'badge_image': 'Quiz_Badge.png'
     }
     
@@ -679,7 +717,7 @@ def save_crimping_score():
         
         db.session.commit()
         
-        print(f"[MVP Backend] ✅ Score saved (ID: {new_score.id}, Badges: {len(newly_earned_badges)})")
+        print(f"[MVP Backend] [OK] Score saved (ID: {new_score.id}, Badges: {len(newly_earned_badges)})")
         
         # Send WebSocket notification if available
         try:
@@ -710,7 +748,7 @@ def save_crimping_score():
         
     except Exception as e:
         db.session.rollback()
-        print(f"[MVP Backend] ❌ Error saving crimping score: {e}")
+        print(f"[MVP Backend] [ERROR] Error saving crimping score: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({
@@ -866,6 +904,16 @@ def logout():
             print(f"WebSocket logout notifications sent for user: {username}")
     except Exception as ws_error:
         print(f"WebSocket logout notification failed: {str(ws_error)}")
+    
+    # Terminate the database session
+    session_token = session.get('session_token')
+    if session_token:
+        from user.models.user_session import UserSession
+        db_session = UserSession.get_session_by_token(session_token)
+        if db_session:
+            db_session.terminate()
+            db.session.commit()
+            print(f"[OK] Terminated database session for user {user_id}")
     
     # Use Flask-Login logout
     from flask_login import logout_user
@@ -1075,10 +1123,46 @@ def login():
             
             return render_template('user/index.html', message=f'Error validating OTP: {str(e)}. Please try again.')
     
+    # CHECK FOR EXISTING ACTIVE SESSION - Prevent concurrent logins
+    from utils.session_guard import check_existing_session, terminate_existing_sessions
+    from user.models.user_session import UserSession
+    
+    has_active_session, session_info = check_existing_session(user.id, namespace='user')
+    
+    if has_active_session:
+        print(f"[WARNING] User {user.username} (ID: {user.id}) already has an active session")
+        print(f"   Session info: IP={session_info.get('ip_address')}, Last activity={session_info.get('last_activity')}")
+        
+        # Terminate the existing session
+        terminated_count = terminate_existing_sessions(user.id, namespace='user')
+        print(f"[OK] Terminated {terminated_count} existing session(s) for user {user.username}")
+        
+        # Notify via WebSocket about session termination
+        try:
+            socketio = get_socketio()
+            if socketio:
+                socketio.emit('session_terminated', {
+                    'reason': 'new_login_from_different_device',
+                    'message': 'Your session has been terminated because you logged in from another device.',
+                    'timestamp': datetime.utcnow().isoformat()
+                }, room=f'user_{user.id}')
+        except Exception as ws_error:
+            print(f"WebSocket session termination notification failed: {str(ws_error)}")
+    
+    # Create new session for this login
+    new_session = UserSession.create_session(
+        user_id=user.id,
+        expiry_hours=24,
+        request_obj=request
+    )
+    db.session.commit()
+    
     # Set user in session (FIXED INDENTATION)
     session['user_id'] = user.id
     session['auth_namespace'] = 'user'  # CRITICAL FIX: Set user namespace
-    print(f"Login successful for user: {user.username}, email: {email}, user_id: {user.id}, namespace: {session.get('auth_namespace')}")
+    session['session_token'] = new_session.session_token  # Store session token for validation
+    session.permanent = True  # Make session permanent
+    print(f"Login successful for user: {user.username}, email: {email}, user_id: {user.id}, namespace: {session.get('auth_namespace')}, session_token: {new_session.session_token[:16]}...")
     
     # Use Flask-Login for proper login and authentication
     # Remember=True ensures the user stays logged in for the session
@@ -1485,10 +1569,10 @@ def save_topology_score():
     try:
         score_value = float(data['score'])
         category = data['category']
-        # ✅ FIX: Use challenge_type from request, default to 'linkup' for Link Up challenges
+        # [OK] FIX: Use challenge_type from request, default to 'linkup' for Link Up challenges
         challenge_type = data.get('challenge_type', 'linkup')
         
-        print(f"💾 Saving score: user_id={user_id}, score={score_value}, category={category}, challenge_type={challenge_type}")
+        print(f"[SAVE] Saving score: user_id={user_id}, score={score_value}, category={category}, challenge_type={challenge_type}")
         
         # Save to legacy UserScore table for backward compatibility
         try:
@@ -1499,9 +1583,9 @@ def save_topology_score():
             )
             db.session.add(new_score)
             db.session.flush()  # Get the ID without committing
-            print(f"✅ UserScore saved with ID: {new_score.id}")
+            print(f"[OK] UserScore saved with ID: {new_score.id}")
         except Exception as score_error:
-            print(f"❌ Error saving UserScore: {score_error}")
+            print(f"[ERROR] Error saving UserScore: {score_error}")
             import traceback
             traceback.print_exc()
             # Continue even if legacy save fails
@@ -1515,7 +1599,7 @@ def save_topology_score():
             from user.models.challenge_score import ChallengeScore
             challenge_score = ChallengeScore.save_score(
                 user_id=user_id,
-                challenge_type=challenge_type,  # ✅ FIX: Use dynamic challenge_type
+                challenge_type=challenge_type,  # [OK] FIX: Use dynamic challenge_type
                 score=score_value,
                 metadata={
                     'category': category,
@@ -1523,9 +1607,9 @@ def save_topology_score():
                     'timestamp': datetime.utcnow().isoformat()
                 }
             )
-            print(f"✅ ChallengeScore saved with ID: {challenge_score.id if challenge_score else 'None'}")
+            print(f"[OK] ChallengeScore saved with ID: {challenge_score.id if challenge_score else 'None'}")
         except Exception as cs_error:
-            print(f"❌ Error saving ChallengeScore: {cs_error}")
+            print(f"[ERROR] Error saving ChallengeScore: {cs_error}")
             import traceback
             traceback.print_exc()
         
@@ -1534,22 +1618,22 @@ def save_topology_score():
             from user.services.badge_service import BadgeService
             newly_earned_badges = BadgeService.check_and_award_badges(
                 user_id=user_id,
-                challenge_type=challenge_type,  # ✅ FIX: Use dynamic challenge_type
+                challenge_type=challenge_type,  # [OK] FIX: Use dynamic challenge_type
                 score=score_value,
                 metadata={
                     'category': category,
                     'difficulty': data.get('difficulty', 'unknown')
                 }
             )
-            print(f"✅ Badges checked, earned: {len(newly_earned_badges)}")
+            print(f"[OK] Badges checked, earned: {len(newly_earned_badges)}")
         except Exception as badge_error:
-            print(f"❌ Error checking badges: {badge_error}")
+            print(f"[ERROR] Error checking badges: {badge_error}")
             import traceback
             traceback.print_exc()
         
         db.session.commit()
         
-        print(f"[Link Up MVP] ✅ Score saved (Type: {challenge_type}, Category: {category}, Badges: {len(newly_earned_badges)})")
+        print(f"[Link Up MVP] [OK] Score saved (Type: {challenge_type}, Category: {category}, Badges: {len(newly_earned_badges)})")
         
         return jsonify({
             'status': 'success', 
@@ -1561,7 +1645,7 @@ def save_topology_score():
         
     except Exception as e:
         db.session.rollback()
-        print(f"[Link Up Error] ❌ Failed to save score: {str(e)}")
+        print(f"[Link Up Error] [ERROR] Failed to save score: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': f'Failed to save score: {str(e)}'

@@ -1,4 +1,4 @@
-"""Instructor deadline management views."""
+﻿"""Instructor deadline management views."""
 
 from datetime import datetime, timedelta
 from types import SimpleNamespace

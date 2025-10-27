@@ -1,4 +1,4 @@
-from __init__ import db
+﻿from __init__ import db
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSONB
 from decimal import Decimal

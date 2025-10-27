@@ -1,4 +1,4 @@
-from flask import Blueprint, request, redirect, url_for, flash, session, current_app
+﻿from flask import Blueprint, request, redirect, url_for, flash, session, current_app
 from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import login_user, logout_user, current_user, login_required
@@ -18,15 +18,15 @@ class AuthController:
         """Instructor landing page - shows features and tools for educators"""
         print("=" * 80)
         print("🏠 INSTRUCTOR LANDING: Route accessed at /instructor/")
-        print(f"🔍 Current user authenticated: {current_user.is_authenticated}")
+        print(f"[DEBUG] Current user authenticated: {current_user.is_authenticated}")
         if current_user.is_authenticated:
-            print(f"🔍 Current user: {current_user.username}")
-            print(f"🔍 Current user type: {type(current_user)}")
+            print(f"[DEBUG] Current user: {current_user.username}")
+            print(f"[DEBUG] Current user type: {type(current_user)}")
         print("=" * 80)
         
         # If already authenticated as instructor, redirect to dashboard
         if current_user.is_authenticated and isinstance(current_user, Instructor):
-            print("✅ Already authenticated as Instructor, redirecting to dashboard")
+            print("[OK] Already authenticated as Instructor, redirecting to dashboard")
             return redirect(url_for('dashboard.dashboard_alias'))
         
         # Show instructor landing page
@@ -36,21 +36,21 @@ class AuthController:
     @auth_bp.route('/login', methods=['GET', 'POST'])
     def login():
         print("=" * 80)
-        print("🔍 AUTH LOGIN: Route accessed at /instructor/login")
-        print(f"🔍 Request method: {request.method}")
-        print(f"🔍 Current user authenticated: {current_user.is_authenticated}")
+        print("[DEBUG] AUTH LOGIN: Route accessed at /instructor/login")
+        print(f"[DEBUG] Request method: {request.method}")
+        print(f"[DEBUG] Current user authenticated: {current_user.is_authenticated}")
         if current_user.is_authenticated:
-            print(f"🔍 Current user: {current_user.username}")
-            print(f"🔍 Current user type: {type(current_user)}")
+            print(f"[DEBUG] Current user: {current_user.username}")
+            print(f"[DEBUG] Current user type: {type(current_user)}")
         print("=" * 80)
         
         # If someone is already authenticated, ensure it's an Admin; otherwise logout to prevent redirect loops
         if current_user.is_authenticated:
             if isinstance(current_user, Instructor):
-                print("✅ Already authenticated as Instructor, redirecting to dashboard")
+                print("[OK] Already authenticated as Instructor, redirecting to dashboard")
                 return redirect(url_for('dashboard.dashboard_alias'))
             else:  # Different user namespace -> force logout & show admin login
-                print("⚠️ Authenticated as different user type, logging out")
+                print("[WARNING] Authenticated as different user type, logging out")
                 logout_user()
                 session.pop('auth_namespace', None)
                 flash('You were logged out of the student session. Please log in with admin credentials.', 'info')
@@ -73,8 +73,31 @@ class AuthController:
             admin = Instructor.query.filter_by(email=email).first()
             
             if admin and admin.check_password(password):
+                # CHECK FOR EXISTING ACTIVE SESSION - Prevent concurrent logins
+                from utils.session_guard import check_existing_session, terminate_existing_sessions
+                from instructor.models.instructor_session import InstructorSession
+                
+                has_active_session, session_info = check_existing_session(admin.id, namespace='instructor')
+                
+                if has_active_session:
+                    print(f"[WARNING] Instructor {admin.username} (ID: {admin.id}) already has an active session")
+                    print(f"   Session info: IP={session_info.get('ip_address')}, Last activity={session_info.get('last_activity')}")
+                    
+                    # Terminate the existing session
+                    terminated_count = terminate_existing_sessions(admin.id, namespace='instructor')
+                    print(f"[OK] Terminated {terminated_count} existing session(s) for instructor {admin.username}")
+                
+                # Create new session for this login
+                new_session = InstructorSession.create_session(
+                    instructor_id=admin.id,
+                    expiry_hours=24,
+                    request_obj=request
+                )
+                db.session.flush()  # Flush to get the session token
+                
                 # CRITICAL FIX: Set admin namespace BEFORE login_user
                 session['auth_namespace'] = 'instructor'
+                session['session_token'] = new_session.session_token  # Store session token for validation
                 session.permanent = True  # Make session permanent to persist across requests
                 session.modified = True  # Force Flask to save the session
                 
@@ -86,7 +109,7 @@ class AuthController:
                 db.session.commit()
                 
                 # Debug logging
-                print(f"Login successful: {admin.username}, ID: {admin.id}, namespace: {session.get('auth_namespace')}")
+                print(f"Login successful: {admin.username}, ID: {admin.id}, namespace: {session.get('auth_namespace')}, session_token: {new_session.session_token[:16]}...")
                 
                 flash('Welcome to Admin Dashboard', 'success')
                 
@@ -107,11 +130,11 @@ class AuthController:
     @auth_bp.route('/signup', methods=['GET', 'POST'])
     def signup():
         print(f"🚀 SIGNUP ROUTE HIT! Method: {request.method}")
-        print(f"🔐 current_user.is_authenticated: {current_user.is_authenticated}")
+        print(f"[AUTH] current_user.is_authenticated: {current_user.is_authenticated}")
         
         # Check if admin is already logged in
         if current_user.is_authenticated:
-            print("🔄 User is authenticated, redirecting to dashboard")
+            print("[REFRESH] User is authenticated, redirecting to dashboard")
             return redirect(url_for('dashboard.index'))
             
         if request.method == 'POST':
@@ -127,12 +150,12 @@ class AuthController:
             # Validation
             if not username or not password or not email:
                 flash('Username, email, and password are required', 'error')
-                print("❌ Validation failed: Missing required fields")
+                print("[ERROR] Validation failed: Missing required fields")
                 return render_safe_template('instructor/signup.html')
             
             if password != confirm_password:
                 flash('Passwords do not match', 'error')
-                print("❌ Validation failed: Passwords do not match")
+                print("[ERROR] Validation failed: Passwords do not match")
                 return render_safe_template('instructor/signup.html')
             
             # Validate password strength using the new validator
@@ -140,14 +163,14 @@ class AuthController:
             if not is_valid:
                 # Show the first error message
                 flash(errors[0], 'error')
-                print(f"❌ Password validation failed: {errors[0]}")
+                print(f"[ERROR] Password validation failed: {errors[0]}")
                 return render_safe_template('instructor/signup.html')
             
             # Check if username already exists
             existing_admin = Instructor.query.filter_by(username=username).first()
             if existing_admin:
                 flash('Username already exists. Please choose another one.', 'error')
-                print(f"❌ Username already exists: {username}")
+                print(f"[ERROR] Username already exists: {username}")
                 return render_safe_template('instructor/signup.html')
             
             # Check if email already exists (if provided)
@@ -155,7 +178,7 @@ class AuthController:
                 existing_email = Instructor.query.filter_by(email=email).first()
                 if existing_email:
                     flash('Email address is already registered. Please use a different email.', 'error')
-                    print(f"❌ Email already exists: {email}")
+                    print(f"[ERROR] Email already exists: {email}")
                     return render_safe_template('instructor/signup.html')
             
             # Create new instructor user
@@ -169,23 +192,23 @@ class AuthController:
                 )
                 new_admin.set_password(password)
                 
-                print(f"✅ Admin object created, adding to database...")
+                print(f"[OK] Admin object created, adding to database...")
                 db.session.add(new_admin)
                 db.session.commit()
                 
                 # Verify the admin was created
                 created_admin = Instructor.query.filter_by(username=username).first()
                 if created_admin:
-                    print(f"✅ Admin created successfully: {created_admin.username}, ID: {created_admin.id}")
+                    print(f"[OK] Admin created successfully: {created_admin.username}, ID: {created_admin.id}")
                 else:
-                    print("❌ Admin creation failed - not found in database after commit")
+                    print("[ERROR] Admin creation failed - not found in database after commit")
                 
                 flash('Admin account created successfully! You can now log in.', 'success')
                 return redirect(url_for('auth.login'))
                 
             except Exception as e:
                 db.session.rollback()
-                print(f"❌ Error creating admin account: {str(e)}")
+                print(f"[ERROR] Error creating admin account: {str(e)}")
                 import traceback
                 traceback.print_exc()
                 flash('Error creating admin account. Please try again.', 'error')
@@ -199,9 +222,20 @@ class AuthController:
     @auth_bp.route('/logout')
     @login_required
     def logout():
+        # Terminate the database session
+        session_token = session.get('session_token')
+        if session_token:
+            from instructor.models.instructor_session import InstructorSession
+            db_session = InstructorSession.get_session_by_token(session_token)
+            if db_session:
+                db_session.terminate()
+                db.session.commit()
+                print(f"[OK] Terminated database session for instructor {current_user.id}")
+        
         # CRITICAL FIX: Clear admin-specific session data and namespace
         session.pop('instructor_id', None)
         session.pop('auth_namespace', None)  # Clear the namespace
+        session.pop('session_token', None)  # Clear the session token
         
         logout_user()  # Use Flask-Login's logout_user
         flash('Logged out successfully', 'success')

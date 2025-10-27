@@ -1,4 +1,4 @@
-from socket_manager import socketio, authenticated_only, admin_only, user_connections
+﻿from socket_manager import socketio, authenticated_only, admin_only, user_connections
 from flask_socketio import emit, join_room, leave_room
 from flask import request
 from flask_login import current_user
@@ -28,7 +28,7 @@ def emit_assignment_notification(user_id: int, notification_data: dict):
         socketio.emit('assignment_notification', notification_data, room=f'user_{user_id}')
         print(f"📢 Sent assignment notification to user {user_id}: {notification_data['title']}")
     except Exception as e:
-        print(f"❌ Error sending assignment notification: {str(e)}")
+        print(f"[ERROR] Error sending assignment notification: {str(e)}")
 
 def emit_simulation_update(class_id: int, update_data: dict):
     """Emit simulation update to all users in a class"""
@@ -36,7 +36,7 @@ def emit_simulation_update(class_id: int, update_data: dict):
         socketio.emit('simulation_update', update_data, room=f'class_{class_id}')
         print(f"📢 Sent simulation update to class {class_id}")
     except Exception as e:
-        print(f"❌ Error sending simulation update: {str(e)}")
+        print(f"[ERROR] Error sending simulation update: {str(e)}")
 
 def emit_instructor_simulation_updated(simulation_id: int, update_data: dict):
     """Emit real-time simulation update to users currently viewing the simulation"""
@@ -65,7 +65,7 @@ def emit_instructor_simulation_updated(simulation_id: int, update_data: dict):
         
         print(f"📢 Sent admin simulation update for simulation {simulation_id} to active viewers")
     except Exception as e:
-        print(f"❌ Error sending admin simulation update: {str(e)}")
+        print(f"[ERROR] Error sending admin simulation update: {str(e)}")
 
 def emit_module_content_updated(class_id: int, module_id: int, update_data: dict):
     """Emit real-time module content update to users currently viewing the module"""
@@ -87,7 +87,7 @@ def emit_module_content_updated(class_id: int, module_id: int, update_data: dict
         
         print(f"📢 Sent module content update for module {module_id} in class {class_id}")
     except Exception as e:
-        print(f"❌ Error sending module content update: {str(e)}")
+        print(f"[ERROR] Error sending module content update: {str(e)}")
 
 def emit_grade_notification(user_id: int, grade_data: dict):
     """Emit grade notification to a specific user"""
@@ -95,7 +95,7 @@ def emit_grade_notification(user_id: int, grade_data: dict):
         socketio.emit('grade_notification', grade_data, room=f'user_{user_id}')
         print(f"📢 Sent grade notification to user {user_id}")
     except Exception as e:
-        print(f"❌ Error sending grade notification: {str(e)}")
+        print(f"[ERROR] Error sending grade notification: {str(e)}")
 
 # ===== WEEK 2 ENHANCEMENT: REAL-TIME CONTENT UPDATES =====
 
@@ -133,9 +133,9 @@ def emit_new_simulation_available(simulation_id: int, category: str, class_ids: 
             # Regenerate class template with new simulation
             try:
                 generator.regenerate_class_resources(class_obj.id)
-                print(f"✅ Regenerated template for class {class_obj.name}")
+                print(f"[OK] Regenerated template for class {class_obj.name}")
             except Exception as e:
-                print(f"❌ Failed to regenerate template for class {class_obj.name}: {e}")
+                print(f"[ERROR] Failed to regenerate template for class {class_obj.name}: {e}")
             
             # Notify users in this class
             class_notification = notification_data.copy()
@@ -149,27 +149,27 @@ def emit_new_simulation_available(simulation_id: int, category: str, class_ids: 
         socketio.emit('new_simulation_available', notification_data, room=f'category_{category}')
         
     except Exception as e:
-        print(f"❌ Error sending new simulation notification: {str(e)}")
+        print(f"[ERROR] Error sending new simulation notification: {str(e)}")
 
 def emit_new_learning_path_available(path_id: int, category: str, class_ids: List[int] = None):
     """Notify users when new learning path is available - DEPRECATED"""
     try:
         # Learning Path feature has been removed from RiddleNet
         # This function now returns without doing anything
-        print(f"⚠️ Learning Path feature removed - ignoring emit for path_id: {path_id}")
+        print(f"[WARNING] Learning Path feature removed - ignoring emit for path_id: {path_id}")
         return
         
     except Exception as e:
-        print(f"❌ Error in deprecated learning path notification: {e}")
+        print(f"[ERROR] Error in deprecated learning path notification: {e}")
         return
         
         for class_obj in affected_classes:
             # Regenerate class template with new learning path
             try:
                 generator.regenerate_class_resources(class_obj.id)
-                print(f"✅ Regenerated template for class {class_obj.name}")
+                print(f"[OK] Regenerated template for class {class_obj.name}")
             except Exception as e:
-                print(f"❌ Failed to regenerate template for class {class_obj.name}: {e}")
+                print(f"[ERROR] Failed to regenerate template for class {class_obj.name}: {e}")
             
             # Notify users in this class
             class_notification = notification_data.copy()
@@ -183,7 +183,7 @@ def emit_new_learning_path_available(path_id: int, category: str, class_ids: Lis
         socketio.emit('new_learning_path_available', notification_data, room=f'category_{category}')
         
     except Exception as e:
-        print(f"❌ Error sending new learning path notification: {str(e)}")
+        print(f"[ERROR] Error sending new learning path notification: {str(e)}")
 
 def emit_assignment_created(assignment_id: int, class_id: int, assignment_type: str):
     """Notify users when new assignment is created"""
@@ -205,7 +205,7 @@ def emit_assignment_created(assignment_id: int, class_id: int, assignment_type: 
             'assignment_type': assignment_type,
             'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
             'class_id': class_id,
-            'message': f'📝 New assignment: {assignment.title}',
+            'message': f'[NOTE] New assignment: {assignment.title}',
             'timestamp': datetime.utcnow().isoformat()
         }
         
@@ -214,7 +214,7 @@ def emit_assignment_created(assignment_id: int, class_id: int, assignment_type: 
         print(f"📢 Notified class {class_id} about new assignment {assignment_id}")
         
     except Exception as e:
-        print(f"❌ Error sending assignment creation notification: {str(e)}")
+        print(f"[ERROR] Error sending assignment creation notification: {str(e)}")
 
 # WebSocket Event Handlers for Week 2 Features
 @socketio.on('join_category_room')
@@ -268,7 +268,7 @@ def handle_join_user_room():
         room = f'user_{current_user.id}'
         join_room(room)
         emit('joined_room', {'room': room, 'type': 'user'})
-        print(f"👤 User {current_user.id} joined room {room}")
+        print(f"[USER] User {current_user.id} joined room {room}")
 
 @socketio.on('join_class_room')
 @authenticated_only
@@ -382,10 +382,10 @@ def handle_module_simulation_linked(data):
                 'timestamp': data.get('timestamp', time.time() * 1000)
             }, room=class_room)
             
-        print(f"✅ Broadcasted module-simulation {action} to relevant rooms")
+        print(f"[OK] Broadcasted module-simulation {action} to relevant rooms")
         
     except Exception as e:
-        print(f"❌ Error handling module-simulation link event: {str(e)}")
+        print(f"[ERROR] Error handling module-simulation link event: {str(e)}")
         emit('error', {'message': f'Error processing module link: {str(e)}'}, room=request.sid)
 
 # Assignment-related events
@@ -698,11 +698,11 @@ def handle_debug_admin_status(data=None):
         except Exception as e:
             user_info['admin_table_error'] = str(e)
         
-        print(f"🔍 Debug admin status for {user_info['username']}: {user_info}")
+        print(f"[DEBUG] Debug admin status for {user_info['username']}: {user_info}")
         emit('debug_admin_response', user_info)
         
     except Exception as e:
-        print(f"❌ Error in debug_admin_status: {str(e)}")
+        print(f"[ERROR] Error in debug_admin_status: {str(e)}")
         emit('debug_admin_response', {'error': str(e)})
 
 # Error handling
@@ -716,9 +716,9 @@ def default_error_handler(e):
 # Import the lobby manager
 try:
     from services.troubleshooting_lobbies import lobby_manager
-    print("✅ Troubleshooting lobby manager imported successfully")
+    print("[OK] Troubleshooting lobby manager imported successfully")
 except ImportError as e:
-    print(f"⚠️ Warning: Could not import lobby manager: {e}")
+    print(f"[WARNING] Warning: Could not import lobby manager: {e}")
     lobby_manager = None
 
 # ===== COLLABORATION SERVICE INTEGRATION =====
@@ -726,9 +726,9 @@ except ImportError as e:
 try:
     from services.collaboration_service import get_collaboration_service
     collaboration_service = get_collaboration_service()
-    print("✅ Collaboration service imported successfully")
+    print("[OK] Collaboration service imported successfully")
 except ImportError as e:
-    print(f"⚠️ Warning: Could not import collaboration service: {e}")
+    print(f"[WARNING] Warning: Could not import collaboration service: {e}")
     collaboration_service = None
 
 # Lobby Management Events
@@ -789,7 +789,7 @@ def handle_join_lobby(data):
                 'participant_data': participant_data
             }
             
-            print(f"🔍 Emitting participant_joined event:")
+            print(f"[DEBUG] Emitting participant_joined event:")
             print(f"   Room: {room_name}")
             print(f"   Event data: {join_event_data}")
             print(f"   Participants in lobby: {list(lobby.participants.keys())}")
@@ -815,13 +815,13 @@ def handle_join_lobby(data):
                 'new_participant': current_user.username
             }, room='admin_collaboration_monitoring')
             
-            print(f"✅ User {current_user.username} joined lobby {lobby.id}")
-            print(f"📊 Notified admin monitoring of participant join")
+            print(f"[OK] User {current_user.username} joined lobby {lobby.id}")
+            print(f"[STATS] Notified admin monitoring of participant join")
         else:
             emit('lobby_joined', result)
             
     except Exception as e:
-        print(f"❌ Error joining lobby: {str(e)}")
+        print(f"[ERROR] Error joining lobby: {str(e)}")
         emit('lobby_joined', {
             'success': False,
             'error': str(e)
@@ -864,7 +864,7 @@ def handle_leave_lobby(data=None):
                     'reason': 'all_participants_left',
                     'duration': lobby.get_duration_string()
                 }, room='admin_collaboration_monitoring')
-                print(f"📊 Notified admin monitoring: lobby {lobby.id} ended (empty)")
+                print(f"[STATS] Notified admin monitoring: lobby {lobby.id} ended (empty)")
             else:
                 # Lobby still has participants - update participant list
                 if updated_lobby:
@@ -878,16 +878,16 @@ def handle_leave_lobby(data=None):
                         'action': 'participant_left',
                         'left_participant': current_user.username
                     }, room='admin_collaboration_monitoring')
-                    print(f"📊 Notified admin monitoring of participant leave")
+                    print(f"[STATS] Notified admin monitoring of participant leave")
             
             emit('lobby_left', {'success': True})
             
-            print(f"✅ User {current_user.username} left lobby {lobby.id}")
+            print(f"[OK] User {current_user.username} left lobby {lobby.id}")
         else:
             emit('lobby_left', {'success': True, 'message': 'Not in any lobby'})
         
     except Exception as e:
-        print(f"❌ Error leaving lobby: {str(e)}")
+        print(f"[ERROR] Error leaving lobby: {str(e)}")
         emit('lobby_left', {
             'success': False,
             'error': str(e)
@@ -908,7 +908,7 @@ def handle_get_public_lobbies(data=None):
             'lobbies': lobbies
         })
     except Exception as e:
-        print(f"❌ Error getting public lobbies: {str(e)}")
+        print(f"[ERROR] Error getting public lobbies: {str(e)}")
         emit('public_lobbies', {
             'success': False,
             'error': str(e)
@@ -935,7 +935,7 @@ def handle_get_my_lobby(data=None):
                 'error': 'Not in any lobby'
             })
     except Exception as e:
-        print(f"❌ Error getting user lobby: {str(e)}")
+        print(f"[ERROR] Error getting user lobby: {str(e)}")
         emit('my_lobby', {
             'success': False,
             'error': str(e)
@@ -998,12 +998,12 @@ def handle_join_team_lobby(data):
                     'participants': lobby.participants
                 })
                 
-                print(f"✅ User {current_user.username} joined team lobby {lobby.id}")
+                print(f"[OK] User {current_user.username} joined team lobby {lobby.id}")
         else:
             emit('team_lobby_joined', result)
             
     except Exception as e:
-        print(f"❌ Error joining team lobby: {str(e)}")
+        print(f"[ERROR] Error joining team lobby: {str(e)}")
         emit('team_lobby_joined', {
             'success': False,
             'error': str(e)
@@ -1062,12 +1062,12 @@ def handle_join_lobby_generic(data):
                 'participants': lobby.participants
             })
             
-            print(f"✅ User {current_user.username} joined lobby {lobby.id}")
+            print(f"[OK] User {current_user.username} joined lobby {lobby.id}")
         else:
             emit('lobby_joined', result)
             
     except Exception as e:
-        print(f"❌ Error joining lobby: {str(e)}")
+        print(f"[ERROR] Error joining lobby: {str(e)}")
         emit('lobby_joined', {
             'success': False,
             'error': str(e)
@@ -1100,12 +1100,12 @@ def handle_leave_team_lobby(data=None):
             lobby_manager.leave_lobby(str(current_user.id))
             
             emit('team_lobby_left', {'success': True})
-            print(f"✅ User {current_user.username} left team lobby {lobby.id}")
+            print(f"[OK] User {current_user.username} left team lobby {lobby.id}")
         else:
             emit('team_lobby_left', {'success': True, 'message': 'Not in any lobby'})
         
     except Exception as e:
-        print(f"❌ Error leaving team lobby: {str(e)}")
+        print(f"[ERROR] Error leaving team lobby: {str(e)}")
         emit('team_lobby_left', {
             'success': False,
             'error': str(e)
@@ -1138,12 +1138,12 @@ def handle_leave_lobby_generic(data=None):
             lobby_manager.leave_lobby(str(current_user.id))
             
             emit('lobby_left', {'success': True})
-            print(f"✅ User {current_user.username} left lobby {lobby.id}")
+            print(f"[OK] User {current_user.username} left lobby {lobby.id}")
         else:
             emit('lobby_left', {'success': True, 'message': 'Not in any lobby'})
         
     except Exception as e:
-        print(f"❌ Error leaving lobby: {str(e)}")
+        print(f"[ERROR] Error leaving lobby: {str(e)}")
         emit('lobby_left', {
             'success': False,
             'error': str(e)
@@ -1160,7 +1160,7 @@ def handle_cursor_update(data):
     try:
         lobby = lobby_manager.get_user_lobby(str(current_user.id))
         if not lobby:
-            print(f"⚠️ No lobby found for user {current_user.id}")
+            print(f"[WARNING] No lobby found for user {current_user.id}")
             return
         
         position = {
@@ -1197,7 +1197,7 @@ def handle_cursor_update(data):
         emit('cursor_moved', cursor_data, room=room_name, include_self=False)
         
     except Exception as e:
-        print(f"❌ Error updating cursor: {str(e)}")
+        print(f"[ERROR] Error updating cursor: {str(e)}")
 
 @socketio.on('update_network_topology')
 @authenticated_only
@@ -1237,10 +1237,10 @@ def handle_network_update(data):
             'timestamp': datetime.utcnow().isoformat()
         }, room=room_name, include_self=False)
         
-        print(f"🔄 Network topology updated by {current_user.username} in lobby {lobby.id}")
+        print(f"[REFRESH] Network topology updated by {current_user.username} in lobby {lobby.id}")
         
     except Exception as e:
-        print(f"❌ Error updating network topology: {str(e)}")
+        print(f"[ERROR] Error updating network topology: {str(e)}")
 
 # Device Locking Events
 @socketio.on('lock_device')
@@ -1289,7 +1289,7 @@ def handle_lock_device(data):
             })
     
     except Exception as e:
-        print(f"❌ Error locking device: {str(e)}")
+        print(f"[ERROR] Error locking device: {str(e)}")
 
 @socketio.on('unlock_device')
 @authenticated_only  
@@ -1332,7 +1332,7 @@ def handle_unlock_device(data):
             })
     
     except Exception as e:
-        print(f"❌ Error unlocking device: {str(e)}")
+        print(f"[ERROR] Error unlocking device: {str(e)}")
 
 # Real-time Device Movement
 @socketio.on('move_device')
@@ -1375,7 +1375,7 @@ def handle_move_device(data):
         }, room=room_name, include_self=False)
         
     except Exception as e:
-        print(f"❌ Error moving device: {str(e)}")
+        print(f"[ERROR] Error moving device: {str(e)}")
 
 # CLI Command Execution Events
 @socketio.on('execute_cli_command')
@@ -1437,7 +1437,7 @@ def handle_cli_command(data):
         print(f"🖥️ CLI command executed by {current_user.username}: {command}")
         
     except Exception as e:
-        print(f"❌ Error executing CLI command: {str(e)}")
+        print(f"[ERROR] Error executing CLI command: {str(e)}")
         emit('cli_command_error', {
             'error': str(e)
         })
@@ -1484,7 +1484,7 @@ def handle_add_device(data):
         print(f"➕ Device added by {current_user.username}: {device_data.get('type', 'unknown')}")
         
     except Exception as e:
-        print(f"❌ Error adding device: {str(e)}")
+        print(f"[ERROR] Error adding device: {str(e)}")
 
 @socketio.on('remove_device')
 @authenticated_only
@@ -1535,7 +1535,7 @@ def handle_remove_device(data):
         print(f"➖ Device removed by {current_user.username}: {device_id}")
         
     except Exception as e:
-        print(f"❌ Error removing device: {str(e)}")
+        print(f"[ERROR] Error removing device: {str(e)}")
 
 # Connection Management Events
 @socketio.on('add_connection')
@@ -1588,7 +1588,7 @@ def handle_add_connection(data):
         print(f"🔗 Connection added by {current_user.username}: {device1_id} <-> {device2_id}")
         
     except Exception as e:
-        print(f"❌ Error adding connection: {str(e)}")
+        print(f"[ERROR] Error adding connection: {str(e)}")
 
 @socketio.on('remove_connection')
 @authenticated_only
@@ -1635,10 +1635,10 @@ def handle_remove_connection(data):
             'timestamp': datetime.utcnow().isoformat()
         }, room=room_name, include_self=False)
         
-        print(f"🔗❌ Connection removed by {current_user.username}")
+        print(f"🔗[ERROR] Connection removed by {current_user.username}")
         
     except Exception as e:
-        print(f"❌ Error removing connection: {str(e)}")
+        print(f"[ERROR] Error removing connection: {str(e)}")
 
 # Device Configuration Events
 @socketio.on('update_device_config')
@@ -1688,7 +1688,7 @@ def handle_device_config_update(data):
         print(f"⚙️ Device config updated by {current_user.username}: {device_id}")
         
     except Exception as e:
-        print(f"❌ Error updating device config: {str(e)}")
+        print(f"[ERROR] Error updating device config: {str(e)}")
 
 # Progress Tracking Events
 @socketio.on('update_scenario_progress')
@@ -1732,10 +1732,10 @@ def handle_scenario_progress_update(data):
             'timestamp': datetime.utcnow().isoformat()
         }, room=room_name, include_self=False)
         
-        print(f"📈 Progress updated by {current_user.username}")
+        print(f"[ACTIVITY] Progress updated by {current_user.username}")
         
     except Exception as e:
-        print(f"❌ Error updating progress: {str(e)}")
+        print(f"[ERROR] Error updating progress: {str(e)}")
 
 # Chat Events
 @socketio.on('send_lobby_chat')
@@ -1770,10 +1770,10 @@ def handle_send_lobby_chat(data):
         # Broadcast chat message to all participants in the lobby
         emit('lobby_chat_message', chat_message, room=room_name)
         
-        print(f"💬 Chat message from {current_user.username} in lobby {lobby.id}: {message}")
+        print(f"[MSG] Chat message from {current_user.username} in lobby {lobby.id}: {message}")
         
     except Exception as e:
-        print(f"❌ Error sending chat message: {str(e)}")
+        print(f"[ERROR] Error sending chat message: {str(e)}")
         emit('lobby_chat_error', {'error': str(e)})
 
 @socketio.on('collaboration_chat_message')
@@ -1781,14 +1781,14 @@ def handle_send_lobby_chat(data):
 def handle_collaboration_chat_message(data):
     """Handle chat message in collaboration session"""
     try:
-        print(f"💬 [DEBUG] ============================================")
-        print(f"💬 [DEBUG] Received collaboration chat message")
-        print(f"💬 [DEBUG] current_user.id: {current_user.id} (type: {type(current_user.id)})")
-        print(f"💬 [DEBUG] current_user.username: {current_user.username}")
-        print(f"💬 [DEBUG] Data received: {data}")
-        print(f"💬 [DEBUG] Data user_id: {data.get('user_id')} (type: {type(data.get('user_id'))})")
-        print(f"💬 [DEBUG] Data username: {data.get('username')}")
-        print(f"💬 [DEBUG] ============================================")
+        print(f"[MSG] [DEBUG] ============================================")
+        print(f"[MSG] [DEBUG] Received collaboration chat message")
+        print(f"[MSG] [DEBUG] current_user.id: {current_user.id} (type: {type(current_user.id)})")
+        print(f"[MSG] [DEBUG] current_user.username: {current_user.username}")
+        print(f"[MSG] [DEBUG] Data received: {data}")
+        print(f"[MSG] [DEBUG] Data user_id: {data.get('user_id')} (type: {type(data.get('user_id'))})")
+        print(f"[MSG] [DEBUG] Data username: {data.get('username')}")
+        print(f"[MSG] [DEBUG] ============================================")
         
         message = data.get('message', '').strip()
         session_id = data.get('session_id')
@@ -1813,10 +1813,10 @@ def handle_collaboration_chat_message(data):
             'session_id': session_id
         }
         
-        print(f"💬 [DEBUG] Created chat_message with TRUSTED data:")
-        print(f"💬 [DEBUG]   - user_id: {chat_message['user_id']}")
-        print(f"💬 [DEBUG]   - username: {chat_message['username']}")
-        print(f"💬 [DEBUG]   - message: {chat_message['message']}")
+        print(f"[MSG] [DEBUG] Created chat_message with TRUSTED data:")
+        print(f"[MSG] [DEBUG]   - user_id: {chat_message['user_id']}")
+        print(f"[MSG] [DEBUG]   - username: {chat_message['username']}")
+        print(f"[MSG] [DEBUG]   - message: {chat_message['message']}")
         
         # Use collaboration service if available
         if collaboration_service:
@@ -1827,10 +1827,10 @@ def handle_collaboration_chat_message(data):
                 message_type='text'
             )
             
-            print(f"💬 [DEBUG] Collaboration service result: {result}")
+            print(f"[MSG] [DEBUG] Collaboration service result: {result}")
             
             if result['success']:
-                print(f"💬 [DEBUG] Broadcasting message with user_id={result['message']['user_id']}, username={result['message']['username']}")
+                print(f"[MSG] [DEBUG] Broadcasting message with user_id={result['message']['user_id']}, username={result['message']['username']}")
                 
                 # Broadcast to all session participants
                 emit('collaboration_chat_message', {
@@ -1842,12 +1842,12 @@ def handle_collaboration_chat_message(data):
                 # Also emit as team_chat_message for compatibility
                 emit('team_chat_message', result['message'], room=f'session_{session_id}')
                 
-                print(f"✅ [DEBUG] Chat message sent and broadcasted: {message[:50]}...")
+                print(f"[OK] [DEBUG] Chat message sent and broadcasted: {message[:50]}...")
             else:
-                print(f"❌ [DEBUG] Collaboration service error: {result['error']}")
+                print(f"[ERROR] [DEBUG] Collaboration service error: {result['error']}")
                 emit('collaboration_chat_error', {'error': result['error']})
         else:
-            print(f"💬 [DEBUG] Using fallback (no collaboration service)")
+            print(f"[MSG] [DEBUG] Using fallback (no collaboration service)")
             # Fallback: broadcast directly to session room
             emit('collaboration_chat_message', {
                 'success': True,
@@ -1858,10 +1858,10 @@ def handle_collaboration_chat_message(data):
             # Also emit as team_chat_message for compatibility
             emit('team_chat_message', chat_message, room=f'session_{session_id}')
             
-            print(f"✅ [DEBUG] Chat message broadcasted (fallback): {message[:50]}...")
+            print(f"[OK] [DEBUG] Chat message broadcasted (fallback): {message[:50]}...")
             
     except Exception as e:
-        print(f"❌ [DEBUG] Error handling collaboration chat message: {str(e)}")
+        print(f"[ERROR] [DEBUG] Error handling collaboration chat message: {str(e)}")
         import traceback
         traceback.print_exc()
         emit('collaboration_chat_error', {
@@ -1873,7 +1873,7 @@ def handle_collaboration_chat_message(data):
 def handle_team_chat_message(data):
     """Handle team chat message (compatibility endpoint)"""
     try:
-        print(f"💬 Received team chat message from {current_user.username}: {data}")
+        print(f"[MSG] Received team chat message from {current_user.username}: {data}")
         
         message = data.get('message', '').strip()
         session_id = data.get('session_id') or data.get('lobby_id')
@@ -1905,10 +1905,10 @@ def handle_team_chat_message(data):
             # Broadcast to all connected users as fallback
             emit('team_chat_message', chat_message, broadcast=True)
         
-        print(f"✅ Team chat message broadcasted: {message[:50]}...")
+        print(f"[OK] Team chat message broadcasted: {message[:50]}...")
         
     except Exception as e:
-        print(f"❌ Error handling team chat message: {str(e)}")
+        print(f"[ERROR] Error handling team chat message: {str(e)}")
         emit('team_chat_error', {
             'error': f'Failed to send message: {str(e)}'
         })
@@ -1952,10 +1952,10 @@ def handle_join_collaboration_session(data):
             'session_id': session_id
         }, room=f'session_{session_id}', include_self=False)
         
-        print(f"✅ User {current_user.username} joined collaboration session {session_id}")
+        print(f"[OK] User {current_user.username} joined collaboration session {session_id}")
         
     except Exception as e:
-        print(f"❌ Error joining collaboration session: {str(e)}")
+        print(f"[ERROR] Error joining collaboration session: {str(e)}")
         emit('collaboration_join_error', {
             'error': f'Failed to join session: {str(e)}'
         })
@@ -1984,10 +1984,10 @@ def handle_leave_collaboration_session(data):
             'session_id': session_id
         })
         
-        print(f"✅ User {current_user.username} left collaboration session {session_id}")
+        print(f"[OK] User {current_user.username} left collaboration session {session_id}")
         
     except Exception as e:
-        print(f"❌ Error leaving collaboration session: {str(e)}")
+        print(f"[ERROR] Error leaving collaboration session: {str(e)}")
 
 @socketio.on('send_lobby_chat')
 @authenticated_only
@@ -2032,10 +2032,10 @@ def handle_send_lobby_chat(data):
         # Broadcast to all lobby participants
         emit('lobby_chat_message', chat_message, room=f'lobby_{lobby.id}')
         
-        print(f"✅ Lobby chat message sent: {message[:50]}...")
+        print(f"[OK] Lobby chat message sent: {message[:50]}...")
         
     except Exception as e:
-        print(f"❌ Error handling lobby chat: {str(e)}")
+        print(f"[ERROR] Error handling lobby chat: {str(e)}")
         emit('lobby_chat_error', {
             'error': f'Failed to send message: {str(e)}'
         })
@@ -2045,9 +2045,9 @@ def handle_send_lobby_chat(data):
 try:
     from services.team_chat_service import get_team_chat_service
     team_chat_service = get_team_chat_service()
-    print("✅ Team chat service imported successfully")
+    print("[OK] Team chat service imported successfully")
 except ImportError as e:
-    print(f"⚠️ Warning: Could not import team chat service: {e}")
+    print(f"[WARNING] Warning: Could not import team chat service: {e}")
     team_chat_service = None
 
 # Team Chat Events
@@ -2112,7 +2112,7 @@ def handle_team_chat_send(data):
                     })
                     return
         except Exception as e:
-            print(f"⚠️ Could not check chat settings: {e}")
+            print(f"[WARNING] Could not check chat settings: {e}")
         
         # Save message using team chat service
         result = team_chat_service.save_message(
@@ -2138,7 +2138,7 @@ def handle_team_chat_send(data):
             # Broadcast to room participants
             emit('team_chat_message', message_data, room=room_key)
             
-            print(f"✅ Team chat message sent by {current_user.username} to {room_key}")
+            print(f"[OK] Team chat message sent by {current_user.username} to {room_key}")
         else:
             # Handle service errors
             error_code = 'server_error'
@@ -2153,7 +2153,7 @@ def handle_team_chat_send(data):
             })
             
     except Exception as e:
-        print(f"❌ Error handling team chat send: {str(e)}")
+        print(f"[ERROR] Error handling team chat send: {str(e)}")
         emit('team_chat_error', {
             'code': 'server_error',
             'message': f'Server error: {str(e)}'
@@ -2217,7 +2217,7 @@ def handle_team_chat_history_request(data):
                 'count': result['count']
             })
             
-            print(f"✅ Team chat history sent to {current_user.username}: {result['count']} messages")
+            print(f"[OK] Team chat history sent to {current_user.username}: {result['count']} messages")
         else:
             emit('team_chat_error', {
                 'code': 'server_error',
@@ -2225,7 +2225,7 @@ def handle_team_chat_history_request(data):
             })
             
     except Exception as e:
-        print(f"❌ Error handling team chat history request: {str(e)}")
+        print(f"[ERROR] Error handling team chat history request: {str(e)}")
         emit('team_chat_error', {
             'code': 'server_error',
             'message': f'Server error: {str(e)}'
@@ -2259,7 +2259,7 @@ def handle_user_typing_start(data):
         }, room=room_key, include_self=False)
         
     except Exception as e:
-        print(f"❌ Error handling typing start: {str(e)}")
+        print(f"[ERROR] Error handling typing start: {str(e)}")
 
 @socketio.on('user_typing_stop')
 @authenticated_only
@@ -2288,7 +2288,7 @@ def handle_user_typing_stop(data):
         }, room=room_key, include_self=False)
         
     except Exception as e:
-        print(f"❌ Error handling typing stop: {str(e)}")
+        print(f"[ERROR] Error handling typing stop: {str(e)}")
 
 # Room management for team chat
 @socketio.on('join_team_chat_room')
@@ -2323,10 +2323,10 @@ def handle_join_team_chat_room(data):
             'lobby_id': lobby_id
         })
         
-        print(f"✅ User {current_user.username} joined team chat room: {room_key}")
+        print(f"[OK] User {current_user.username} joined team chat room: {room_key}")
         
     except Exception as e:
-        print(f"❌ Error joining team chat room: {str(e)}")
+        print(f"[ERROR] Error joining team chat room: {str(e)}")
         emit('team_chat_error', {
             'code': 'server_error',
             'message': f'Failed to join room: {str(e)}'
@@ -2357,7 +2357,303 @@ def handle_leave_team_chat_room(data):
             'room': room_key
         })
         
-        print(f"✅ User {current_user.username} left team chat room: {room_key}")
+        print(f"[OK] User {current_user.username} left team chat room: {room_key}")
         
     except Exception as e:
-        print(f"❌ Error leaving team chat room: {str(e)}")
+        print(f"[ERROR] Error leaving team chat room: {str(e)}")
+
+
+# ===== LIVE QUIZ REAL-TIME EVENTS =====
+
+@socketio.on('join_live_quiz')
+@authenticated_only
+def handle_join_live_quiz(data):
+    """Handle student joining a live quiz session"""
+    try:
+        session_id = data.get('session_id')
+        
+        if not session_id:
+            emit('live_quiz_error', {'message': 'No session ID provided'})
+            return
+        
+        from user.models.live_quiz import LiveQuizSession, LiveQuizParticipant
+        
+        # Get session
+        session = LiveQuizSession.query.get(session_id)
+        if not session:
+            emit('live_quiz_error', {'message': 'Quiz session not found'})
+            return
+        
+        # Check if user already joined
+        participant = LiveQuizParticipant.query.filter_by(
+            session_id=session_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not participant:
+            # Create new participant
+            participant = LiveQuizParticipant(
+                session_id=session_id,
+                user_id=current_user.id,
+                display_name=current_user.username
+            )
+            db.session.add(participant)
+            db.session.commit()
+        
+        # Join the quiz room
+        room = f'live_quiz_{session_id}'
+        join_room(room)
+        
+        # Notify all participants
+        emit('participant_joined', {
+            'participant_id': participant.id,
+            'display_name': participant.display_name,
+            'participant_count': len(session.participants)
+        }, room=room)
+        
+        # Send current quiz state to the joining user
+        emit('quiz_state', {
+            'status': session.status,
+            'current_question_index': session.current_question_index,
+            'participant': participant.to_dict()
+        })
+        
+        print(f"[OK] {current_user.username} joined live quiz {session_id}")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Error joining live quiz: {str(e)}")
+        emit('live_quiz_error', {'message': str(e)})
+
+
+@socketio.on('submit_live_answer')
+@authenticated_only
+def handle_submit_live_answer(data):
+    """Handle real-time answer submission"""
+    try:
+        session_id = data.get('session_id')
+        question_id = data.get('question_id')
+        selected_answer = data.get('selected_answer')
+        response_time = data.get('response_time', 0)
+        
+        from user.models.live_quiz import LiveQuizSession, LiveQuizParticipant, LiveQuizResponse
+        from instructor.models.question import Question
+        
+        # Get session and participant
+        session = LiveQuizSession.query.get(session_id)
+        participant = LiveQuizParticipant.query.filter_by(
+            session_id=session_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not session or not participant:
+            emit('live_quiz_error', {'message': 'Invalid session or participant'})
+            return
+        
+        # Check if already answered
+        existing = LiveQuizResponse.query.filter_by(
+            participant_id=participant.id,
+            question_id=question_id
+        ).first()
+        
+        if existing:
+            emit('live_quiz_error', {'message': 'Already answered this question'})
+            return
+        
+        # Get question and check answer
+        question = Question.query.get(question_id)
+        if not question:
+            emit('live_quiz_error', {'message': 'Question not found'})
+            return
+        
+        is_correct = (selected_answer.strip().lower() == question.answer.strip().lower())
+        
+        # Create response
+        response = LiveQuizResponse(
+            participant_id=participant.id,
+            session_id=session_id,
+            question_id=question_id,
+            selected_answer=selected_answer,
+            is_correct=is_correct,
+            response_time=response_time,
+            question_text=question.question,
+            correct_answer=question.answer
+        )
+        
+        # Calculate points (Slido-style scoring)
+        points = response.calculate_points(
+            max_time=session.time_per_question,
+            max_points=1000
+        )
+        response.points_awarded = points
+        
+        db.session.add(response)
+        
+        # Update participant stats
+        participant.total_answered += 1
+        if is_correct:
+            participant.total_correct += 1
+            participant.total_score += points
+        
+        participant.total_time += response_time
+        participant.average_response_time = participant.total_time / participant.total_answered
+        
+        db.session.commit()
+        
+        # Get updated leaderboard
+        from user.routes.live_quiz_routes import get_session_leaderboard
+        leaderboard = get_session_leaderboard(session_id)
+        
+        # Broadcast to all participants in this quiz
+        room = f'live_quiz_{session_id}'
+        
+        # Send answer result to the participant
+        emit('answer_result', {
+            'is_correct': is_correct,
+            'points_awarded': points,
+            'total_score': participant.total_score,
+            'correct_answer': question.answer
+        })
+        
+        # Broadcast leaderboard update to all participants
+        emit('leaderboard_update', {
+            'leaderboard': leaderboard,
+            'answered_count': LiveQuizResponse.query.filter_by(
+                session_id=session_id,
+                question_id=question_id
+            ).count()
+        }, room=room)
+        
+        print(f"[OK] {current_user.username} submitted answer for question {question_id}")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Error submitting live answer: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        emit('live_quiz_error', {'message': str(e)})
+
+
+@socketio.on('instructor_start_quiz')
+@instructor_required
+def handle_instructor_start_quiz(data):
+    """Instructor starts a live quiz"""
+    try:
+        session_id = data.get('session_id')
+        
+        from user.models.live_quiz import LiveQuizSession
+        
+        session = LiveQuizSession.query.get(session_id)
+        if not session:
+            emit('live_quiz_error', {'message': 'Session not found'})
+            return
+        
+        # Update session status
+        session.status = 'active'
+        session.started_at = datetime.utcnow()
+        db.session.commit()
+        
+        # Broadcast to all participants
+        room = f'live_quiz_{session_id}'
+        emit('quiz_started', {
+            'session_id': session_id,
+            'started_at': session.started_at.isoformat()
+        }, room=room)
+        
+        print(f"[OK] Instructor started live quiz {session_id}")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Error starting quiz: {str(e)}")
+        emit('live_quiz_error', {'message': str(e)})
+
+
+@socketio.on('instructor_next_question')
+@instructor_required
+def handle_instructor_next_question(data):
+    """Instructor advances to next question"""
+    try:
+        session_id = data.get('session_id')
+        
+        from user.models.live_quiz import LiveQuizSession
+        
+        session = LiveQuizSession.query.get(session_id)
+        if not session:
+            emit('live_quiz_error', {'message': 'Session not found'})
+            return
+        
+        # Advance to next question
+        session.current_question_index += 1
+        db.session.commit()
+        
+        # Broadcast to all participants
+        room = f'live_quiz_{session_id}'
+        emit('next_question', {
+            'question_index': session.current_question_index,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room)
+        
+        print(f"[OK] Quiz {session_id} advanced to question {session.current_question_index}")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Error advancing question: {str(e)}")
+        emit('live_quiz_error', {'message': str(e)})
+
+
+@socketio.on('instructor_end_quiz')
+@instructor_required
+def handle_instructor_end_quiz(data):
+    """Instructor ends a live quiz"""
+    try:
+        session_id = data.get('session_id')
+        
+        from user.models.live_quiz import LiveQuizSession
+        
+        session = LiveQuizSession.query.get(session_id)
+        if not session:
+            emit('live_quiz_error', {'message': 'Session not found'})
+            return
+        
+        # Update session status
+        session.status = 'completed'
+        session.ended_at = datetime.utcnow()
+        db.session.commit()
+        
+        # Get final leaderboard
+        from user.routes.live_quiz_routes import get_session_leaderboard
+        leaderboard = get_session_leaderboard(session_id)
+        
+        # Broadcast to all participants
+        room = f'live_quiz_{session_id}'
+        emit('quiz_ended', {
+            'session_id': session_id,
+            'ended_at': session.ended_at.isoformat(),
+            'leaderboard': leaderboard
+        }, room=room)
+        
+        print(f"[OK] Instructor ended live quiz {session_id}")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Error ending quiz: {str(e)}")
+        emit('live_quiz_error', {'message': str(e)})
+
+
+@socketio.on('leave_live_quiz')
+@authenticated_only
+def handle_leave_live_quiz(data):
+    """Handle user leaving a live quiz"""
+    try:
+        session_id = data.get('session_id')
+        
+        if not session_id:
+            return
+        
+        room = f'live_quiz_{session_id}'
+        leave_room(room)
+        
+        print(f"[OK] {current_user.username} left live quiz {session_id}")
+        
+    except Exception as e:
+        print(f"[ERROR] Error leaving live quiz: {str(e)}")

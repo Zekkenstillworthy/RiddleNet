@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
+﻿from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from instructor.models.essay_response import EssayResponse
 from instructor.models.user import InstructorUser
 from instructor.models.activity_log import ActivityLog
@@ -522,9 +522,9 @@ def edit(essay_id):
 @login_required
 def get_class_essays(class_id):
     """Get all essays for a specific class with statistics"""
-    print(f"🔍 Essay API called for class_id: {class_id}")
-    print(f"🔍 Current user: {current_user}")
-    print(f"🔍 User role: {getattr(current_user, 'role', 'No role')}")
+    print(f"[DEBUG] Essay API called for class_id: {class_id}")
+    print(f"[DEBUG] Current user: {current_user}")
+    print(f"[DEBUG] User role: {getattr(current_user, 'role', 'No role')}")
     
     try:
         # Import class_students here to avoid circular imports

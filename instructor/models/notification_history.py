@@ -1,4 +1,4 @@
-"""
+﻿"""
 Notification History Model for RiddleNet
 Stores all sent notifications for audit and tracking purposes
 """

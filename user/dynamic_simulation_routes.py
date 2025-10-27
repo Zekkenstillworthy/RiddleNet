@@ -1,4 +1,4 @@
-"""
+﻿"""
 Dynamic Simulation Routes Generator
 Automatically creates routes for instructor-created simulations - Learning Paths feature removed
 """
@@ -7,6 +7,7 @@ from flask import Blueprint, render_template, session, request, jsonify, redirec
 from user.models.user import User as UserModel
 from user.models.score import Score
 from instructor.models.simulation import Simulation, SimulationAttempt
+from instructor.models.simulation_progress import SimulationProgress
 from instructor.models.class_model import Class
 # Learning Path models removed - import stubs to prevent errors
 from instructor.models.learning_path import LearningPath, LearningPathSimulation, UserLearningProgress
@@ -17,6 +18,57 @@ from functools import wraps
 import json
 import re
 from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError
+
+
+def _normalize_json_dict(payload, context_label, simulation_id):
+    """Ensure payload is returned as a dict, logging diagnostics for string payloads."""
+    if payload is None:
+        current_app.logger.debug(
+            "[%s] Simulation %s has no payload; using empty dict",
+            context_label,
+            simulation_id
+        )
+        return {}
+
+    value = payload
+    for attempt in range(3):
+        if isinstance(value, str):
+            trimmed = value.strip()
+            preview = trimmed[:200]
+            current_app.logger.debug(
+                "[%s] String payload detected (len=%s, attempt=%s) preview=%s",
+                context_label,
+                len(trimmed),
+                attempt,
+                preview if preview == trimmed else f"{preview}…"
+            )
+            if not trimmed:
+                return {}
+            try:
+                value = json.loads(trimmed)
+            except (json.JSONDecodeError, ValueError) as decode_err:
+                current_app.logger.error(
+                    "[%s] Failed to parse payload on attempt %s for simulation %s: %s",
+                    context_label,
+                    attempt,
+                    simulation_id,
+                    decode_err
+                )
+                return {}
+            continue
+        break
+
+    if not isinstance(value, dict):
+        current_app.logger.warning(
+            "[%s] Payload type %s unsupported for simulation %s; falling back to empty dict",
+            context_label,
+            type(value),
+            simulation_id
+        )
+        return {}
+
+    return value
 
 # Import login_required from proper location
 def login_required(f):
@@ -971,7 +1023,7 @@ def my_simulations():
 @dynamic_sim_bp.route('/simulation/<int:simulation_id>/tutorial', methods=['GET'])
 def get_simulation_tutorial(simulation_id):
     """Get tutorial content for popup display (no auth required for flexibility)"""
-    print(f"🔍 TUTORIAL ROUTE CALLED! simulation_id={simulation_id}")
+    print(f"[DEBUG] TUTORIAL ROUTE CALLED! simulation_id={simulation_id}")
     try:
         # Try to import Tutorial model - handle gracefully if it doesn't exist
         try:
@@ -1121,14 +1173,14 @@ def run_simulation(simulation_id):
 
         # DEFENSIVE CHECK: Ensure simulation_config is a dict before using .get()
         if not isinstance(simulation_config, dict):
-            print(f"⚠️ WARNING: simulation_config is type {type(simulation_config)}, converting to dict")
+            print(f"[WARNING] WARNING: simulation_config is type {type(simulation_config)}, converting to dict")
             if isinstance(simulation_config, str):
                 try:
                     import json
                     simulation_config = json.loads(simulation_config)
-                    print(f"✅ Successfully parsed simulation_config from string to dict")
+                    print(f"[OK] Successfully parsed simulation_config from string to dict")
                 except Exception as parse_error:
-                    print(f"❌ Failed to parse simulation_config: {parse_error}")
+                    print(f"[ERROR] Failed to parse simulation_config: {parse_error}")
                     simulation_config = {}
             else:
                 simulation_config = {}
@@ -1467,7 +1519,7 @@ def run_simulation(simulation_id):
             json.dumps(clean_simulation_data)
             json.dumps(clean_progress)
         except TypeError as json_err:
-            print(f"⚠️ JSON serialization test failed: {json_err}")
+            print(f"[WARNING] JSON serialization test failed: {json_err}")
             # Deep clean by converting to JSON string and parsing back
             clean_simulation_data = json.loads(json.dumps(clean_simulation_data, default=str))
             clean_progress = json.loads(json.dumps(clean_progress, default=str))
@@ -1773,17 +1825,27 @@ def update_network_state(simulation_id):
     """Update network topology and device states with enhanced validation"""
     try:
         user = get_user_from_session()
-        raw_payload = request.get_json() or {}
+        raw_payload = request.get_json(silent=True)
 
-        # Ensure payload is a dict before proceeding
-        if isinstance(raw_payload, str):
-            try:
-                data = json.loads(raw_payload)
-            except (json.JSONDecodeError, ValueError):
-                data = {}
-        elif isinstance(raw_payload, dict):
+        # Normalize payload into a dictionary to avoid attribute errors later on
+        if isinstance(raw_payload, dict):
             data = raw_payload
+        elif isinstance(raw_payload, str):
+            try:
+                parsed_payload = json.loads(raw_payload)
+                data = parsed_payload if isinstance(parsed_payload, dict) else {}
+            except (json.JSONDecodeError, ValueError):
+                current_app.logger.warning(
+                    "[network-state] Unable to parse JSON payload for simulation %s", simulation_id
+                )
+                data = {}
         else:
+            if raw_payload not in (None, {}):
+                current_app.logger.debug(
+                    "[network-state] Unexpected payload type %s for simulation %s",
+                    type(raw_payload),
+                    simulation_id
+                )
             data = {}
         
         # Get current attempt
@@ -1807,19 +1869,16 @@ def update_network_state(simulation_id):
         
         # Get simulation to check if topology validation is needed
         simulation = Simulation.query.get(simulation_id)
-        simulation_config = simulation.simulation_config if simulation else None
-        
-        # DEFENSIVE CHECK: Parse simulation_config if it's a string
-        if simulation_config is None:
-            simulation_config = {}
-        elif isinstance(simulation_config, str):
-            try:
-                simulation_config = json.loads(simulation_config)
-            except (json.JSONDecodeError, ValueError):
-                print(f"⚠️ WARNING [network-state]: Failed to parse simulation_config for simulation {simulation_id}")
-                simulation_config = {}
-        elif not isinstance(simulation_config, dict):
-            simulation_config = {}
+        simulation_config = _normalize_json_dict(
+            simulation.simulation_config if simulation else None,
+            'NETWORK_STATE simulation_config',
+            simulation_id
+        )
+        current_app.logger.debug(
+            "[NETWORK_STATE] simulation_config keys for %s: %s",
+            simulation_id,
+            list(simulation_config.keys()) if simulation_config else []
+        )
         
         topology_enabled = simulation_config.get('topology_enabled', False)
         selected_topology = simulation_config.get('selected_topology', '')
@@ -1901,7 +1960,12 @@ def update_network_state(simulation_id):
         metadata = data.get('metadata', {})
         if isinstance(metadata, str):
             try:
-                metadata = json.loads(metadata)
+                parsed_metadata = json.loads(metadata)
+                # Ensure parsed result is a dict
+                if isinstance(parsed_metadata, dict):
+                    metadata = parsed_metadata
+                else:
+                    metadata = {'raw': parsed_metadata}
             except (json.JSONDecodeError, ValueError):
                 # Preserve unexpected metadata without breaking downstream .get usage
                 metadata = {'raw': metadata}
@@ -1934,7 +1998,9 @@ def update_network_state(simulation_id):
         })
         
     except Exception as e:
+        import traceback
         print(f"Error updating network state for simulation {simulation_id}: {e}")
+        print(f"Full traceback:\n{traceback.format_exc()}")
         return jsonify({
             'error': 'Failed to update network state',
             'details': str(e) if current_app.debug else 'Internal server error'
@@ -2713,8 +2779,8 @@ def handle_ping_command(args, device_states, topology_data=None):
     # DEBUG: Log available devices and IPs
     import logging
     logger = logging.getLogger(__name__)
-    logger.info(f"🔍 MVP PING DEBUG: Looking for target IP: {target}")
-    logger.info(f"🔍 Device states available: {list(device_states.keys())}")
+    logger.info(f"[DEBUG] MVP PING DEBUG: Looking for target IP: {target}")
+    logger.info(f"[DEBUG] Device states available: {list(device_states.keys())}")
     for dev_id, dev_state in device_states.items():
         interfaces = dev_state.get('interfaces', {})
         for int_name, int_config in interfaces.items():
@@ -2733,15 +2799,15 @@ def handle_ping_command(args, device_states, topology_data=None):
             if ip_addr == target:
                 target_device_id = device_id
                 target_interface = interface_name
-                logger.info(f"✅ Found target device: {device_id}, interface: {interface_name}")
+                logger.info(f"[OK] Found target device: {device_id}, interface: {interface_name}")
                 break
         if target_device_id:
             break
     
     # Step 3: Handle non-existent device
     if not target_device_id:
-        logger.warning(f"❌ Target device NOT FOUND for IP: {target}")
-        logger.info(f"📋 Available IPs in topology: {[int_cfg.get('ip_address') or int_cfg.get('ipAddress') for dev in device_states.values() for int_cfg in dev.get('interfaces', {}).values()]}")
+        logger.warning(f"[ERROR] Target device NOT FOUND for IP: {target}")
+        logger.info(f"[DATA] Available IPs in topology: {[int_cfg.get('ip_address') or int_cfg.get('ipAddress') for dev in device_states.values() for int_cfg in dev.get('interfaces', {}).values()]}")
         
         # Check for well-known external addresses
         if target in ['8.8.8.8', '1.1.1.1', '208.67.222.222']:
@@ -2837,7 +2903,7 @@ def handle_interface_ip_config(device_state, device_id, interface_name, ip_addr,
     device_state['interfaces'][interface_name]['subnet_mask'] = subnet_mask
     device_state['interfaces'][interface_name]['subnetMask'] = subnet_mask
     
-    logger.info(f"✅ Configured {interface_name} on {device_id}: IP={ip_addr}, Mask={subnet_mask}")
+    logger.info(f"[OK] Configured {interface_name} on {device_id}: IP={ip_addr}, Mask={subnet_mask}")
     
     return f"IP address {ip_addr} {subnet_mask} configured on {interface_name}"
 
@@ -2856,7 +2922,7 @@ def handle_interface_no_shutdown(device_state, device_id, interface_name, sessio
     device_state['interfaces'][interface_name]['status'] = 'up'
     device_state['interfaces'][interface_name]['protocol'] = 'up'
     
-    logger.info(f"✅ Interface {interface_name} on {device_id} is now UP")
+    logger.info(f"[OK] Interface {interface_name} on {device_id} is now UP")
     
     return f"{interface_name} is now administratively up"
 
@@ -2875,7 +2941,7 @@ def handle_interface_shutdown(device_state, device_id, interface_name, session_d
     device_state['interfaces'][interface_name]['status'] = 'down'
     device_state['interfaces'][interface_name]['protocol'] = 'down'
     
-    logger.info(f"⚠️ Interface {interface_name} on {device_id} is now DOWN")
+    logger.info(f"[WARNING] Interface {interface_name} on {device_id} is now DOWN")
     
     return f"{interface_name} is now administratively down"
 
@@ -3358,9 +3424,9 @@ def complete_simulation(simulation_id):
                 category='topology'  # Link Up challenges use topology category
             )
             db.session.add(new_score)
-            print(f"✅ Topology score {final_score} saved for user {user.id}")
+            print(f"[OK] Topology score {final_score} saved for user {user.id}")
         except Exception as score_error:
-            print(f"⚠️ Error saving topology score to Score table: {score_error}")
+            print(f"[WARNING] Error saving topology score to Score table: {score_error}")
             # Don't fail the entire request if score save fails
 
         db.session.commit()
@@ -3771,7 +3837,7 @@ def simulate_show_interfaces_diagnostic(device_states):
         for intf_name, intf_config in interfaces.items():
             status = intf_config.get('status', 'down')
             ip_addr = intf_config.get('ip_address', 'unassigned')
-            status_icon = '🟢' if status == 'up' else '🔴'
+            status_icon = '[OK]' if status == 'up' else '[FAIL]'
             
             result += f"  {intf_name}: {status_icon} {status} - IP: {ip_addr}\n"
         
@@ -4891,9 +4957,9 @@ def save_task_progress(simulation_id):
         
         data = request.get_json()
         print(f"\n{'='*80}")
-        print(f"🔍 [BACKEND DEBUG] Received task progress for simulation {simulation_id}")
-        print(f"🔍 [BACKEND DEBUG] User: {user.username} (ID: {user.id})")
-        print(f"🔍 [BACKEND DEBUG] Incoming data:")
+        print(f"[DEBUG] [BACKEND DEBUG] Received task progress for simulation {simulation_id}")
+        print(f"[DEBUG] [BACKEND DEBUG] User: {user.username} (ID: {user.id})")
+        print(f"[DEBUG] [BACKEND DEBUG] Incoming data:")
         print(f"  - devices_placed: {data.get('devices_placed', [])}")
         print(f"  - devices_configured: {data.get('devices_configured', [])}")
         print(f"  - connections_made: {data.get('connections_made', [])}")
@@ -4907,7 +4973,7 @@ def save_task_progress(simulation_id):
         ).first()
         
         if not assignment:
-            print(f"🔍 [BACKEND DEBUG] Creating new assignment")
+            print(f"[DEBUG] [BACKEND DEBUG] Creating new assignment")
             assignment = TaskAssignment(
                 simulation_id=simulation_id,
                 user_id=user.id,
@@ -4915,34 +4981,34 @@ def save_task_progress(simulation_id):
             )
             db.session.add(assignment)
         else:
-            print(f"🔍 [BACKEND DEBUG] Updating existing assignment (ID: {assignment.id})")
+            print(f"[DEBUG] [BACKEND DEBUG] Updating existing assignment (ID: {assignment.id})")
         
         # Update progress fields
         if 'devices_placed' in data:
             assignment.devices_placed = data['devices_placed']
-            print(f"🔍 [BACKEND DEBUG] Set devices_placed: {assignment.devices_placed}")
+            print(f"[DEBUG] [BACKEND DEBUG] Set devices_placed: {assignment.devices_placed}")
         if 'devices_configured' in data:
             assignment.devices_configured = data['devices_configured']
-            print(f"🔍 [BACKEND DEBUG] Set devices_configured: {assignment.devices_configured}")
+            print(f"[DEBUG] [BACKEND DEBUG] Set devices_configured: {assignment.devices_configured}")
         if 'connections_made' in data:
             assignment.connections_made = data['connections_made']
-            print(f"🔍 [BACKEND DEBUG] Set connections_made: {assignment.connections_made}")
+            print(f"[DEBUG] [BACKEND DEBUG] Set connections_made: {assignment.connections_made}")
         if 'cli_history' in data:
             assignment.cli_history = data['cli_history']
-            print(f"🔍 [BACKEND DEBUG] Set cli_history: {len(assignment.cli_history)} commands")
+            print(f"[DEBUG] [BACKEND DEBUG] Set cli_history: {len(assignment.cli_history)} commands")
         if 'activity_log' in data:
             assignment.activity_log = data['activity_log']
-            print(f"🔍 [BACKEND DEBUG] Set activity_log: {len(assignment.activity_log)} entries")
+            print(f"[DEBUG] [BACKEND DEBUG] Set activity_log: {len(assignment.activity_log)} entries")
         
         assignment.last_activity = datetime.utcnow()
         
         db.session.commit()
-        print(f"🔍 [BACKEND DEBUG] Database commit successful")
+        print(f"[DEBUG] [BACKEND DEBUG] Database commit successful")
         
         # Get validation results
         validation = assignment.validate_progress()
         completion = assignment.completion_percentage
-        print(f"🔍 [BACKEND DEBUG] Validation results:")
+        print(f"[DEBUG] [BACKEND DEBUG] Validation results:")
         print(f"  - Completion: {completion}%")
         print(f"  - Validation data: {validation}")
         
@@ -4958,7 +5024,7 @@ def save_task_progress(simulation_id):
             'connections_made': len(assignment.connections_made or []),
             'cli_commands': len(assignment.cli_history or [])
         }, room=f'instructor_simulation_{simulation_id}')
-        print(f"🔍 [BACKEND DEBUG] Socket event emitted")
+        print(f"[DEBUG] [BACKEND DEBUG] Socket event emitted")
         print(f"{'='*80}\n")
         
         return jsonify({
@@ -4970,7 +5036,7 @@ def save_task_progress(simulation_id):
         
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Error saving task progress: {e}")
+        print(f"[ERROR] Error saving task progress: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -5136,7 +5202,7 @@ def get_user_task_assignment(simulation_id):
             })
         
     except Exception as e:
-        print(f"❌ Error getting task assignment: {e}")
+        print(f"[ERROR] Error getting task assignment: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -5148,7 +5214,7 @@ def get_simulation_task_config(simulation_id):
         simulation = Simulation.query.get_or_404(simulation_id)
         task_config = simulation.task_config or {}
         
-        # 🔧 FIX: Handle case where task_config might be stored as JSON string
+        # [FIX] FIX: Handle case where task_config might be stored as JSON string
         if isinstance(task_config, str):
             import json
             try:
@@ -5156,7 +5222,7 @@ def get_simulation_task_config(simulation_id):
             except:
                 task_config = {}
         
-        print(f"📋 [STUDENT TASK-CONFIG] Simulation {simulation_id}: enabled={task_config.get('enabled')}, devices={len(task_config.get('device_requirements', []))}, connections={len(task_config.get('connection_requirements', []))}")
+        print(f"[DATA] [STUDENT TASK-CONFIG] Simulation {simulation_id}: enabled={task_config.get('enabled')}, devices={len(task_config.get('device_requirements', []))}, connections={len(task_config.get('connection_requirements', []))}")
         
         # Only return if task mode is enabled
         if not task_config.get('enabled'):
@@ -5185,6 +5251,277 @@ def get_simulation_task_config(simulation_id):
     except Exception as e:
         current_app.logger.error(f"Error getting task config: {str(e)}")
         return jsonify({'error': f'Failed to get task config: {str(e)}'}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/export', methods=['GET'])
+@user_login_required
+def export_simulation(simulation_id):
+    """Export the full simulation payload for download."""
+    try:
+        user = get_user_from_session()
+        if not user:
+            current_app.logger.error(f"[EXPORT] No user in session for simulation {simulation_id}")
+            return jsonify({'error': 'Authentication required'}), 401
+
+        simulation = Simulation.query.get_or_404(simulation_id)
+        current_app.logger.info(f"[EXPORT] User {user.username} (ID: {user.id}) exporting simulation {simulation_id}: {simulation.title}")
+
+        controller = DynamicSimulationController()
+        if not controller.can_access_simulation(user.id, simulation_id):
+            current_app.logger.warning(f"[EXPORT] User {user.id} denied access to simulation {simulation_id}")
+            return jsonify({'error': 'Access denied'}), 403
+
+        raw_simulation_data = _normalize_json_dict(
+            getattr(simulation, 'simulation_config', None),
+            'EXPORT simulation_config',
+            simulation_id
+        )
+        current_app.logger.debug(
+            "[EXPORT] simulation_config keys for %s: %s",
+            simulation_id,
+            list(raw_simulation_data.keys()) if raw_simulation_data else []
+        )
+
+        # Determine canonical topology/configuration blocks
+        topology_payload = {}
+        for key in ('network_topology', 'topology', 'topology_config'):
+            candidate = raw_simulation_data.get(key)
+            if isinstance(candidate, str):
+                try:
+                    candidate = json.loads(candidate)
+                except Exception:
+                    candidate = {}
+            if isinstance(candidate, dict) and candidate:
+                topology_payload = candidate
+                break
+        configuration_payload = raw_simulation_data.get('configuration') or {}
+        if isinstance(configuration_payload, str):
+            try:
+                configuration_payload = json.loads(configuration_payload)
+            except Exception:
+                configuration_payload = {}
+        elif not isinstance(configuration_payload, dict):
+            configuration_payload = {}
+
+        # Gather per-user state from progress table when available
+        progress_payload = {}
+        try:
+            progress_record = SimulationProgress.query.filter_by(
+                simulation_id=simulation_id,
+                user_id=user.id
+            ).first()
+            if progress_record and progress_record.progress_data:
+                progress_payload = progress_record.progress_data
+                if isinstance(progress_payload, str):
+                    try:
+                        progress_payload = json.loads(progress_payload)
+                    except Exception:
+                        progress_payload = {}
+                elif not isinstance(progress_payload, dict):
+                    progress_payload = {}
+        except SQLAlchemyError as db_err:
+            current_app.logger.warning(
+                "[export] Progress lookup failed for simulation %s user %s: %s",
+                simulation_id,
+                user.id,
+                db_err
+            )
+            progress_payload = {}
+
+        # Include the most recent attempt session data as a fallback snapshot
+        attempt_snapshot = {}
+        try:
+            latest_attempt = SimulationAttempt.query.filter_by(
+                simulation_id=simulation_id,
+                user_id=user.id
+            ).order_by(SimulationAttempt.started_at.desc()).first()
+            if latest_attempt:
+                attempt_snapshot['attempt_id'] = latest_attempt.id
+                attempt_snapshot['started_at'] = latest_attempt.started_at.isoformat() if latest_attempt.started_at else None
+                attempt_snapshot['completed_at'] = latest_attempt.completed_at.isoformat() if latest_attempt.completed_at else None
+                attempt_snapshot['is_completed'] = latest_attempt.is_completed
+                attempt_snapshot['total_score'] = latest_attempt.total_score or 0
+
+                session_data = latest_attempt.session_data or {}
+                if isinstance(session_data, str):
+                    try:
+                        session_data = json.loads(session_data)
+                    except Exception:
+                        session_data = {}
+                elif not isinstance(session_data, dict):
+                    session_data = {}
+
+                attempt_snapshot['session_data'] = session_data
+                attempt_snapshot['step_responses'] = latest_attempt.step_responses or {}
+        except SQLAlchemyError as db_err:
+            current_app.logger.warning(
+                "[export] Attempt lookup failed for simulation %s user %s: %s",
+                simulation_id,
+                user.id,
+                db_err
+            )
+
+        export_timestamp = datetime.utcnow().isoformat()
+
+        def _ensure_list(value, context_label):
+            if isinstance(value, list):
+                return value
+            if isinstance(value, str):
+                try:
+                    parsed_value = json.loads(value)
+                    if isinstance(parsed_value, list):
+                        return parsed_value
+                except Exception:
+                    current_app.logger.debug(
+                        "[EXPORT] Failed to coerce %s payload to list for simulation %s",
+                        context_label,
+                        simulation_id
+                    )
+            return []
+
+        task_config = _normalize_json_dict(
+            getattr(simulation, 'task_config', None),
+            'EXPORT task_config',
+            simulation_id
+        )
+
+        validation_rules = _normalize_json_dict(
+            getattr(simulation, 'validation_rules', None),
+            'EXPORT validation_rules',
+            simulation_id
+        )
+
+        initial_state = _normalize_json_dict(
+            getattr(simulation, 'initial_state', None),
+            'EXPORT initial_state',
+            simulation_id
+        )
+
+        expected_outcomes = _normalize_json_dict(
+            getattr(simulation, 'expected_outcomes', None),
+            'EXPORT expected_outcomes',
+            simulation_id
+        )
+
+        hints = _ensure_list(
+            getattr(simulation, 'hints_and_tips', []),
+            'EXPORT hints'
+        )
+
+        learning_objectives = _ensure_list(
+            getattr(simulation, 'learning_objectives', []),
+            'EXPORT learning_objectives'
+        )
+
+        prerequisite_knowledge = _ensure_list(
+            getattr(simulation, 'prerequisite_knowledge', []),
+            'EXPORT prerequisite_knowledge'
+        )
+
+        tags = _ensure_list(
+            getattr(simulation, 'tags', []),
+            'EXPORT tags'
+        )
+
+        step_definitions = _ensure_list(
+            getattr(simulation, 'step_definitions', []),
+            'EXPORT step_definitions'
+        )
+
+        task_mode = (
+            raw_simulation_data.get('task_mode')
+            or task_config.get('task_mode')
+            or getattr(simulation, 'task_mode', None)
+            or 'combined'
+        )
+
+        simulation_block = {
+            'id': simulation.id,
+            'title': simulation.title,
+            'description': simulation.description,
+            'simulation_type': simulation.simulation_type,
+            'category': simulation.category,
+            'difficulty': simulation.difficulty,
+            'learning_objectives': learning_objectives,
+            'prerequisite_knowledge': prerequisite_knowledge,
+            'estimated_duration': simulation.estimated_duration,
+            'base_score': simulation.base_score,
+            'time_bonus': simulation.time_bonus,
+            'perfect_completion_bonus': simulation.perfect_completion_bonus,
+            'tags': tags,
+            'version': simulation.version,
+            'step_definitions': step_definitions,
+            'validation_rules': validation_rules,
+            'simulation_config': raw_simulation_data,
+            'initial_state': initial_state,
+            'expected_outcomes': expected_outcomes,
+            'hints': hints,
+            'task_mode': task_mode,
+            'task_config': task_config,
+            'topology': topology_payload,
+            'configuration': configuration_payload,
+            'created_at': simulation.created_at.isoformat() if simulation.created_at else None,
+            'updated_at': simulation.updated_at.isoformat() if simulation.updated_at else None
+        }
+
+        export_payload = {
+            'format': 'rnetfile',
+            'version': '1.0',
+            'exported_at': export_timestamp,
+            'exported_by': user.username,
+            'export_metadata': {
+                'exporter_id': user.id,
+                'exporter_username': user.username,
+                'export_timestamp': export_timestamp,
+                'export_origin': 'student_portal',
+                'export_context': 'dynamic_simulation_export'
+            },
+            'verification': {
+                'qr_code_included': False,
+                'qr_code_base64': None,
+                'confirmation_url': None,
+                'verification_token': None,
+                'instructions': 'Student-generated export does not include QR verification.',
+                'qr_metadata': {
+                    'verification_available': False
+                }
+            },
+            'simulation': simulation_block,
+            'student_state': {
+                'progress': progress_payload,
+                'attempt': attempt_snapshot
+            },
+            'topology': topology_payload,
+            'configuration': configuration_payload,
+            'simulation_config': raw_simulation_data,
+            'progress': progress_payload,
+            'attempt': attempt_snapshot,
+            'metadata': {
+                'exported_at': export_timestamp,
+                'exported_by': user.username,
+                'version': '2.1'
+            }
+        }
+
+        try:
+            json.dumps(export_payload)
+        except TypeError:
+            export_payload = json.loads(json.dumps(export_payload, default=str))
+
+        return jsonify({
+            'success': True,
+            'data': export_payload,
+            'message': 'Simulation data exported successfully'
+        })
+
+    except Exception as exc:
+        import traceback
+        error_trace = traceback.format_exc()
+        current_app.logger.exception(f"[EXPORT ERROR] Failed to export simulation {simulation_id}")
+        current_app.logger.error(f"[EXPORT ERROR] Full traceback:\n{error_trace}")
+        return jsonify({
+            'error': 'Failed to export simulation',
+            'details': str(exc) if current_app.debug else None
+        }), 500
 
 # ===== END AUTOMATIC TASK VERIFICATION ROUTES =====
 

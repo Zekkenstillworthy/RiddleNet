@@ -1,4 +1,4 @@
-
+﻿
 from functools import wraps
 from flask import jsonify, request, session
 from flask_login import current_user

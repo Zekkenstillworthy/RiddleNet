@@ -1,4 +1,4 @@
-"""
+﻿"""
 Modern Simulation Controller with Enhanced Validation
 Handles enhanced validation across all simulation editors
 """

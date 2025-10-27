@@ -120,9 +120,9 @@ class NotificationService:
                 )
                 
                 if user_notification:
-                    print(f"✅ Created UserNotification for {user.username}")
+                    print(f"[OK] Created UserNotification for {user.username}")
                 else:
-                    print(f"❌ Failed to create UserNotification for {user.username}")
+                    print(f"[ERROR] Failed to create UserNotification for {user.username}")
                 
                 # Send via WebSocket if requested
                 if channel in [NotificationChannel.WEBSOCKET, NotificationChannel.BOTH]:
@@ -137,7 +137,7 @@ class NotificationService:
             except Exception as e:
                 results['failed'] += 1
                 results['errors'].append(f"Failed to send to {user.username}: {str(e)}")
-                print(f"❌ Error processing notification for {user.username}: {e}")
+                print(f"[ERROR] Error processing notification for {user.username}: {e}")
         
         # Record in database for audit trail
         delivery_time = time.time() - start_time
@@ -153,17 +153,17 @@ class NotificationService:
     def _send_websocket_notification(self, user: Any, notification_data: Dict, user_notification: Optional[Any] = None) -> bool:
         """Send WebSocket notification to user"""
         if not self.socketio:
-            print(f"⚠️ SocketIO not available for WebSocket notification to {user.username}")
+            print(f"[WARNING] SocketIO not available for WebSocket notification to {user.username}")
             return False
             
         try:
             # Determine user room
             room = f"user_{user.id}"
             
-            print(f"🔍 DEBUG: Preparing WebSocket notification for user {user.id} ({user.username})")
-            print(f"🔍 DEBUG: Room: {room}")
-            print(f"🔍 DEBUG: Notification data: {notification_data}")
-            print(f"🔍 DEBUG: SocketIO available: {self.socketio is not None}")
+            print(f"[DEBUG] DEBUG: Preparing WebSocket notification for user {user.id} ({user.username})")
+            print(f"[DEBUG] DEBUG: Room: {room}")
+            print(f"[DEBUG] DEBUG: Notification data: {notification_data}")
+            print(f"[DEBUG] DEBUG: SocketIO available: {self.socketio is not None}")
             
             # Send to user's personal room
             self.socketio.emit('notification', notification_data, room=room)
@@ -171,7 +171,7 @@ class NotificationService:
             
             # For ALL admin notifications, also emit as announcement for better visibility
             notification_type = notification_data.get('type', '')
-            print(f"🔍 DEBUG: Notification type: {notification_type}")
+            print(f"[DEBUG] DEBUG: Notification type: {notification_type}")
             
             # Expanded list to include all relevant notification types
             announcement_types = [
@@ -195,22 +195,22 @@ class NotificationService:
                     'source': 'admin_notification'
                 }
                 
-                print(f"🔍 DEBUG: Sending announcement data: {announcement_data}")
+                print(f"[DEBUG] DEBUG: Sending announcement data: {announcement_data}")
                 
                 # Emit to specific user for dashboard announcements
                 self.socketio.emit('new_announcement', announcement_data, room=room)
-                print(f"✅ Announcement sent to user {user.id} ({user.username}): {announcement_data['title']} (ID: {announcement_data['id']})")
+                print(f"[OK] Announcement sent to user {user.id} ({user.username}): {announcement_data['title']} (ID: {announcement_data['id']})")
                 
                 # ALSO emit to all_users room for broader reach
                 self.socketio.emit('new_announcement', announcement_data, room='all_users')
-                print(f"✅ Announcement also sent to all_users room")
+                print(f"[OK] Announcement also sent to all_users room")
                 
                 # ALSO emit to announcements room for general announcement handling
                 self.socketio.emit('new_announcement', announcement_data, room='announcements')
-                print(f"✅ Announcement also sent to announcements room")
+                print(f"[OK] Announcement also sent to announcements room")
                 
             else:
-                print(f"🔍 DEBUG: Notification type '{notification_type}' not in announcement types, only sending as notification")
+                print(f"[DEBUG] DEBUG: Notification type '{notification_type}' not in announcement types, only sending as notification")
             
             # Also send to admin room if it's a high priority notification
             if notification_data.get('priority') in ['high', 'urgent']:
@@ -226,9 +226,9 @@ class NotificationService:
             return True
             
         except Exception as e:
-            print(f"❌ WebSocket notification failed for user {user.username}: {e}")
+            print(f"[ERROR] WebSocket notification failed for user {user.username}: {e}")
             import traceback
-            print(f"❌ Traceback: {traceback.format_exc()}")
+            print(f"[ERROR] Traceback: {traceback.format_exc()}")
             return False
     
     def _send_email_notification(self, user: Any, notification_type: NotificationType, notification_data: Dict) -> bool:
@@ -589,7 +589,7 @@ class NotificationService:
             )
             
         except Exception as e:
-            print(f"❌ Error in send_user_notification for user {user_id}: {e}")
+            print(f"[ERROR] Error in send_user_notification for user {user_id}: {e}")
             return {'error': str(e), 'success': False}
     
     def send_system_announcement(self, 
@@ -616,10 +616,10 @@ class NotificationService:
                 }
                 user_data_list.append(user_data)
                 
-            print(f"👥 Processing system announcement for {len(user_data_list)} users")
+            print(f"[USERS] Processing system announcement for {len(user_data_list)} users")
             
         except Exception as e:
-            print(f"❌ Error querying users: {e}")
+            print(f"[ERROR] Error querying users: {e}")
             return {'error': f'Failed to query users: {str(e)}', 'success': False}
         
         results = {
@@ -649,23 +649,23 @@ class NotificationService:
                 if user_notification:
                     user_notification_map[user_data['id']] = user_notification
                     user_notifications_created += 1
-                    print(f"✅ Created UserNotification for {user_data['username']} (ID: {user_notification.id})")
+                    print(f"[OK] Created UserNotification for {user_data['username']} (ID: {user_notification.id})")
                 else:
-                    print(f"❌ Failed to create UserNotification for {user_data['username']}")
+                    print(f"[ERROR] Failed to create UserNotification for {user_data['username']}")
                     results['failed'] += 1
             except Exception as e:
-                print(f"❌ Failed to create UserNotification for {user_data['username']}: {e}")
+                print(f"[ERROR] Failed to create UserNotification for {user_data['username']}: {e}")
                 results['errors'].append(f"UserNotification for {user_data['username']} failed: {e}")
                 results['failed'] += 1
 
-        print(f"✅ Created {user_notifications_created} individual user notifications")
+        print(f"[OK] Created {user_notifications_created} individual user notifications")
         results['user_notifications_created'] = user_notifications_created
 
         # Step 2: Emit announcements with IDs to each user's room
         if self.socketio:
             try:
                 sender_name = sender_info.get('sender_username', 'Admin') if sender_info else 'System'
-                print(f"✅ Sending system announcement via WebSocket to all users: {title}")
+                print(f"[OK] Sending system announcement via WebSocket to all users: {title}")
                 websocket_count = 0
                 
                 for user_data in user_data_list:
@@ -688,14 +688,14 @@ class NotificationService:
                         websocket_count += 1
                         
                     except Exception as e:
-                        print(f"❌ Failed to send WebSocket to {user_data['username']}: {e}")
+                        print(f"[ERROR] Failed to send WebSocket to {user_data['username']}: {e}")
                         results['errors'].append(f"WebSocket to {user_data['username']} failed: {e}")
                         
                 results['websocket_sent'] = websocket_count
-                print(f"✅ Sent {websocket_count} WebSocket announcements")
+                print(f"[OK] Sent {websocket_count} WebSocket announcements")
                 
             except Exception as e:
-                print(f"❌ Failed to send announcements: {e}")
+                print(f"[ERROR] Failed to send announcements: {e}")
                 results['errors'].append(f"WebSocket announcement failed: {e}")
 
         # Step 3: Send emails to all users (if email channel is enabled)
@@ -727,12 +727,12 @@ class NotificationService:
                             email_count += 1
                             
                     except Exception as e:
-                        print(f"❌ Failed to send email to {user_data['username']}: {e}")
+                        print(f"[ERROR] Failed to send email to {user_data['username']}: {e}")
                         results['errors'].append(f"Email to {user_data['username']} failed: {e}")
                         results['failed'] += 1
                         
             results['email_sent'] = email_count
-            print(f"✅ Sent {email_count} emails")
+            print(f"[OK] Sent {email_count} emails")
 
         # Record single notification history entry for "all users" for admin audit trail
         delivery_time = time.time() - start_time
@@ -765,7 +765,7 @@ class NotificationService:
                 )
                 
             except Exception as e:
-                print(f"❌ Error recording notification history: {e}")
+                print(f"[ERROR] Error recording notification history: {e}")
         
         return results
     

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Authentication decorators for RiddleNet
 Provides secure access control for admin functions
 """
@@ -18,13 +18,13 @@ def instructor_required(f):
         print("=" * 80)
         print(f"🚨 ADMIN_REQUIRED DECORATOR CALLED FOR: {request.path}")
         print("=" * 80)
-        print(f"🔍 Admin decorator: current_user={current_user}")
-        print(f"🔍 Admin decorator: is_authenticated={current_user.is_authenticated}")
-        print(f"🔍 Admin decorator: user type={type(current_user)}")
-        print(f"🔍 Admin decorator: request path={request.path}")
+        print(f"[DEBUG] Admin decorator: current_user={current_user}")
+        print(f"[DEBUG] Admin decorator: is_authenticated={current_user.is_authenticated}")
+        print(f"[DEBUG] Admin decorator: user type={type(current_user)}")
+        print(f"[DEBUG] Admin decorator: request path={request.path}")
         
         if not current_user.is_authenticated:
-            print("❌ Admin decorator: User not authenticated, redirecting to login")
+            print("[ERROR] Admin decorator: User not authenticated, redirecting to login")
             if request.is_json:
                 return jsonify({'error': 'Authentication required'}), 401
             # For instructor routes, redirect to admin login instead of user login
@@ -40,7 +40,7 @@ def instructor_required(f):
             from instructor.models.user import Instructor
             if isinstance(current_user, Instructor):
                 is_instructor = True
-                print(f"✅ Admin decorator: Instructor model instance detected for {current_user.username}")
+                print(f"[OK] Admin decorator: Instructor model instance detected for {current_user.username}")
                 current_app.logger.debug(f"Admin validation successful: {current_user.username} (Instructor model instance)")
         except ImportError:
             pass
@@ -48,13 +48,13 @@ def instructor_required(f):
         # Method 2: Check is_instructor attribute
         if not is_instructor and hasattr(current_user, 'is_instructor') and current_user.is_instructor:
             is_instructor = True
-            print(f"✅ Admin decorator: is_instructor=True for {current_user.username}")
+            print(f"[OK] Admin decorator: is_instructor=True for {current_user.username}")
             current_app.logger.debug(f"Admin validation successful: {current_user.username} (is_instructor=True)")
         
         # Method 3: Check role attribute
         if not is_instructor and hasattr(current_user, 'role') and current_user.role in ['admin', 'super_admin']:
             is_instructor = True
-            print(f"✅ Admin decorator: role={current_user.role} for {current_user.username}")
+            print(f"[OK] Admin decorator: role={current_user.role} for {current_user.username}")
             current_app.logger.debug(f"Admin validation successful: {current_user.username} (role={current_user.role})")
         
         # Method 4: Check if user ID is in admin table (FALLBACK)
@@ -64,14 +64,14 @@ def instructor_required(f):
                 admin_user = Instructor.query.filter_by(username=current_user.username).first()
                 if admin_user:
                     is_instructor = True
-                    print(f"✅ Admin decorator: Found in admin table for {current_user.username}")
+                    print(f"[OK] Admin decorator: Found in admin table for {current_user.username}")
                     current_app.logger.debug(f"Admin validation successful: {current_user.username} (found in admin table)")
             except Exception as e:
-                print(f"❌ Admin decorator: Admin table lookup failed: {e}")
+                print(f"[ERROR] Admin decorator: Admin table lookup failed: {e}")
                 current_app.logger.warning(f"Admin table lookup failed: {e}")
         
         if not is_instructor:
-            print(f"❌ Admin decorator: Admin validation failed for user: {getattr(current_user, 'username', 'unknown')}")
+            print(f"[ERROR] Admin decorator: Admin validation failed for user: {getattr(current_user, 'username', 'unknown')}")
             current_app.logger.warning(f"Admin validation failed for user: {getattr(current_user, 'username', 'unknown')}")
             if request.is_json:
                 return jsonify({'error': 'Admin access required'}), 403
@@ -80,7 +80,7 @@ def instructor_required(f):
             session['admin_login_redirect'] = request.url
             return redirect(url_for('auth.login'))
         
-        print(f"✅ Admin decorator: Access granted for {current_user.username}")
+        print(f"[OK] Admin decorator: Access granted for {current_user.username}")
         return f(*args, **kwargs)
     return decorated_function
 

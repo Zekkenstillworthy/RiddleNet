@@ -1,4 +1,4 @@
-"""Simulation progress tracking model."""
+﻿"""Simulation progress tracking model."""
 
 from datetime import datetime
 

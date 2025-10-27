@@ -1,4 +1,4 @@
-"""
+﻿"""
 Helper functions for admin templates rendering
 """
 import os

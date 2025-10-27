@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+﻿from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from werkzeug.security import generate_password_hash
 from sqlalchemy import func
 from datetime import datetime
@@ -149,12 +149,12 @@ class UserController:
         
         # Debug session information
         logging.info(f"🗑️ DELETE REQUEST - User ID: {user_id}")
-        logging.info(f"🔐 Session data: auth_namespace={session.get('auth_namespace')}, user_id={session.get('_user_id')}")
-        logging.info(f"👤 Current user: {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
+        logging.info(f"[AUTH] Session data: auth_namespace={session.get('auth_namespace')}, user_id={session.get('_user_id')}")
+        logging.info(f"[USER] Current user: {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
         
         # Check authentication explicitly
         if not current_user.is_authenticated:
-            logging.error("❌ User not authenticated for delete operation")
+            logging.error("[ERROR] User not authenticated for delete operation")
             return jsonify({
                 'success': False,
                 'message': 'Authentication required. Please log in again.'
@@ -200,12 +200,12 @@ class UserController:
                     # Commit immediately to avoid transaction failures affecting other tables
                     db.session.commit()
                     if result.rowcount > 0:
-                        logging.info(f"✅ Deleted {result.rowcount} record(s) from {table} for user {user.id}")
+                        logging.info(f"[OK] Deleted {result.rowcount} record(s) from {table} for user {user.id}")
                 except Exception as e:
                     # Rollback this transaction and continue with next table
                     db.session.rollback()
                     # Log warning but continue - table might not exist or have different schema
-                    logging.warning(f"⚠️ Could not clean {table}: {str(e)[:100]}")
+                    logging.warning(f"[WARNING] Could not clean {table}: {str(e)[:100]}")
             
             # Handle essay responses - either delete them or handle differently
             try:
@@ -215,7 +215,7 @@ class UserController:
                 db.session.commit()
             except Exception as e:
                 db.session.rollback()
-                logging.warning(f"⚠️ Could not delete essay responses: {str(e)[:100]}")
+                logging.warning(f"[WARNING] Could not delete essay responses: {str(e)[:100]}")
             
             # Option 2 (alternative): Set essay user_id to null if NOT NULL constraint is removed
             # EssayResponse.query.filter_by(user_id=user.id).update({EssayResponse.user_id: None})
@@ -237,7 +237,7 @@ class UserController:
                     )
                     db.session.commit()
                     if result.rowcount > 0:
-                        logging.info(f"✅ Deleted {result.rowcount} record(s) from {table}")
+                        logging.info(f"[OK] Deleted {result.rowcount} record(s) from {table}")
                 except Exception as e:
                     db.session.rollback()
                     logging.debug(f"Table {table} may not exist or have user_id column: {str(e)[:50]}")
@@ -252,14 +252,14 @@ class UserController:
             )
             db.session.commit()
             
-            logging.info(f"✅ Successfully deleted user {username} (ID: {user_id})")
+            logging.info(f"[OK] Successfully deleted user {username} (ID: {user_id})")
             return jsonify({
                 'success': True,
                 'message': ''
             }), 200
         except Exception as e:
             db.session.rollback()
-            logging.error(f"❌ Error deleting user: {str(e)}")
+            logging.error(f"[ERROR] Error deleting user: {str(e)}")
             return jsonify({
                 'success': False,
                 'message': f'Error deleting user: {str(e)}'
@@ -812,35 +812,35 @@ class UserController:
         """Instructor profile page"""
         from flask import session
         
-        print("🔍 INSTRUCTOR PROFILE: Route accessed")
-        print(f"🔍 INSTRUCTOR PROFILE: Current user = {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
-        print(f"🔍 INSTRUCTOR PROFILE: User type = {type(current_user)}")
+        print("[DEBUG] INSTRUCTOR PROFILE: Route accessed")
+        print(f"[DEBUG] INSTRUCTOR PROFILE: Current user = {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
+        print(f"[DEBUG] INSTRUCTOR PROFILE: User type = {type(current_user)}")
         
         # CRITICAL FIX: Auto-fix namespace if user is authenticated as Instructor
         auth_namespace = session.get('auth_namespace', 'unknown')
-        print(f"🔍 INSTRUCTOR PROFILE: Auth namespace = {auth_namespace}")
+        print(f"[DEBUG] INSTRUCTOR PROFILE: Auth namespace = {auth_namespace}")
         
         # If user is authenticated as Instructor but namespace is wrong, fix it
         if isinstance(current_user, (Instructor, InstructorUser)):
             if auth_namespace != 'instructor':
-                print(f"🔧 INSTRUCTOR PROFILE: Auto-fixing namespace from '{auth_namespace}' to 'instructor'")
+                print(f"[FIX] INSTRUCTOR PROFILE: Auto-fixing namespace from '{auth_namespace}' to 'instructor'")
                 session['auth_namespace'] = 'instructor'
                 session.modified = True
                 auth_namespace = 'instructor'
         
         if auth_namespace != 'instructor':
-            print(f"❌ INSTRUCTOR PROFILE: Namespace check failed - expected 'instructor', got '{auth_namespace}'")
+            print(f"[ERROR] INSTRUCTOR PROFILE: Namespace check failed - expected 'instructor', got '{auth_namespace}'")
             flash('Access denied. Instructor credentials required.', 'error')
             return redirect(url_for('auth.login'))
         
         # Accept both legacy Instructor accounts and InstructorUser teacher accounts
         if not isinstance(current_user, (Instructor, InstructorUser)):
-            print(f"❌ INSTRUCTOR PROFILE: User type check failed - user is {type(current_user)}")
+            print(f"[ERROR] INSTRUCTOR PROFILE: User type check failed - user is {type(current_user)}")
             flash('Access denied. Instructor credentials required.', 'error')
             session.clear()  # Clear potentially poisoned session
             return redirect(url_for('auth.login'))
         
-        print("✅ INSTRUCTOR PROFILE: All checks passed, rendering template")
+        print("[OK] INSTRUCTOR PROFILE: All checks passed, rendering template")
         
         try:
             from utils.render_utils import render_safe_template
@@ -850,7 +850,7 @@ class UserController:
                                       title="Admin Profile",
                                       active_page='profile')
         except Exception as e:
-            print(f"❌ INSTRUCTOR PROFILE: Template rendering error: {str(e)}")
+            print(f"[ERROR] INSTRUCTOR PROFILE: Template rendering error: {str(e)}")
             import logging
             import traceback
             logging.error(f"Error rendering admin profile: {str(e)}")

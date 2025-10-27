@@ -1,4 +1,4 @@
-"""
+﻿"""
 Assignment Submission Controller
 Handles student assignment submissions, file uploads, and grading
 """

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+﻿from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import login_required
 from utils.auth_decorators import instructor_required
 from instructor.models.class_model import Class

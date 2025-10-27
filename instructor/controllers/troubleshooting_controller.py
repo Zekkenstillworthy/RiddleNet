@@ -1,4 +1,4 @@
-from flask import request, jsonify
+﻿from flask import request, jsonify
 from __init__ import db
 from instructor.models.troubleshooting import Troubleshooting
 from instructor.models.troubleshooting_progress import TroubleshootingProgress
