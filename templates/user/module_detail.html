@@ -4381,52 +4381,6 @@ function handleLiveQuizClick() {
 }
 
 
-function showLiveQuizNotification(session) {
-    // Create a notification banner
-    const banner = document.createElement('div');
-    banner.style.cssText = `
-        position: fixed;
-        top: 80px;
-        right: 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 20px 24px;
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
-        z-index: 10000;
-        max-width: 400px;
-        animation: slideIn 0.5s ease;
-    `;
-    
-    banner.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-            <i class="fas fa-bolt" style="font-size: 1.5rem;"></i>
-            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Live Quiz Active!</h4>
-        </div>
-        <p style="margin: 0 0 16px 0; font-size: 0.95rem; opacity: 0.9;">
-            ${session.title} is now live. Join now to compete!
-        </p>
-        <div style="display: flex; gap: 12px;">
-            <button onclick="joinLiveQuizSession(${session.id})" 
-                    style="flex: 1; padding: 10px 16px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                Join Now
-            </button>
-            <button onclick="this.parentElement.parentElement.remove()" 
-                    style="padding: 10px 16px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 8px; cursor: pointer;">
-                Later
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(banner);
-    
-    // Auto-remove after 10 seconds
-    setTimeout(() => {
-        banner.style.animation = 'slideOut 0.5s ease';
-        setTimeout(() => banner.remove(), 500);
-    }, 10000);
-}
-
 function joinLiveQuizSession(sessionId) {
     const context = window.__moduleContext || {};
     const { classId, moduleId, lessonId } = context;

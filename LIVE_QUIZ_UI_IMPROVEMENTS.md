@@ -31,18 +31,16 @@ Three UI/UX improvements implemented to enhance the Live Quiz student experience
 - Created unnecessary friction in the user flow
 
 **After**:
-- Notification modal call commented out (line 4315)
-- `showLiveQuizNotification()` function no longer called
+- Notification modal logic and supporting function removed entirely
 - Students can join quiz via the Live Quiz button without modal interruption
+- No background timers inject UI banners anymore
 
-**Code Changes**:
+**Key Update**:
 ```javascript
-// Line 4310-4316 in module_detail.html
 const activeSession = liveQuizSessions.find(s => s.status === 'active');
 if (activeSession) {
-    console.log('Auto-joining active quiz session:', activeSession.id);
-    // Notification modal removed per user request
-    // showLiveQuizNotification(activeSession);
+  console.log('Auto-joining active quiz session:', activeSession.id);
+  // Notification modal removed per user request
 }
 ```
 
@@ -149,11 +147,13 @@ function exitLiveQuiz() {
 
 ## Files Modified
 1. `templates/user/module_detail.html`
-   - Commented out notification modal call (line 4315)
+  - Removed notification modal call and helper function
    - Added lesson content hide on quiz init (line 4557-4561)
    - Added `exitLiveQuiz()` function (line 4953-4981)
    - Added "Exit" button in quiz header (line 2323)
    - Added "Back to Lesson" button on completion screen (line 2394-2401)
+2. `templates/user/base.html`
+  - Defaulted Live Quiz sidebar badge text to `WAITING` for clearer inactive state
 
 ---
 
