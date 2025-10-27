@@ -4437,6 +4437,11 @@ function joinLiveQuizSession(sessionId) {
         context,
         questionCount: lessonQuestions.length
     });
+    
+    // Debug: Log first question to see its structure
+    if (lessonQuestions.length > 0) {
+        console.log('[LiveQuiz][Join] Sample question:', lessonQuestions[0]);
+    }
 
     // MVP: Join quiz session and use embedded questions (no separate fetch)
     fetch('/api/live-quiz-mvp/join', {
@@ -4478,13 +4483,35 @@ function joinLiveQuizSession(sessionId) {
         }
 
         // MVP: Initialize directly with embedded questions (no extra GET)
-        initializeLiveQuiz(sessionId, lessonQuestions.map(q => ({
-            id: (q.id || q.numb),
-            question: q.question,
-            options: q.options || [],
-            answer: q.answer,
-            explanation: q.explanation || null
-        })));
+        const formattedQuestions = lessonQuestions.map(q => {
+            // Parse options if they're stored as a JSON string
+            let options = q.options;
+            if (typeof options === 'string') {
+                try {
+                    options = JSON.parse(options);
+                } catch (e) {
+                    console.warn('[LiveQuiz] Failed to parse options for question', q.id || q.numb);
+                    options = [];
+                }
+            }
+            
+            // Ensure options is an array
+            if (!Array.isArray(options)) {
+                options = [];
+            }
+            
+            return {
+                id: (q.id || q.numb),
+                question: q.question,
+                options: options,
+                answer: q.answer,
+                explanation: q.explanation || null
+            };
+        });
+        
+        console.log('[LiveQuiz][Join] Formatted questions:', formattedQuestions);
+        
+        initializeLiveQuiz(sessionId, formattedQuestions);
 
         // Remove notification
         document.querySelectorAll('[onclick*="joinLiveQuizSession"]').forEach(el => {
@@ -4516,11 +4543,23 @@ let liveQuizState = {
 
 // Initialize Live Quiz
 function initializeLiveQuiz(sessionId, questions) {
+  console.log('[LiveQuiz] Initializing with session:', sessionId);
+  console.log('[LiveQuiz] Questions:', questions);
+  
   liveQuizState.sessionId = sessionId;
   liveQuizState.questions = questions;
   
   // Show live quiz container
-  document.getElementById('liveQuizContainer').style.display = 'block';
+  const liveQuizContainer = document.getElementById('liveQuizContainer');
+  if (liveQuizContainer) {
+    liveQuizContainer.style.display = 'block';
+  }
+  
+  // Set session code display
+  const sessionCodeEl = document.getElementById('liveSessionCode');
+  if (sessionCodeEl) {
+    sessionCodeEl.textContent = sessionId || '------';
+  }
   
   // Hide live quiz button
   const buttonContainer = document.getElementById('liveQuizButtonContainer');
@@ -4531,6 +4570,18 @@ function initializeLiveQuiz(sessionId, questions) {
   
   // Join the quiz
   joinLiveQuiz();
+  
+  // Fetch initial leaderboard
+  fetch(`/api/live-quiz-mvp/leaderboard/${sessionId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.leaderboard) {
+        console.log('[LiveQuiz] Initial leaderboard:', data.leaderboard);
+        updateLeaderboard(data.leaderboard);
+        updateParticipantCount(data.leaderboard.length);
+      }
+    })
+    .catch(err => console.error('[LiveQuiz] Error fetching initial leaderboard:', err));
 }
 
 // Connect to Live Quiz via Socket
@@ -4557,12 +4608,36 @@ function connectToLiveQuiz() {
   liveQuizState.socket.on('participant_joined', (data) => {
     console.log('Participant joined:', data);
     updateParticipantCount(data.participant_count);
+    
+    // Also fetch and update leaderboard to show new participant
+    if (liveQuizState.sessionId) {
+      fetch(`/api/live-quiz-mvp/leaderboard/${liveQuizState.sessionId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.leaderboard) {
+            updateLeaderboard(data.leaderboard);
+          }
+        })
+        .catch(err => console.error('Error fetching leaderboard:', err));
+    }
   });
   
   liveQuizState.socket.on('quiz_state', (data) => {
     console.log('Quiz state received:', data);
+    
+    // Update participant count if available
+    if (data.participant_count !== undefined) {
+      updateParticipantCount(data.participant_count);
+    }
+    
     if (data.status === 'active') {
-      loadQuestion(data.current_question_index);
+      loadQuestion(data.current_question_index || 0);
+    } else if (data.status === 'waiting') {
+      // Quiz is waiting to start - show first question preview
+      console.log('Quiz is waiting, loading first question preview');
+      if (liveQuizState.questions && liveQuizState.questions.length > 0) {
+        loadQuestion(0);
+      }
     }
   });
   
@@ -4599,14 +4674,29 @@ function joinLiveQuiz() {
     return;
   }
   
+  console.log('[LiveQuiz] Joining session:', liveQuizState.sessionId);
+  console.log('[LiveQuiz] Questions available:', liveQuizState.questions.length);
+  
   liveQuizState.socket.emit('join_live_quiz', {
     session_id: liveQuizState.sessionId
   });
+  
+  // Load first question immediately while waiting for server response
+  if (liveQuizState.questions && liveQuizState.questions.length > 0) {
+    console.log('[LiveQuiz] Loading first question immediately');
+    loadQuestion(0);
+  } else {
+    console.warn('[LiveQuiz] No questions available to load!');
+  }
 }
 
 // Load Question
 function loadQuestion(index) {
-  if (index >= liveQuizState.questions.length) {
+  console.log('[LiveQuiz] Loading question index:', index);
+  console.log('[LiveQuiz] Total questions:', liveQuizState.questions.length);
+  
+  if (!liveQuizState.questions || index >= liveQuizState.questions.length) {
+    console.warn('[LiveQuiz] Cannot load question - invalid index or no questions');
     return;
   }
   
@@ -4614,12 +4704,17 @@ function loadQuestion(index) {
   liveQuizState.currentQuestion = liveQuizState.questions[index];
   liveQuizState.answered = false;
   
+  console.log('[LiveQuiz] Current question:', liveQuizState.currentQuestion);
+  
   // Update question display
   document.getElementById('questionNumber').textContent = `Question ${index + 1} of ${liveQuizState.questions.length}`;
-  document.getElementById('questionText').textContent = liveQuizState.currentQuestion.question;
+  document.getElementById('questionText').textContent = liveQuizState.currentQuestion.question || 'Loading question...';
   
   // Clear previous answer feedback
-  document.getElementById('answerFeedback').style.display = 'none';
+  const feedbackEl = document.getElementById('answerFeedback');
+  if (feedbackEl) {
+    feedbackEl.style.display = 'none';
+  }
   
   // Render answer options
   renderAnswerOptions();
@@ -4631,9 +4726,23 @@ function loadQuestion(index) {
 // Render Answer Options
 function renderAnswerOptions() {
   const optionsContainer = document.getElementById('answerOptions');
+  if (!optionsContainer) {
+    console.error('[LiveQuiz] Answer options container not found');
+    return;
+  }
+  
   optionsContainer.innerHTML = '';
   
   const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  
+  // Check if options exist
+  if (!liveQuizState.currentQuestion.options || !Array.isArray(liveQuizState.currentQuestion.options)) {
+    console.warn('[LiveQuiz] No options available for current question');
+    optionsContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">No answer options available for this question</p>';
+    return;
+  }
+  
+  console.log('[LiveQuiz] Rendering', liveQuizState.currentQuestion.options.length, 'options');
   
   liveQuizState.currentQuestion.options.forEach((option, index) => {
     const optionEl = document.createElement('div');
