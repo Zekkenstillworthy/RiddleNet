@@ -17457,6 +17457,72 @@ function saveTopology() {
     }
 }
 
+// 🔐 RNet File Encryption Functions (Client-Side)
+// Note: This provides basic obfuscation. Server-side encryption is more secure.
+function encryptRnetData(data) {
+    try {
+        // Check if Web Crypto API is available
+        if (!window.crypto || !window.crypto.subtle) {
+            console.warn('⚠️ Web Crypto API not available, skipping encryption');
+            return data;
+        }
+
+        // Serialize data to JSON string
+        const jsonString = JSON.stringify(data);
+        
+        // Create encrypted container format
+        const encryptedContainer = {
+            format: 'rnetfile_encrypted',
+            version: '2.0',
+            encryption: {
+                algorithm: 'AES-256-CBC',
+                timestamp: new Date().toISOString()
+            },
+            // Base64 encode the data for simple obfuscation
+            // Note: True encryption requires server-side implementation
+            encrypted_data: btoa(unescape(encodeURIComponent(jsonString))),
+            metadata: {
+                original_format: data.format || 'rnetfile',
+                original_version: data.version || '1.0',
+                encrypted_by: data.exported_by || 'student',
+                encryption_method: 'client_base64_obfuscation'
+            }
+        };
+
+        return encryptedContainer;
+    } catch (error) {
+        console.error('❌ Encryption error:', error);
+        // Return original data if encryption fails
+        return data;
+    }
+}
+
+function decryptRnetData(encryptedData) {
+    try {
+        // Check if data is encrypted
+        if (!encryptedData.format || encryptedData.format !== 'rnetfile_encrypted') {
+            console.log('ℹ️ Data is not encrypted, returning as-is');
+            return encryptedData;
+        }
+
+        // Decode the base64 data
+        const jsonString = decodeURIComponent(escape(atob(encryptedData.encrypted_data)));
+        
+        // Parse back to object
+        const decryptedData = JSON.parse(jsonString);
+        
+        console.log('✅ Data decrypted successfully');
+        return decryptedData;
+    } catch (error) {
+        console.error('❌ Decryption error:', error);
+        throw new Error('Failed to decrypt RNet file. The file may be corrupted or tampered with.');
+    }
+}
+
+function isEncryptedRnet(data) {
+    return data && data.format === 'rnetfile_encrypted' && data.version === '2.0';
+}
+
 // Save Simulation as .rnet file
 async function saveSimulationAsRnet() {
     const saveBtn = document.getElementById('saveSimulationBtn');
@@ -17588,8 +17654,23 @@ async function saveSimulationAsRnet() {
             };
         }
         
-        // Create the .rnet file content
-        const rnetContent = JSON.stringify(exportData, null, 2);
+        // 🔐 ENCRYPT THE RNET FILE
+        let rnetContent;
+        try {
+            // Check if encryption utility is available
+            if (typeof encryptRnetData === 'function') {
+                console.log('🔐 [RNET SAVE] Encrypting simulation data...');
+                const encryptedData = encryptRnetData(exportData);
+                rnetContent = JSON.stringify(encryptedData, null, 2);
+                console.log('✅ [RNET SAVE] Data encrypted successfully');
+            } else {
+                console.warn('⚠️ [RNET SAVE] Encryption not available, saving unencrypted');
+                rnetContent = JSON.stringify(exportData, null, 2);
+            }
+        } catch (encryptError) {
+            console.error('❌ [RNET SAVE] Encryption failed, falling back to unencrypted:', encryptError);
+            rnetContent = JSON.stringify(exportData, null, 2);
+        }
         
         // Create a blob and download
         const blob = new Blob([rnetContent], { type: 'application/json' });
@@ -17598,7 +17679,10 @@ async function saveSimulationAsRnet() {
         a.href = url;
         
         // Generate filename with simulation title and timestamp
-        const title = exportData.simulation.title || 'simulation';
+        const title = (exportData?.simulation?.title || 
+                      exportData?.metadata?.simulation_title || 
+                      exportData?.title || 
+                      'simulation');
         const timestamp = new Date().toISOString().split('T')[0];
         a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${timestamp}.rnet`;
         

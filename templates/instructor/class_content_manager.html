@@ -16192,21 +16192,44 @@ async function createLiveQuizSession(questionGroupId, moduleId, questionGroupNam
 function connectToLiveQuizSocket(sessionId) {
     // Connect to socket if not already connected
     if (!window.socket || !window.socket.connected) {
-        console.log('Connecting to socket for live quiz...');
+        console.log('[MVP LiveQuiz] Connecting instructor to socket...');
         window.socket = io();
     }
+    
+    console.log('[MVP LiveQuiz] Setting up instructor socket listeners for session:', sessionId);
     
     // Listen for participant updates
     window.socket.on('participant_joined', (data) => {
         if (data.session_id === sessionId) {
+            console.log('%c[INSTRUCTOR SOCKET] ════════════════════════════════════════', 'color: #ff00ff; font-weight: bold');
+            console.log('[INSTRUCTOR SOCKET] 👤 participant_joined event received!');
+            console.log('[INSTRUCTOR SOCKET] Display name:', data.display_name);
+            console.log('[INSTRUCTOR SOCKET] Participant count:', data.participant_count);
+            console.log('[INSTRUCTOR SOCKET] Session ID:', data.session_id);
+            console.log('[INSTRUCTOR SOCKET] Has leaderboard:', !!data.leaderboard);
+            if (data.leaderboard) {
+                console.log('[INSTRUCTOR SOCKET] Leaderboard size:', data.leaderboard.length);
+            }
+            console.log('[INSTRUCTOR SOCKET] Full event data:', data);
+            
             document.getElementById('participant-count').textContent = data.participant_count;
+            console.log('[INSTRUCTOR SOCKET] ✅ Updated participant count to:', data.participant_count);
+            
+            // Show toast notification
+            moduleBuilder?.showToast?.(`MVP: ${data.display_name} joined the quiz (${data.participant_count} total)`, 'info');
+            
+            // Update leaderboard immediately
+            console.log('[INSTRUCTOR SOCKET] 📊 Fetching updated leaderboard...');
             updateInstructorLeaderboard();
+            
+            console.log('%c[INSTRUCTOR SOCKET] ════════════════════════════════════════', 'color: #ff00ff; font-weight: bold');
         }
     });
     
     // Listen for answer submissions
     window.socket.on('answer_submitted', (data) => {
         if (data.session_id === sessionId) {
+            console.log('[MVP LiveQuiz] Answer submitted by participant');
             updateInstructorLeaderboard();
         }
     });
@@ -16214,30 +16237,58 @@ function connectToLiveQuizSocket(sessionId) {
     // Listen for leaderboard updates
     window.socket.on('leaderboard_update', (data) => {
         if (data.session_id === sessionId) {
+            console.log('[MVP LiveQuiz] Leaderboard update received');
             displayInstructorLeaderboard(data.leaderboard);
         }
     });
+    
+    console.log('[MVP LiveQuiz] Instructor socket listeners configured successfully');
 }
 
 async function startLiveQuiz() {
     if (!activeLiveQuizSession) return;
     
     try {
-    const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/start`, {
+        console.log('%c[INSTRUCTOR START] ════════════════════════════════════════', 'color: #00ff00; font-weight: bold');
+        console.log('[INSTRUCTOR START] Starting quiz session:', activeLiveQuizSession.id);
+        console.log('[INSTRUCTOR START] Session details:', activeLiveQuizSession);
+        
+        const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/start`, {
             method: 'POST'
         });
         
+        console.log('[INSTRUCTOR START] Fetch response status:', response.status);
+        
         const data = await response.json();
         
+        console.log('[INSTRUCTOR START] Response data:', data);
+        
         if (data.success) {
+            console.log('[INSTRUCTOR START] ✅ Quiz started successfully!');
+            console.log('[INSTRUCTOR START] Updating UI...');
+            
             document.getElementById('start-quiz-btn').style.display = 'none';
             document.getElementById('next-question-btn').style.display = 'block';
             document.getElementById('current-question-num').textContent = '1';
             
-            moduleBuilder?.showToast?.('Quiz started!', 'success');
+            console.log('[INSTRUCTOR START] UI updated - Start button hidden, Next button visible');
+            console.log('[INSTRUCTOR START] Fetching initial leaderboard...');
+            
+            moduleBuilder?.showToast?.('MVP: Quiz started! Students can now see questions.', 'success');
+            
+            // Fetch and display initial leaderboard
+            updateInstructorLeaderboard();
+            
+            console.log('[INSTRUCTOR START] ✅ Start quiz complete!');
+            console.log('%c[INSTRUCTOR START] ════════════════════════════════════════', 'color: #00ff00; font-weight: bold');
+        } else {
+            console.error('[INSTRUCTOR START] ❌ Failed to start quiz:', data.error);
+            moduleBuilder?.showToast?.(data.error || 'Failed to start quiz', 'error');
         }
     } catch (error) {
-        console.error('Error starting quiz:', error);
+        console.error('[INSTRUCTOR START] ❌ Error starting quiz:', error);
+        console.error('[INSTRUCTOR START] Error stack:', error.stack);
+        moduleBuilder?.showToast?.('Error starting quiz', 'error');
     }
 }
 
@@ -16245,22 +16296,44 @@ async function nextQuestion() {
     if (!activeLiveQuizSession) return;
     
     try {
-    const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/next-question`, {
+        console.log('[MVP LiveQuiz] Instructor advancing to next question');
+        
+        const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/next-question`, {
             method: 'POST'
         });
         
         const data = await response.json();
         
         if (data.success) {
-            document.getElementById('current-question-num').textContent = data.current_question;
+            const currentQ = data.current_question;
+            const totalQ = data.total_questions;
+            document.getElementById('current-question-num').textContent = currentQ;
+            
+            console.log(`[MVP LiveQuiz] Advanced to question ${currentQ}/${totalQ}`);
+            
+            // Update leaderboard if provided
+            if (data.leaderboard && Array.isArray(data.leaderboard)) {
+                console.log('[MVP LiveQuiz] Updating instructor leaderboard from next question response');
+                displayInstructorLeaderboard(data.leaderboard);
+            } else {
+                // Fallback: fetch leaderboard
+                updateInstructorLeaderboard();
+            }
             
             if (data.quiz_completed) {
                 document.getElementById('next-question-btn').style.display = 'none';
-                moduleBuilder?.showToast?.('Quiz completed!', 'success');
-            }
+                moduleBuilder?.showToast?.('MVP: Quiz completed! Final leaderboard shown to students.', 'success');
+                console.log('[MVP LiveQuiz] Quiz completed - showing final results');
+            } else {
+                moduleBuilder?.showToast?.(`MVP: Question ${currentQ}/${totalQ} shown to students`, 'success');
+            };
+        } else {
+            console.error('[MVP LiveQuiz] Failed to advance question:', data.error);
+            moduleBuilder?.showToast?.(data.error || 'Failed to advance question', 'error');
         }
     } catch (error) {
-        console.error('Error moving to next question:', error);
+        console.error('[MVP LiveQuiz] Error moving to next question:', error);
+        moduleBuilder?.showToast?.('Error advancing question', 'error');
     }
 }
 
@@ -16292,29 +16365,48 @@ async function updateInstructorLeaderboard() {
     if (!activeLiveQuizSession) return;
     
     try {
-    const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/leaderboard`);
+        console.log('[INSTRUCTOR LEADERBOARD] 📊 Fetching leaderboard for session:', activeLiveQuizSession.id);
+        
+        const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/leaderboard`);
         const data = await response.json();
         
+        console.log('[INSTRUCTOR LEADERBOARD] Response:', data);
+        
         if (data.success) {
+            console.log('[INSTRUCTOR LEADERBOARD] ✅ Received', data.leaderboard?.length || 0, 'participants');
+            console.log('[INSTRUCTOR LEADERBOARD] Leaderboard data:', data.leaderboard);
             displayInstructorLeaderboard(data.leaderboard);
+        } else {
+            console.warn('[INSTRUCTOR LEADERBOARD] ❌ Fetch failed:', data.error);
         }
     } catch (error) {
-        console.error('Error fetching leaderboard:', error);
+        console.error('[INSTRUCTOR LEADERBOARD] ❌ Error fetching leaderboard:', error);
     }
 }
 
 function displayInstructorLeaderboard(leaderboard) {
     const container = document.getElementById('instructor-leaderboard-list');
     
+    console.log('[INSTRUCTOR LEADERBOARD DISPLAY] 📋 Updating display...');
+    console.log('[INSTRUCTOR LEADERBOARD DISPLAY] Container element:', container);
+    console.log('[INSTRUCTOR LEADERBOARD DISPLAY] Leaderboard:', leaderboard);
+    
     if (!leaderboard || leaderboard.length === 0) {
+        console.log('[INSTRUCTOR LEADERBOARD DISPLAY] ⚠️ No participants - showing empty state');
         container.innerHTML = `
             <div class="empty-state-small">
                 <i class="fas fa-users"></i>
-                No responses yet...
+                Waiting for participants to join...
             </div>
         `;
         return;
     }
+    
+    console.log('[INSTRUCTOR LEADERBOARD DISPLAY] ✅ Displaying', leaderboard.length, 'participants');
+    console.log('[INSTRUCTOR LEADERBOARD DISPLAY] Participant details:');
+    leaderboard.forEach((p, i) => {
+        console.log(`  ${i+1}. ${p.display_name || p.username || p.name} - Score: ${p.total_score}, Correct: ${p.total_correct}`);
+    });
     
     const formatText = (value, fallback = '') => {
         if (value === null || value === undefined) return fallback;
@@ -16496,6 +16588,139 @@ liveQuizStyles.textContent = `
     }
 `;
 document.head.appendChild(liveQuizStyles);
+
+// ===== AUTO-RESTORE LIVE QUIZ SESSION ON PAGE LOAD =====
+async function checkAndRestoreActiveLiveQuiz() {
+    try {
+        console.log('\n' + '🔍'.repeat(50));
+        console.log('[LIVE QUIZ RESTORE] Checking for active sessions...');
+        
+        // Check if we have a current class
+        if (!moduleBuilder?.currentClass?.id) {
+            console.log('[LIVE QUIZ RESTORE] No active class, skipping restore');
+            console.log('🔍'.repeat(50) + '\n');
+            return;
+        }
+        
+        const classId = moduleBuilder.currentClass.id;
+        console.log('[LIVE QUIZ RESTORE] Current class ID:', classId);
+        
+        // Fetch active or waiting sessions for this instructor and class
+        const response = await fetch(`/instructor/api/live-quiz/sessions?class_id=${classId}`);
+        
+        if (!response.ok) {
+            console.log('[LIVE QUIZ RESTORE] Failed to fetch sessions:', response.status);
+            console.log('🔍'.repeat(50) + '\n');
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[LIVE QUIZ RESTORE] Response:', data);
+        
+        if (data.success && data.sessions && data.sessions.length > 0) {
+            // Filter for active or waiting sessions only
+            const activeSessions = data.sessions.filter(s => s.status === 'active' || s.status === 'waiting');
+            
+            if (activeSessions.length === 0) {
+                console.log('[LIVE QUIZ RESTORE] No active or waiting sessions found');
+                console.log('🔍'.repeat(50) + '\n');
+                return;
+            }
+            
+            // Take the first active/waiting session
+            const activeSession = activeSessions[0];
+            console.log('\n' + '✅'.repeat(50));
+            console.log('[LIVE QUIZ RESTORE] ✅ Active session found!');
+            console.log('[LIVE QUIZ RESTORE] Session ID:', activeSession.id);
+            console.log('[LIVE QUIZ RESTORE] Session code:', activeSession.session_code);
+            console.log('[LIVE QUIZ RESTORE] Question group:', activeSession.question_group_id);
+            console.log('[LIVE QUIZ RESTORE] Module ID:', activeSession.module_id);
+            console.log('[LIVE QUIZ RESTORE] Current question:', activeSession.current_question_index);
+            console.log('[LIVE QUIZ RESTORE] Status:', activeSession.status);
+            console.log('✅'.repeat(50) + '\n');
+            
+            // Restore the session
+            activeLiveQuizSession = activeSession;
+            
+            // Fetch question group name
+            let questionGroupName = 'Live Quiz';
+            try {
+                // Try to get the question group name from the current content
+                const modules = moduleBuilder?.classContent?.modules || [];
+                for (const module of modules) {
+                    const questionGroups = module.question_groups || [];
+                    const qg = questionGroups.find(q => q.id === activeSession.question_group_id);
+                    if (qg) {
+                        questionGroupName = qg.name;
+                        break;
+                    }
+                }
+            } catch (err) {
+                console.log('[LIVE QUIZ RESTORE] Could not fetch question group name:', err);
+            }
+            
+            console.log('[LIVE QUIZ RESTORE] 🚀 Reopening Live Quiz modal...');
+            
+            // Show the modal
+            showLiveQuizModal(activeSession.question_group_id, questionGroupName);
+            
+            // Wait a bit for the modal to be created in the DOM
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Switch to active panel
+            const setupPanel = document.querySelector('.live-quiz-setup');
+            const activePanel = document.getElementById('live-quiz-active-panel');
+            
+            if (setupPanel) setupPanel.style.display = 'none';
+            if (activePanel) activePanel.style.display = 'block';
+            
+            // Update session info
+            const sessionCodeDisplay = document.getElementById('session-code-display');
+            const currentQuestionNum = document.getElementById('current-question-num');
+            const totalQuestions = document.getElementById('total-questions');
+            
+            if (sessionCodeDisplay) sessionCodeDisplay.textContent = activeSession.session_code;
+            if (currentQuestionNum) currentQuestionNum.textContent = (activeSession.current_question_index || 0) + 1;
+            if (totalQuestions) totalQuestions.textContent = activeSession.question_count || 0;
+            
+            // Show appropriate buttons based on status
+            const startBtn = document.getElementById('start-quiz-btn');
+            const nextBtn = document.getElementById('next-question-btn');
+            
+            if (activeSession.status === 'active') {
+                if (startBtn) startBtn.style.display = 'none';
+                if (nextBtn) nextBtn.style.display = 'inline-flex';
+            } else if (activeSession.status === 'waiting') {
+                if (startBtn) startBtn.style.display = 'inline-flex';
+                if (nextBtn) nextBtn.style.display = 'none';
+            }
+            
+            // Reconnect to WebSocket for live updates
+            if (liveQuizSocket) {
+                liveQuizSocket.disconnect();
+            }
+            
+            // TODO: Reconnect WebSocket if needed
+            
+            console.log('[LIVE QUIZ RESTORE] ✅ Modal restored successfully!');
+            console.log('🔍'.repeat(50) + '\n');
+            
+        } else {
+            console.log('[LIVE QUIZ RESTORE] No active sessions found');
+            console.log('🔍'.repeat(50) + '\n');
+        }
+        
+    } catch (error) {
+        console.error('[LIVE QUIZ RESTORE] ❌ Error restoring session:', error);
+        console.log('🔍'.repeat(50) + '\n');
+    }
+}
+
+// Run the restore check when the page loads
+// Delay slightly to ensure moduleBuilder is initialized
+setTimeout(() => {
+    checkAndRestoreActiveLiveQuiz();
+}, 1000);
 
 console.log('✅ [ADMIN] Live Quiz management functions loaded');
 

@@ -1447,15 +1447,18 @@
     <!-- WebSocket Integration for User Module -->
     <script src="{{ url_for('static', filename='js/socket-client.js') }}"></script>
     <script>
-        // Initialize WebSocket for user module
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.socketClient) {
-                console.log('Initializing user module WebSocket handlers...');
+        // Initialize WebSocket for user module with proper timing
+        function initializeUserModuleWebSocket() {
+            if (!window.socketClient || typeof window.socketClient.on !== 'function') {
+                console.log('⏳ Waiting for socketClient to be ready...');
+                setTimeout(initializeUserModuleWebSocket, 500);
+                return;
+            }
+            
+            console.log('Initializing user module WebSocket handlers...');
 
-
-
-                // Handle topology completion events
-                window.socketClient.on('topology_completed', function (data) {
+            // Handle topology completion events
+            window.socketClient.on('topology_completed', function (data) {
                     console.log('Topology completed:', data);
                     if (data.score !== undefined) {
                         showUserNotification('Topology Completed',
@@ -1527,10 +1530,15 @@
                 });
 
                 console.log('User module WebSocket handlers initialized successfully');
-            } else {
-                console.warn('SocketClient not available for user module');
-            }
-        });
+        }
+        
+        // Start initialization when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeUserModuleWebSocket);
+        } else {
+            // DOM already loaded
+            initializeUserModuleWebSocket();
+        }
 
         // User notification function
         function showUserNotification(title, message, type = 'info') {
@@ -1695,6 +1703,98 @@
                 }
             });
         });
+    </script>
+    
+    <!-- Global Live Quiz Button Management -->
+    <script>
+        // Global function to update live quiz button visibility
+        // NOTE: updateLiveQuizButton is defined in module_detail.html
+        // Do NOT redefine it here - it will overwrite the lesson-filtered version!
+
+        // Global function to handle live quiz button click
+        window.handleLiveQuizClick = function() {
+            const button = document.getElementById('liveQuizButton');
+            const sessionId = button.dataset.sessionId;
+            const status = button.dataset.status;
+            const moduleContext = window.__moduleContext || {};
+            
+            if (!sessionId) {
+                console.log('[LiveQuiz] No active quiz session found');
+                alert('No active quiz session available.');
+                return;
+            }
+            
+            if (status === 'waiting') {
+                console.log('[LiveQuiz][MVP] Quiz session is waiting - instructor has not started it yet');
+                alert('MVP: The Live Quiz has not started yet. Please wait for your instructor to begin.');
+                return;
+            }
+
+            if (typeof window.joinLiveQuizSession === 'function' && moduleContext.classId && moduleContext.moduleId && moduleContext.lessonId) {
+                console.log('[LiveQuiz] Delegating join to module-specific handler');
+                window.joinLiveQuizSession(sessionId);
+                return;
+            }
+            
+            // Redirect to the page where quiz sessions are available
+            // Try to find the module/lesson context first
+            const urlParams = new URLSearchParams(window.location.search);
+            const classId = button.dataset.classId || moduleContext.classId || urlParams.get('class_id');
+            const moduleId = button.dataset.moduleId || moduleContext.moduleId;
+            const lessonId = button.dataset.lessonId || moduleContext.lessonId;
+            
+            if (classId && moduleId && lessonId) {
+                window.location.href = `/class/${classId}/module/${moduleId}/lesson/${lessonId}?join_quiz=${sessionId}`;
+                return;
+            }
+
+            if (classId) {
+                window.location.href = `/class/${classId}?join_quiz=${sessionId}`;
+            } else {
+                // Fallback: alert user
+                alert('MVP: Please navigate to your class module to join the live quiz.');
+            }
+        };
+
+        // Check for live quiz sessions on page load via WebSocket
+        function ensureLiveQuizSocketReady() {
+            if (!window.socketClient || typeof window.socketClient.on !== 'function') {
+                console.log('[LiveQuiz] SocketClient not ready for session request, retrying...');
+                setTimeout(ensureLiveQuizSocketReady, 500);
+                return;
+            }
+
+            // Listen for live quiz session updates (only register once)
+            if (!window.__liveQuizSessionsListenerRegistered) {
+                window.socketClient.on('live_quiz_sessions_update', function(data) {
+                    console.log('[LiveQuiz] Sessions update received:', data);
+                    if (data.sessions && typeof window.updateLiveQuizButton === 'function') {
+                        window.updateLiveQuizButton(data.sessions);
+                    }
+                });
+                window.__liveQuizSessionsListenerRegistered = true;
+            }
+
+            // Emit request only when socket connection exists
+            if (window.socketClient.socket && window.socketClient.connected) {
+                console.log('[LiveQuiz] Requesting live quiz sessions...');
+                window.socketClient.emit('get_live_quiz_sessions');
+            } else {
+                console.log('[LiveQuiz] Waiting for socket connection before requesting sessions...');
+                if (!window.__liveQuizSessionsConnectedHandlerRegistered) {
+                    window.__liveQuizSessionsConnectedHandlerRegistered = true;
+                    window.socketClient.on('connected', function() {
+                        window.socketClient.emit('get_live_quiz_sessions');
+                    });
+                }
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', ensureLiveQuizSocketReady);
+        } else {
+            ensureLiveQuizSocketReady();
+        }
     </script>
     
     <!-- Enhanced Landscape Optimizations -->

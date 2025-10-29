@@ -1563,24 +1563,38 @@ html {
 }
 
 /* ============================================================================ */
+/* LIVE QUIZ BUTTON STYLES */
+/* ============================================================================ */
+
+.live-quiz-join-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6) !important;
+}
+
+.live-quiz-join-btn:active {
+    transform: translateY(0);
+}
+
+/* ============================================================================ */
 /* LIVE QUIZ STYLES - Slido-style Interface */
 /* ============================================================================ */
 
 .live-quiz-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 2rem auto;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .live-quiz-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 2rem;
-  border-radius: 15px 15px 0 0;
+  border-radius: 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  margin-bottom: 2rem;
 }
 
 .quiz-info {
@@ -1642,10 +1656,11 @@ html {
 .live-quiz-question-area {
   background: var(--card-bg);
   padding: 3rem 2rem;
-  border-radius: 0 0 15px 15px;
+  border-radius: 15px;
   margin-bottom: 2rem;
   min-height: 400px;
   position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .question-timer {
@@ -1837,25 +1852,6 @@ html {
 .feedback-details {
   margin: 0;
   opacity: 0.8;
-}
-
-.feedback-points {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.points-earned {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #10b981;
-}
-
-.total-score {
-  font-size: 1.1rem;
-  color: var(--text-secondary);
 }
 
 .live-quiz-leaderboard {
@@ -2229,7 +2225,42 @@ html {
             </div>
         </div>
 
-        
+        <!-- ========== LIVE QUIZ BUTTON ========== -->
+        <!-- Real-time button that updates when instructor starts/stops quiz -->
+        <div id="liveQuizButtonContainer" style="display: none; margin: 20px 0;">
+            <button id="liveQuizButton" 
+                    class="live-quiz-join-btn" 
+                    onclick="handleLiveQuizClick()"
+                    style="width: 100%; 
+                           padding: 16px 24px; 
+                           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                           color: white; 
+                           border: none; 
+                           border-radius: 12px; 
+                           font-size: 1.1rem; 
+                           font-weight: 700; 
+                           cursor: pointer; 
+                           display: flex; 
+                           align-items: center; 
+                           justify-content: center; 
+                           gap: 12px;
+                           box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                           transition: all 0.3s ease;">
+                <i class="fas fa-play-circle" style="font-size: 1.5rem;"></i>
+                <span id="liveQuizButtonText">Join Live Quiz</span>
+                <span id="liveQuizBadge" 
+                      style="background: #ef4444; 
+                             color: white; 
+                             padding: 4px 12px; 
+                             border-radius: 20px; 
+                             font-size: 0.75rem; 
+                             font-weight: 700; 
+                             text-transform: uppercase; 
+                             letter-spacing: 1px;
+                             display: none;">LIVE</span>
+            </button>
+        </div>
+        <!-- ========== END LIVE QUIZ BUTTON ========== -->
 
 
 
@@ -2357,10 +2388,6 @@ html {
               <p class="feedback-details"></p>
             </div>
           </div>
-          <div class="feedback-points">
-            <span class="points-earned" id="pointsEarned">+500</span>
-            <span class="total-score">Total: <span id="userTotalScore">0</span></span>
-          </div>
         </div>
       </div>
 
@@ -2399,12 +2426,12 @@ html {
               <span class="stat-label">Your Rank</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value" id="finalScore">0</span>
-              <span class="stat-label">Total Points</span>
-            </div>
-            <div class="stat-item">
               <span class="stat-value" id="finalCorrect">0</span>
               <span class="stat-label">Correct Answers</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="finalAccuracy">0%</span>
+              <span class="stat-label">Accuracy</span>
             </div>
           </div>
           <button onclick="exitLiveQuiz()" style="margin-top: 20px; padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
@@ -2589,12 +2616,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span>Simulations</span>
                 </a>
             </li>
-            <li class="nav-item" id="nav-questions">
-                <a href="#" onclick="switchContent(event, 'questions')">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Questions</span>
-                </a>
-            </li>
+            
         `;
         console.log('✅ Sidebar navigation customized for module detail page');
 
@@ -2705,9 +2727,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <span><i class="fas fa-star"></i> Points: ${assignment.points || 'N/A'}</span>
                                 ${submission && submission.grade ? `<span><i class="fas fa-check-circle"></i> Grade: ${submission.grade}/${assignment.points}</span>` : ''}
                             </div>
-                            <a href="/class/${classId}/assignment/${assignment.id}" class="btn-primary" style="display: inline-block; padding: 10px 20px; background: var(--cyber-glow); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                            <button onclick="loadAssignment(${assignment.id})" class="btn-primary" style="display: inline-block; padding: 10px 20px; background: var(--cyber-glow); color: white; text-decoration: none; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
                                 ${status === 'graded' ? 'View Results' : status === 'submitted' || status === 'resubmitted' ? 'View Submission' : 'Start Assignment'} <i class="fas fa-arrow-right"></i>
-                            </a>
+                            </button>
                         </div>
                         `;
                     }).join('')}
@@ -3225,11 +3247,72 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // WebSocket Connection for Real-Time Module Updates
-if (typeof socketClient !== 'undefined' && socketClient) {
-    // Join module room for real-time updates
+// Wait for socket to be ready before attempting to join room
+function initializeModuleWebSocket() {
+    if (typeof socketClient === 'undefined' || !socketClient) {
+        console.log('⏳ SocketClient not ready, retrying in 500ms...');
+        setTimeout(initializeModuleWebSocket, 500);
+        return;
+    }
+    
     {% if module %}
-    socketClient.emit('join_module_room', {module_id: {{ module.id }}});
-    console.log('🔌 Joined module room: module_{{ module.id }}');
+    // Function to join module room when socket is ready
+    function joinModuleRoom() {
+        console.log('\n' + '🔵'.repeat(50));
+        console.log('[WEBSOCKET DEBUG] 🔌 joinModuleRoom() called');
+        console.log('[WEBSOCKET DEBUG] Timestamp:', new Date().toISOString());
+        console.log('[WEBSOCKET DEBUG] Module ID:', {{ module.id }});
+        console.log('[WEBSOCKET DEBUG] socketClient exists:', typeof socketClient !== 'undefined');
+        
+        if (typeof socketClient === 'undefined') {
+            console.error('[WEBSOCKET DEBUG] ❌ socketClient is undefined!');
+            console.log('🔵'.repeat(50) + '\n');
+            return;
+        }
+        
+        console.log('[WEBSOCKET DEBUG] socketClient.socket exists:', !!socketClient.socket);
+        console.log('[WEBSOCKET DEBUG] socketClient.connected:', socketClient.connected);
+        
+        if (socketClient.socket && socketClient.connected) {
+            console.log('[WEBSOCKET DEBUG] ✅ Socket is ready - emitting join_module_room...');
+            
+            socketClient.emit('join_module_room', {module_id: {{ module.id }}});
+            
+            console.log('[WEBSOCKET DEBUG] ✅ emit() called for join_module_room');
+            console.log('[WEBSOCKET DEBUG] ✅ Now listening for live_quiz_session_status_changed events on room: module_{{ module.id }}');
+            console.log('[WEBSOCKET DEBUG] Expected event name: "live_quiz_session_status_changed"');
+            console.log('🔵'.repeat(50) + '\n');
+        } else {
+            console.log('[WEBSOCKET DEBUG] ⏳ Socket not ready yet');
+            console.log('[WEBSOCKET DEBUG] Setting up "connected" event listener...');
+            
+            // Set up one-time listener for connection
+            socketClient.on('connected', function joinOnConnect() {
+                console.log('\n' + '🟢'.repeat(50));
+                console.log('[WEBSOCKET DEBUG] 🎉 "connected" event received!');
+                console.log('[WEBSOCKET DEBUG] socketClient.socket:', !!socketClient.socket);
+                console.log('[WEBSOCKET DEBUG] socketClient.connected:', socketClient.connected);
+                
+                if (socketClient.socket && socketClient.connected) {
+                    console.log('[WEBSOCKET DEBUG] ✅ Socket ready after connect - emitting join_module_room...');
+                    socketClient.emit('join_module_room', {module_id: {{ module.id }}});
+                    console.log('[WEBSOCKET DEBUG] ✅ Joined module room after connection: module_{{ module.id }}');
+                    console.log('🟢'.repeat(50) + '\n');
+                } else {
+                    console.log('[WEBSOCKET DEBUG] ⚠️ Connected event fired but socket still not ready');
+                    console.log('[WEBSOCKET DEBUG] Retrying in 300ms...');
+                    console.log('🟢'.repeat(50) + '\n');
+                    setTimeout(joinModuleRoom, 300);
+                }
+            });
+            
+            console.log('[WEBSOCKET DEBUG] ✅ "connected" listener registered');
+            console.log('🔵'.repeat(50) + '\n');
+        }
+    }
+    
+    // Try to join module room (will wait if not connected yet)
+    joinModuleRoom();
     {% endif %}
 
     // Listen for module content updates
@@ -3247,15 +3330,317 @@ if (typeof socketClient !== 'undefined' && socketClient) {
             handleModuleContentUpdate(data);
         }
     });
-
+    
+     // REALTIME UPDATE: Listen for Live Quiz session status changes
+    socketClient.on('live_quiz_session_status_changed', function(data) {
+        console.log('\n' + '🟣'.repeat(50));
+        console.log('[CLIENT EVENT] 📥 RECEIVED live_quiz_session_status_changed');
+        console.log('[CLIENT EVENT] Timestamp:', new Date().toISOString());
+        console.log('[CLIENT EVENT] Raw event data:', JSON.stringify(data, null, 2));
+        console.log('[CLIENT EVENT] Data fields:');
+        console.log('  - session_id:', data.session_id);
+        console.log('  - status:', data.status);
+        console.log('  - module_id:', data.module_id);
+        console.log('  - lesson_id:', data.lesson_id);
+        console.log('  - class_id:', data.class_id);
+        console.log('  - title:', data.title);
+        console.log('  - session_code:', data.session_code);
+        console.log('[CLIENT EVENT] Current module context:', window.__moduleContext);
+        console.log('🟣'.repeat(50) + '\n');
+        
+        // Get current module/lesson context
+        const moduleContext = window.__moduleContext || {};
+        
+        const eventModuleId = parseInt(data.module_id);
+        const eventLessonId = data.lesson_id ? parseInt(data.lesson_id) : null;
+        const currentModuleId = parseInt(moduleContext.moduleId);
+        const currentLessonId = moduleContext.lessonId ? parseInt(moduleContext.lessonId) : null;
+        
+        console.log('\n' + '🔍'.repeat(50));
+        console.log('[VALIDATION] Checking if event matches current page:');
+        console.log('[VALIDATION] Event module ID:', eventModuleId);
+        console.log('[VALIDATION] Current module ID:', currentModuleId);
+        console.log('[VALIDATION] Event lesson ID:', eventLessonId);
+        console.log('[VALIDATION] Current lesson ID:', currentLessonId);
+        
+        // Module ID must match. Lesson ID only needs to match if both are specified.
+        const moduleMatches = eventModuleId === currentModuleId;
+        const lessonMatches = (eventLessonId === null || currentLessonId === null) ? true : (eventLessonId === currentLessonId);
+        
+        console.log('[VALIDATION] Module matches:', moduleMatches);
+        console.log('[VALIDATION] Lesson matches:', lessonMatches);
+        console.log('[VALIDATION] Overall match:', moduleMatches && lessonMatches);
+        console.log('🔍'.repeat(50) + '\n');
+        
+        if (!moduleMatches || !lessonMatches) {
+            console.log('⏭️ Event not for current page, IGNORING\n');
+            return;
+        }
+        
+        console.log('\n' + '✅'.repeat(50));
+        console.log('[MATCH] ✅ Event matches current page! Processing...');
+        console.log('✅'.repeat(50) + '\n');
+        
+        // Update session status in memory
+        console.log('\n' + '📝'.repeat(50));
+        console.log('[SESSION UPDATE] Current sessions array:', window.currentLiveQuizSessions);
+        console.log('[SESSION UPDATE] Looking for session ID:', data.session_id);
+        
+        if (window.currentLiveQuizSessions) {
+            const sessionIndex = window.currentLiveQuizSessions.findIndex(s => s.id === data.session_id);
+            console.log('[SESSION UPDATE] Session index in array:', sessionIndex);
+            
+            if (sessionIndex !== -1) {
+                const oldStatus = window.currentLiveQuizSessions[sessionIndex].status;
+                const newStatus = data.status;
+                console.log(`[SESSION UPDATE] 🔄 Updating existing session ${data.session_id}`);
+                console.log(`[SESSION UPDATE] Status change: ${oldStatus} → ${newStatus}`);
+                
+                window.currentLiveQuizSessions[sessionIndex].status = data.status;
+                
+                if (data.status === 'completed') {
+                    console.log('[SESSION UPDATE] 🏁 Session completed, removing from active list');
+                    window.currentLiveQuizSessions.splice(sessionIndex, 1);
+                }
+            } else if (data.status === 'active') {
+                console.log('[SESSION UPDATE] ➕ New active session detected, adding to list');
+                const newSession = {
+                    id: data.session_id,
+                    status: data.status,
+                    title: data.title,
+                    session_code: data.session_code,
+                    lesson_id: data.lesson_id
+                };
+                console.log('[SESSION UPDATE] New session object:', newSession);
+                window.currentLiveQuizSessions.push(newSession);
+            }
+            
+            console.log('[SESSION UPDATE] Updated sessions array:', window.currentLiveQuizSessions);
+        } else {
+            console.error('[SESSION UPDATE] ❌ window.currentLiveQuizSessions is not defined!');
+        }
+        console.log('📝'.repeat(50) + '\n');
+        
+        // Update button display in real-time
+        console.log('\n' + '🔘'.repeat(50));
+        console.log('[BUTTON UPDATE] Calling updateLiveQuizButton()...');
+        console.log('[BUTTON UPDATE] Function exists:', typeof window.updateLiveQuizButton === 'function');
+        console.log('[BUTTON UPDATE] Passing sessions:', window.currentLiveQuizSessions);
+        
+        if (typeof window.updateLiveQuizButton === 'function') {
+            window.updateLiveQuizButton(window.currentLiveQuizSessions);
+            console.log('[BUTTON UPDATE] ✅ Button update function called successfully!');
+            console.log('[BUTTON UPDATE] Check for visual changes on page...');
+        } else {
+            console.error('[BUTTON UPDATE] ❌ updateLiveQuizButton function not found!');
+        }
+        console.log('🔘'.repeat(50) + '\n');
+        
+        console.log('🎉 EVENT PROCESSING COMPLETE!\n');
+    });
+    
     // Handle page unload - leave module room
     window.addEventListener('beforeunload', function() {
         {% if module %}
-        socketClient.emit('leave_module_room', {module_id: {{ module.id }}});
-        console.log('👋 Left module room: module_{{ module.id }}');
+        if (socketClient.socket && socketClient.connected) {
+            socketClient.emit('leave_module_room', {module_id: {{ module.id }}});
+            console.log('👋 Left module room: module_{{ module.id }}');
+        }
         {% endif %}
     });
 }
+
+// Call initialization when script loads
+initializeModuleWebSocket();
+
+// ===== AUTO-RESTORE STUDENT LIVE QUIZ SESSION ON PAGE LOAD =====
+async function checkAndRestoreStudentLiveQuiz() {
+    try {
+        console.log('\n' + '🎮'.repeat(50));
+        console.log('[STUDENT QUIZ RESTORE] Checking for active quiz participation...');
+        
+        const moduleContext = window.__moduleContext || {};
+        const { classId, moduleId, lessonId } = moduleContext;
+        
+        if (!classId || !moduleId) {
+            console.log('[STUDENT QUIZ RESTORE] No module context, skipping');
+            console.log('🎮'.repeat(50) + '\n');
+            return;
+        }
+        
+        console.log('[STUDENT QUIZ RESTORE] Context:', { classId, moduleId, lessonId });
+        
+        // Check if student has an active session
+        const response = await fetch(`/api/live-quiz-mvp/my-active-session?class_id=${classId}&module_id=${moduleId}`);
+        
+        if (!response.ok) {
+            console.log('[STUDENT QUIZ RESTORE] Failed to check session:', response.status);
+            console.log('🎮'.repeat(50) + '\n');
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('[STUDENT QUIZ RESTORE] Response:', data);
+        
+        if (data.success && data.has_active_session && data.session) {
+            const session = data.session;
+            
+            console.log('\n' + '✅'.repeat(50));
+            console.log('[STUDENT QUIZ RESTORE] ✅ Active quiz participation found!');
+            console.log('[STUDENT QUIZ RESTORE] Session ID:', session.session_id);
+            console.log('[STUDENT QUIZ RESTORE] Title:', session.title);
+            console.log('[STUDENT QUIZ RESTORE] Status:', session.status);
+            console.log('[STUDENT QUIZ RESTORE] Current question:', session.current_question_index + 1, '/', session.total_questions);
+            console.log('[STUDENT QUIZ RESTORE] Score:', session.participant_stats.total_score);
+            console.log('[STUDENT QUIZ RESTORE] Correct answers:', session.participant_stats.total_correct, '/', session.participant_stats.total_answered);
+            console.log('✅'.repeat(50) + '\n');
+            
+            // Get lesson questions
+            const lessonQuestions = Array.isArray(window.__lessonQuestions) ? window.__lessonQuestions : [];
+            
+            if (lessonQuestions.length === 0) {
+                console.warn('[STUDENT QUIZ RESTORE] ⚠️ No lesson questions available, cannot restore quiz interface');
+                console.log('🎮'.repeat(50) + '\n');
+                return;
+            }
+            
+            console.log('[STUDENT QUIZ RESTORE] Lesson questions available:', lessonQuestions.length);
+            
+            // Format questions for live quiz
+            const formattedQuestions = lessonQuestions.map(q => {
+                let options = q.options;
+                if (typeof options === 'string') {
+                    try {
+                        options = JSON.parse(options);
+                    } catch (e) {
+                        options = [];
+                    }
+                }
+                
+                if (!Array.isArray(options)) {
+                    options = [];
+                }
+                
+                return {
+                    id: (q.id || q.numb),
+                    question: q.question,
+                    options: options,
+                    answer: q.answer,
+                    explanation: q.explanation || null
+                };
+            });
+            
+            console.log('[STUDENT QUIZ RESTORE] 🚀 Reinitializing Live Quiz interface...');
+            
+            // Restore quiz state
+            liveQuizState.sessionId = session.session_id;
+            liveQuizState.questions = formattedQuestions;
+            liveQuizState.currentQuestionIndex = session.current_question_index || 0;
+            liveQuizState.hasJoined = true;
+            liveQuizState.quizEnded = (session.status === 'completed');
+            
+            // Show live quiz container
+            const liveQuizContainer = document.getElementById('liveQuizContainer');
+            if (liveQuizContainer) {
+                liveQuizContainer.style.display = 'block';
+            }
+            
+            // Hide lesson content
+            const lessonContent = document.querySelector('.lesson-content');
+            if (lessonContent) {
+                lessonContent.style.display = 'none';
+            }
+            
+            // Reconnect to WebSocket
+            console.log('[STUDENT QUIZ RESTORE] 🔌 Reconnecting to Live Quiz WebSocket...');
+            connectLiveQuizSocket(session.session_id);
+            
+            // Update UI with current question
+            if (session.status === 'active' && liveQuizState.currentQuestionIndex < formattedQuestions.length) {
+                const currentQ = formattedQuestions[liveQuizState.currentQuestionIndex];
+                liveQuizState.currentQuestion = currentQ;
+                liveQuizState.answered = false; // Reset for current question
+                
+                // Display question
+                displayQuestion(currentQ, liveQuizState.currentQuestionIndex + 1);
+                
+                console.log('[STUDENT QUIZ RESTORE] ✅ Displaying current question:', liveQuizState.currentQuestionIndex + 1);
+            } else if (session.status === 'completed') {
+                console.log('[STUDENT QUIZ RESTORE] Quiz has ended, showing completion state');
+                showQuizCompletion({ leaderboard: [] });
+            } else {
+                console.log('[STUDENT QUIZ RESTORE] Quiz status:', session.status, '- waiting for instructor');
+                showWaitingState();
+            }
+            
+            // Fetch and display current leaderboard
+            try {
+                const leaderboardResponse = await fetch(`/api/live-quiz-mvp/leaderboard/${session.session_id}`);
+                if (leaderboardResponse.ok) {
+                    const leaderboardData = await leaderboardResponse.json();
+                    if (leaderboardData.success && Array.isArray(leaderboardData.leaderboard)) {
+                        updateLeaderboard(leaderboardData.leaderboard);
+                        console.log('[STUDENT QUIZ RESTORE] ✅ Leaderboard updated');
+                        if (session.status === 'completed') {
+                            console.log('[STUDENT QUIZ RESTORE] ✅ Rendering completion stats from restored leaderboard');
+                            showQuizCompletion({ leaderboard: leaderboardData.leaderboard });
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('[STUDENT QUIZ RESTORE] Could not fetch leaderboard:', err);
+            }
+            
+            console.log('[STUDENT QUIZ RESTORE] ✅ Live Quiz restored successfully!');
+            console.log('🎮'.repeat(50) + '\n');
+            
+        } else {
+            console.log('[STUDENT QUIZ RESTORE] No active quiz participation found');
+            console.log('🎮'.repeat(50) + '\n');
+        }
+        
+    } catch (error) {
+        console.error('[STUDENT QUIZ RESTORE] ❌ Error restoring quiz:', error);
+        console.log('🎮'.repeat(50) + '\n');
+    }
+}
+
+// Helper function to show waiting state
+function showWaitingState() {
+    const quizContent = document.getElementById('quizContent');
+    if (quizContent) {
+        quizContent.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px;">
+                <i class="fas fa-clock" style="font-size: 64px; color: var(--accent-color); margin-bottom: 20px;"></i>
+                <h2 style="color: var(--text-primary); margin-bottom: 12px;">Waiting for instructor...</h2>
+                <p style="color: var(--text-secondary); font-size: 16px;">
+                    Your instructor will start the next question shortly.
+                </p>
+            </div>
+        `;
+    }
+}
+
+// Helper function to show quiz completion
+function showQuizCompletion() {
+    const quizContent = document.getElementById('quizContent');
+    if (quizContent) {
+        quizContent.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px;">
+                <i class="fas fa-check-circle" style="font-size: 64px; color: #10b981; margin-bottom: 20px;"></i>
+                <h2 style="color: var(--text-primary); margin-bottom: 12px;">Quiz Complete!</h2>
+                <p style="color: var(--text-secondary); font-size: 16px;">
+                    Check the leaderboard to see your final ranking.
+                </p>
+            </div>
+        `;
+    }
+}
+
+// Run restore check after a short delay to ensure page is fully loaded
+setTimeout(() => {
+    checkAndRestoreStudentLiveQuiz();
+}, 1500);
 
 function handleModuleContentUpdate(data) {
     try {
@@ -3850,16 +4235,6 @@ function renderQuizStartScreen() {
                         </div>
                         <div style="color: var(--text-secondary); font-size: 0.9rem;">Per Question</div>
                     </div>
-                    
-                    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px;">
-                        <div style="font-size: 2rem; color: var(--network-purple); margin-bottom: 8px;">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
-                            1000
-                        </div>
-                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Max Points</div>
-                    </div>
                 </div>
                 
                 <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 20px; margin: 24px 0;">
@@ -3868,7 +4243,6 @@ function renderQuizStartScreen() {
                     </h3>
                     <ul style="color: var(--text-secondary); text-align: left; margin: 0; padding-left: 24px; line-height: 1.8;">
                         <li>Answer questions as quickly and accurately as possible</li>
-                        <li>Correct answers earn points based on speed (faster = more points!)</li>
                         <li>Watch your rank on the live leaderboard</li>
                         <li>See your final ranking when you complete the quiz</li>
                     </ul>
@@ -3909,7 +4283,7 @@ function renderQuestion(index) {
                         Question ${index + 1} of ${quizQuestions.length}
                     </span>
                     <span style="color: var(--cyber-glow); font-weight: 600; font-size: 1.1rem;">
-                        Score: ${quizScore}
+                        ${quizScore} / ${quizQuestions.length} Correct
                     </span>
                 </div>
                 <div style="background: var(--dark-bg); height: 8px; border-radius: 4px; overflow: hidden;">
@@ -3975,65 +4349,94 @@ function renderQuestion(index) {
     lessonContent.innerHTML = html;
     
     // Start countdown timer
-    startQuestionTimer();
+    // Practice-only timer (renamed to avoid MVP collisions)
+    startPracticeTimer();
     
     // Load initial leaderboard
-    updateLeaderboard();
+    updateLeaderboardPreview();
 }
 
-let timerInterval = null;
-let timeRemaining = 30;
+// Practice-only timer (standalone quiz while reading lesson; not used by MVP live quiz)
+let practiceTimerInterval = null;
+let practiceTimeRemaining = 30;
 
-function startQuestionTimer() {
-    timeRemaining = 30;
-    const timerDisplay = document.getElementById('timer-display');
+function startPracticeTimer() {
+    console.log('🕒 [PRACTICE TIMER] Starting question timer');
+    practiceTimeRemaining = 30;
+    // Practice view uses its own display ids (not the circular timer)
+    const timerText = document.getElementById('timer-display');
     const timerBarFill = document.getElementById('timer-bar-fill');
     
-    if (timerInterval) clearInterval(timerInterval);
+    if (practiceTimerInterval) {
+        console.log('🕒 [PRACTICE TIMER] Clearing existing timer interval');
+        clearInterval(practiceTimerInterval);
+    }
     
-    timerInterval = setInterval(() => {
-        timeRemaining--;
+    practiceTimerInterval = setInterval(() => {
+        practiceTimeRemaining--;
+        console.log('🕒 [PRACTICE TIMER] Time remaining:', practiceTimeRemaining);
         
-        if (timerDisplay) {
-            timerDisplay.textContent = timeRemaining;
-            
-            // Change color as time runs out
-            if (timeRemaining <= 10) {
-                timerDisplay.style.color = 'var(--danger-color)';
-                timerDisplay.style.textShadow = '0 0 15px rgba(239, 68, 68, 0.5)';
-            } else if (timeRemaining <= 20) {
-                timerDisplay.style.color = 'var(--warning-color)';
-                timerDisplay.style.textShadow = '0 0 15px rgba(245, 158, 11, 0.5)';
-            }
+        // Update timer text
+        if (timerText) {
+            timerText.textContent = practiceTimeRemaining;
         }
         
+        // Update practice progress bar
         if (timerBarFill) {
-            timerBarFill.style.width = `${(timeRemaining / 30) * 100}%`;
+            timerBarFill.style.width = `${(practiceTimeRemaining / 30) * 100}%`;
         }
         
-        if (timeRemaining <= 0) {
-            clearInterval(timerInterval);
+        if (practiceTimeRemaining <= 0) {
+            console.log('⏰ [PRACTICE TIMER] Time expired!');
+            clearInterval(practiceTimerInterval);
+            practiceTimerInterval = null;
             // Auto-submit with no answer (counts as incorrect)
-            handleTimeout();
+            handlePracticeTimeout();
         }
     }, 1000);
 }
 
-function handleTimeout() {
+function handlePracticeTimeout() {
+    console.log('⏰ [TIMEOUT] Handling timeout');
     // Disable all option buttons
-    const options = document.querySelectorAll('.quiz-option-btn');
-    options.forEach(btn => btn.disabled = true);
+    const options = document.querySelectorAll('.quiz-option-btn, .answer-option');
+    options.forEach(btn => {
+        btn.disabled = true;
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '0.6';
+    });
     
-    showFeedback(false, 'Time\'s up!', 'You ran out of time on this question.', 0);
+    // Show timeout feedback
+    const feedbackEl = document.getElementById('answerFeedback');
+    if (feedbackEl) {
+        const feedbackContent = feedbackEl.querySelector('.feedback-content');
+        if (feedbackContent) {
+            feedbackContent.className = 'feedback-content incorrect';
+            const iconEl = feedbackContent.querySelector('.feedback-icon');
+            const titleEl = feedbackContent.querySelector('.feedback-title');
+            const detailsEl = feedbackContent.querySelector('.feedback-details');
+            
+            if (iconEl) iconEl.innerHTML = '<i class="fas fa-clock"></i>';
+            if (titleEl) titleEl.textContent = 'Time\'s Up!';
+            if (detailsEl) detailsEl.textContent = 'You ran out of time on this question.';
+            
+            feedbackEl.style.display = 'block';
+        }
+    }
     
+    // Move to next question after delay
     setTimeout(() => {
         currentQuestionIndex++;
-        renderQuestion(currentQuestionIndex);
+        if (currentQuestionIndex < quizQuestions.length) {
+            renderQuestion(currentQuestionIndex);
+        } else {
+            completeQuiz();
+        }
     }, 3000);
 }
 
 async function submitQuizAnswer(selectedAnswer, questionId) {
-    if (timerInterval) clearInterval(timerInterval);
+    if (practiceTimerInterval) clearInterval(practiceTimerInterval);
     
     // Disable all options
     const options = document.querySelectorAll('.quiz-option-btn');
@@ -4101,8 +4504,7 @@ function showFeedback(isCorrect, title, message, points) {
             </div>
             <div style="flex: 1;">
                 <h4 style="color: var(--text-primary); margin: 0 0 8px 0; font-size: 1.2rem;">${title}</h4>
-                <p style="color: var(--text-secondary); margin: 0 0 8px 0; line-height: 1.6;">${message}</p>
-                ${points > 0 ? `<div style="color: var(--neon-green); font-weight: 600; font-size: 1.1rem;"><i class="fas fa-plus-circle"></i> +${points} points</div>` : ''}
+                <p style="color: var(--text-secondary); margin: 0; line-height: 1.6;">${message}</p>
             </div>
         </div>
     `;
@@ -4112,7 +4514,7 @@ function showFeedback(isCorrect, title, message, points) {
     feedbackDiv.style.border = `2px solid ${borderColor}`;
 }
 
-async function updateLeaderboard() {
+async function updateLeaderboardPreview() {
     try {
     const response = await fetch(`/api/live-quiz-mvp/leaderboard/${currentQuizSession.id}`);
         const data = await response.json();
@@ -4128,8 +4530,10 @@ async function updateLeaderboard() {
 function renderLeaderboard(leaderboard) {
     const leaderboardContent = document.getElementById('leaderboard-content');
     if (!leaderboardContent) return;
-    
-    if (!leaderboard || leaderboard.length === 0) {
+
+    const normalizedLeaderboard = normalizeLeaderboardEntries(leaderboard);
+
+    if (!normalizedLeaderboard || normalizedLeaderboard.length === 0) {
         leaderboardContent.innerHTML = `
             <div style="text-align: center; padding: 20px; color: var(--text-muted);">
                 <i class="fas fa-users" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
@@ -4141,7 +4545,7 @@ function renderLeaderboard(leaderboard) {
     
     const html = `
         <div style="display: flex; flex-direction: column; gap: 12px;">
-            ${leaderboard.slice(0, 5).map((participant, index) => `
+            ${normalizedLeaderboard.slice(0, 5).map((participant, index) => `
                 <div style="background: ${participant.is_current_user ? 'rgba(0, 217, 255, 0.1)' : 'rgba(255, 255, 255, 0.03)'}; border: 1px solid ${participant.is_current_user ? 'var(--cyber-glow)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 16px;">
                     <div style="background: ${index === 0 ? 'linear-gradient(135deg, #FFD700, #FFA500)' : index === 1 ? 'linear-gradient(135deg, #C0C0C0, #808080)' : index === 2 ? 'linear-gradient(135deg, #CD7F32, #8B4513)' : 'var(--dark-bg)'}; color: ${index < 3 ? '#000' : 'var(--text-primary)'}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
                         ${participant.rank}
@@ -4155,11 +4559,11 @@ function renderLeaderboard(leaderboard) {
                         </div>
                     </div>
                     <div style="color: var(--neon-green); font-weight: 700; font-size: 1.1rem; flex-shrink: 0;">
-                        ${participant.total_score}
+                        ${participant.total_correct}/${participant.questions_answered || participant.total_answered || 0}
                     </div>
                 </div>
             `).join('')}
-            ${leaderboard.length > 5 ? `<div style="text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 8px;">and ${leaderboard.length - 5} more...</div>` : ''}
+            ${normalizedLeaderboard.length > 5 ? `<div style="text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 8px;">and ${normalizedLeaderboard.length - 5} more...</div>` : ''}
         </div>
     `;
     
@@ -4170,7 +4574,7 @@ function startLeaderboardUpdates() {
     // Update leaderboard every 5 seconds
     if (leaderboardUpdateInterval) clearInterval(leaderboardUpdateInterval);
     leaderboardUpdateInterval = setInterval(() => {
-        updateLeaderboard();
+        updateLeaderboardPreview();
     }, 5000);
 }
 
@@ -4324,43 +4728,115 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Global variable to store current live quiz sessions
-let currentLiveQuizSessions = {{ live_quiz_sessions|tojson|safe if live_quiz_sessions else '[]' }};
+window.currentLiveQuizSessions = {{ live_quiz_sessions|tojson|safe if live_quiz_sessions else '[]' }};
+
+// Initialize the button on page load
+if (window.currentLiveQuizSessions && window.currentLiveQuizSessions.length > 0) {
+    console.log('[MVP REALTIME] Initializing Live Quiz button with sessions:', window.currentLiveQuizSessions);
+    updateLiveQuizButton(window.currentLiveQuizSessions);
+}
 
 function updateLiveQuizButton(sessions) {
+    console.log('\n' + '='.repeat(80));
+    console.log('[MVP REALTIME] 🔘 updateLiveQuizButton() called');
+    console.log('[MVP REALTIME] Current sessions:', sessions);
+    console.log('='.repeat(80) + '\n');
+    
     const buttonContainer = document.getElementById('liveQuizButtonContainer');
     const button = document.getElementById('liveQuizButton');
     const buttonText = document.getElementById('liveQuizButtonText');
     const badge = document.getElementById('liveQuizBadge');
     
-    if (!buttonContainer || !button) return;
+    if (!buttonContainer || !button) {
+        console.error('[MVP REALTIME] ❌ Button elements not found in DOM');
+        return;
+    }
+    
+    const currentLessonId = (window.__moduleContext || {}).lessonId ? parseInt((window.__moduleContext || {}).lessonId) : null;
+    
+    console.log('[MVP REALTIME] Filtering sessions for lesson:', currentLessonId);
     
     if (sessions && sessions.length > 0) {
-        const activeSession = sessions.find(s => s.status === 'active');
-        const waitingSession = sessions.find(s => s.status === 'waiting');
+        const relevantSessions = sessions.filter(s => {
+            // If session has no lesson_id, it's for the whole module - always show it
+            if (!s.lesson_id || s.lesson_id === null) {
+                console.log(`[MVP REALTIME]   Session ${s.id} (module-wide): ✅ MATCH (no lesson restriction)`);
+                return true;
+            }
+            // If session has lesson_id, only show if it matches current lesson
+            const match = parseInt(s.lesson_id) === currentLessonId;
+            console.log(`[MVP REALTIME]   Session ${s.id} (lesson ${s.lesson_id}): ${match ? '✅ MATCH' : '⏭️ skip'}`);
+            return match;
+        });
+        
+        console.log('[MVP REALTIME] Relevant sessions found:', relevantSessions.length);
+        
+        if (relevantSessions.length === 0) {
+            console.log('[MVP REALTIME] ❌ No sessions for this lesson, hiding button');
+            buttonContainer.style.display = 'none';
+            return;
+        }
+        
+        const activeSession = relevantSessions.find(s => s.status === 'active');
+        const waitingSession = relevantSessions.find(s => s.status === 'waiting');
+        const sessionForContext = activeSession || waitingSession || null;
+        const moduleContext = window.__moduleContext || {};
         
         if (activeSession) {
+            console.log('[MVP REALTIME] 🟢 Session is ACTIVE - showing LIVE button');
             buttonContainer.style.display = 'block';
-            buttonText.textContent = 'Join Live Quiz Now!';
+            buttonText.textContent = 'Live Quiz';
             badge.style.display = 'inline-block';
             badge.textContent = 'LIVE';
             button.style.animation = 'pulse 2s infinite';
             button.dataset.sessionId = activeSession.id;
             button.dataset.status = 'active';
+            console.log('[MVP REALTIME] ✅ Button updated to LIVE state');
         } else if (waitingSession) {
+            console.log('[MVP REALTIME] ⏳ Session is WAITING - showing WAITING button');
             buttonContainer.style.display = 'block';
-            buttonText.textContent = 'Live Quiz Starting Soon';
+            buttonText.textContent = 'Live Quiz';
             badge.style.display = 'inline-block';
             badge.textContent = 'WAITING';
             button.dataset.sessionId = waitingSession.id;
             button.dataset.status = 'waiting';
             button.style.animation = 'none';
+            console.log('[MVP REALTIME] ✅ Button updated to WAITING state');
         } else {
+            console.log('[MVP REALTIME] ⏹️ Session status unknown, hiding button');
             buttonContainer.style.display = 'none';
         }
+
+        if (sessionForContext) {
+            button.dataset.classId = sessionForContext.class_id || moduleContext.classId || '';
+            button.dataset.moduleId = sessionForContext.module_id || moduleContext.moduleId || '';
+            button.dataset.lessonId = sessionForContext.lesson_id || moduleContext.lessonId || '';
+        } else if (moduleContext.classId) {
+            button.dataset.classId = moduleContext.classId;
+            button.dataset.moduleId = moduleContext.moduleId || '';
+            button.dataset.lessonId = moduleContext.lessonId || '';
+        } else {
+            delete button.dataset.classId;
+            delete button.dataset.moduleId;
+            delete button.dataset.lessonId;
+        }
+        
+        console.log('[MVP REALTIME] 🎨 Final button state:', {
+            display: buttonContainer.style.display,
+            text: buttonText.textContent,
+            badge: badge.textContent,
+            pulsing: button.style.animation !== 'none'
+        });
     } else {
+        console.log('[MVP REALTIME] ❌ No sessions provided, hiding button');
         buttonContainer.style.display = 'none';
     }
+    
+    console.log('='.repeat(80) + '\n');
 }
+
+// Make function globally accessible for WebSocket handlers
+window.updateLiveQuizButton = updateLiveQuizButton;
 
 function handleLiveQuizClick() {
     const button = document.getElementById('liveQuizButton');
@@ -4373,8 +4849,9 @@ function handleLiveQuizClick() {
     }
     
     if (status === 'waiting') {
-        // Quiz is waiting - don't join yet, just log
-        console.log('[LiveQuiz] Quiz is waiting to start. Status will update when instructor begins.');
+        // MVP Guard: Quiz is waiting - instructor has not started it yet
+        console.log('[LiveQuiz][MVP] Quiz session is waiting - instructor has not started it yet');
+        alert('MVP: The Live Quiz has not started yet. Please wait for your instructor to begin.');
         return;
     }
     
@@ -4425,6 +4902,21 @@ function joinLiveQuizSession(sessionId) {
     .then(async res => {
         if (!res.ok) {
             const bodyText = await res.text();
+            
+            // MVP Guard: Handle 403 (session not active)
+            if (res.status === 403) {
+                try {
+                    const errorData = JSON.parse(bodyText);
+                    if (errorData.waiting) {
+                        console.warn('[LiveQuiz][MVP][BLOCKED] Session is waiting - instructor has not started it', errorData);
+                        alert(errorData.error || 'MVP: The Live Quiz has not started yet. Please wait for your instructor to begin.');
+                        return null;
+                    }
+                } catch (parseErr) {
+                    // Fall through to generic error handling
+                }
+            }
+            
             console.warn('[LiveQuiz][Join] HTTP error', {
                 status: res.status,
                 statusText: res.statusText,
@@ -4435,6 +4927,8 @@ function joinLiveQuizSession(sessionId) {
         return res.json();
     })
     .then(joinData => {
+        if (!joinData) return; // Blocked by MVP guard
+        
         if (!joinData.success) throw new Error(joinData.error || 'Failed to join quiz');
         console.log('✅ Successfully joined quiz:', joinData);
         console.log('[LiveQuiz][Join] Success', { sessionId, participant: joinData.participant, leaderboardSize: joinData.leaderboard?.length || 0 });
@@ -4489,6 +4983,9 @@ function joinLiveQuizSession(sessionId) {
 // LIVE QUIZ - Socket.IO & Real-Time Functionality
 // ============================================================================
 
+const CURRENT_USER_ID = {{ (current_user.id if current_user.is_authenticated else None)|tojson }};
+window.__CURRENT_USER_ID = CURRENT_USER_ID;
+
 // Live Quiz State
 let liveQuizState = {
   sessionId: null,
@@ -4499,8 +4996,13 @@ let liveQuizState = {
   timer: null,
   timeRemaining: 30,
   socket: null,
-  isConnected: false
+    isConnected: false,
+    hasJoined: false,
+    quizEnded: false,  // GUARD: Track if quiz has ended to prevent timer loops
+    currentUserId: CURRENT_USER_ID
 };
+
+console.log('[LiveQuiz][UserContext] Current user id detected:', liveQuizState.currentUserId);
 
 // Initialize Live Quiz
 function initializeLiveQuiz(sessionId, questions) {
@@ -4509,6 +5011,8 @@ function initializeLiveQuiz(sessionId, questions) {
   
   liveQuizState.sessionId = sessionId;
   liveQuizState.questions = questions;
+    liveQuizState.hasJoined = false;
+  liveQuizState.quizEnded = false;  // RESET: Clear ended flag for new quiz
   
   // Show live quiz container
   const liveQuizContainer = document.getElementById('liveQuizContainer');
@@ -4532,11 +5036,8 @@ function initializeLiveQuiz(sessionId, questions) {
   const buttonContainer = document.getElementById('liveQuizButtonContainer');
   if (buttonContainer) buttonContainer.style.display = 'none';
   
-  // Connect to socket
+  // Connect to socket (this will automatically join when connected)
   connectToLiveQuiz();
-  
-  // Join the quiz
-  joinLiveQuiz();
   
   // Fetch initial leaderboard
   fetch(`/api/live-quiz-mvp/leaderboard/${sessionId}`)
@@ -4553,108 +5054,314 @@ function initializeLiveQuiz(sessionId, questions) {
 
 // Connect to Live Quiz via Socket
 function connectToLiveQuiz() {
-  if (typeof io === 'undefined') {
-    console.error('Socket.IO not loaded');
-    return;
+    // Reuse the global socket client so we don't open competing connections
+    if (!window.socketClient) {
+        console.log('[LiveQuiz] socketClient not ready, retrying...');
+        setTimeout(connectToLiveQuiz, 500);
+        return;
+    }
+
+    if (!window.socketClient.socket) {
+        console.log('[LiveQuiz] Waiting for socketClient.socket initialization...');
+            if (!window.__liveQuizAwaitingSocket) {
+                window.__liveQuizAwaitingSocket = true;
+                window.socketClient.on('connected', () => {
+                    connectToLiveQuiz();
+                });
+            }
+        setTimeout(connectToLiveQuiz, 500);
+        return;
+    }
+
+    const activeSocket = window.socketClient.socket;
+    liveQuizState.socket = activeSocket;
+
+    if (!window.__liveQuizHandlersRegistered) {
+        window.__liveQuizHandlersRegistered = true;
+
+        activeSocket.on('quiz_started', (data) => {
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #00ff00; font-weight: bold');
+            console.log('[STUDENT SOCKET] 🚀 quiz_started event received!');
+            console.log('[STUDENT SOCKET] Session ID:', data.session_id);
+            console.log('[STUDENT SOCKET] Started at:', data.started_at);
+            console.log('[STUDENT SOCKET] Current question index:', data.current_question_index);
+            console.log('[STUDENT SOCKET] Full event data:', data);
+            
+            const badge = document.getElementById('quizStatusBadge');
+            if (badge) {
+                badge.textContent = 'Active';
+                badge.classList.remove('badge-warning');
+                badge.classList.add('badge-success', 'active');
+                console.log('[STUDENT SOCKET] ✅ Status badge updated to Active');
+            }
+            
+            // Load first question when instructor starts
+            if (liveQuizState.questions.length > 0) {
+                console.log('[STUDENT SOCKET] 📝 Loading first question (index 0)');
+                console.log('[STUDENT SOCKET] Total questions available:', liveQuizState.questions.length);
+                loadQuestion(0);
+            } else {
+                console.warn('[STUDENT SOCKET] ⚠️ No questions available to load');
+            }
+            
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #00ff00; font-weight: bold');
+        });
+
+        activeSocket.on('participant_joined', (data) => {
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #ff00ff; font-weight: bold');
+            console.log('[STUDENT SOCKET] 👤 participant_joined event received!');
+            console.log('[STUDENT SOCKET] Display name:', data.display_name);
+            console.log('[STUDENT SOCKET] Participant count:', data.participant_count);
+            console.log('[STUDENT SOCKET] Session ID:', data.session_id);
+            console.log('[STUDENT SOCKET] Has leaderboard:', !!data.leaderboard);
+            if (data.leaderboard) {
+                console.log('[STUDENT SOCKET] Leaderboard size:', data.leaderboard.length);
+            }
+            console.log('[STUDENT SOCKET] Full event data:', data);
+            
+            updateParticipantCount(data.participant_count);
+            console.log('[STUDENT SOCKET] ✅ Participant count updated to:', data.participant_count);
+
+            // Update leaderboard with data from event (if provided)
+            if (data.leaderboard && Array.isArray(data.leaderboard)) {
+                console.log('[STUDENT SOCKET] 📊 Updating leaderboard from event...');
+                updateLeaderboard(data.leaderboard);
+                console.log('[STUDENT SOCKET] ✅ Leaderboard updated from event');
+            } else if (liveQuizState.sessionId) {
+                console.log('[STUDENT SOCKET] ⚠️ No leaderboard in event - fetching from API...');
+                // Fallback: fetch updated leaderboard
+                fetch(`/api/live-quiz-mvp/leaderboard/${liveQuizState.sessionId}`)
+                    .then(res => res.json())
+                    .then(payload => {
+                        if (payload.success && payload.leaderboard) {
+                            console.log('[STUDENT SOCKET] ✅ Leaderboard fetched from API');
+                            updateLeaderboard(payload.leaderboard);
+                        }
+                    })
+                    .catch(err => console.error('[STUDENT SOCKET] ❌ Error fetching leaderboard:', err));
+            }
+            
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #ff00ff; font-weight: bold');
+        });
+
+        activeSocket.on('quiz_state', (data) => {
+            console.log('[MVP LiveQuiz] Quiz state received:', data);
+
+            if (data.participant_count !== undefined) {
+                updateParticipantCount(data.participant_count);
+            }
+            
+            // Update leaderboard if provided
+            if (data.leaderboard && Array.isArray(data.leaderboard)) {
+                console.log('[MVP LiveQuiz] Updating leaderboard from quiz_state');
+                updateLeaderboard(data.leaderboard);
+            }
+
+            if (data.status === 'active') {
+                console.log('[MVP LiveQuiz] Session is active - loading question', data.current_question_index || 0);
+                loadQuestion(data.current_question_index || 0);
+            } else if (data.status === 'waiting') {
+                console.log('[MVP LiveQuiz] Session is waiting - showing waiting screen');
+                showWaitingForInstructor();
+            } else {
+                console.log('[MVP LiveQuiz] Session status:', data.status);
+            }
+        });
+
+        activeSocket.on('answer_result', (data) => {
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #ffaa00; font-weight: bold');
+            console.log('[STUDENT SOCKET] ✅ answer_result event received!');
+            console.log('[STUDENT SOCKET] Full event data:', data);
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #ffaa00; font-weight: bold');
+            showAnswerFeedback(data);
+        });
+
+        activeSocket.on('leaderboard_update', (data) => {
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #ff6600; font-weight: bold');
+            console.log('[STUDENT SOCKET] 📊 leaderboard_update event received!');
+            console.log('[STUDENT SOCKET] Has leaderboard:', !!data.leaderboard);
+            if (data.leaderboard) {
+                console.log('[STUDENT SOCKET] Leaderboard size:', data.leaderboard.length);
+            }
+            console.log('[STUDENT SOCKET] Full event data:', data);
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #ff6600; font-weight: bold');
+            updateLeaderboard(data.leaderboard);
+        });
+
+        activeSocket.on('next_question', (data) => {
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #00d9ff; font-weight: bold');
+            console.log('[STUDENT SOCKET] ⏭️ next_question event received!');
+            console.log('[STUDENT SOCKET] Question index:', data.question_index);
+            console.log('[STUDENT SOCKET] Timestamp:', data.timestamp);
+            console.log('[STUDENT SOCKET] Has leaderboard:', !!data.leaderboard);
+            if (data.leaderboard) {
+                console.log('[STUDENT SOCKET] Leaderboard size:', data.leaderboard.length);
+            }
+            console.log('[STUDENT SOCKET] Full event data:', data);
+            
+            // Update leaderboard if provided (shows results from previous question)
+            if (data.leaderboard && Array.isArray(data.leaderboard)) {
+                console.log('[STUDENT SOCKET] 📊 Updating leaderboard from event...');
+                updateLeaderboard(data.leaderboard);
+                console.log('[STUDENT SOCKET] ✅ Leaderboard updated');
+            }
+            
+            // Clear any existing answer feedback
+            const feedbackEl = document.getElementById('answerFeedback');
+            if (feedbackEl) {
+                feedbackEl.style.display = 'none';
+                console.log('[STUDENT SOCKET] ✅ Cleared previous answer feedback');
+            }
+            
+            // Load the new question
+            console.log('[STUDENT SOCKET] 📝 Loading question index:', data.question_index);
+            loadQuestion(data.question_index);
+            
+            // Reset answered state for new question
+            liveQuizState.answered = false;
+            console.log('[STUDENT SOCKET] ✅ Reset answered state for new question');
+            
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #00d9ff; font-weight: bold');
+        });
+
+        activeSocket.on('quiz_ended', (data) => {
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #ff0000; font-weight: bold');
+            console.log('[STUDENT SOCKET] 🏁 quiz_ended event received!');
+            console.log('[STUDENT SOCKET] Full event data:', data);
+            console.log('%c[STUDENT SOCKET] ════════════════════════════════════════', 'color: #ff0000; font-weight: bold');
+            
+            // CRITICAL: Stop the timer immediately when quiz ends
+            stopQuestionTimer();
+            liveQuizState.quizEnded = true;
+            
+            showQuizCompletion(data);
+        });
+
+        activeSocket.on('live_quiz_error', (data) => {
+            console.error('Live quiz error:', data);
+            alert(data.message);
+        });
+
+        if (!window.__liveQuizDisconnectHandlerRegistered) {
+            window.__liveQuizDisconnectHandlerRegistered = true;
+            window.socketClient.on('disconnected', () => {
+                console.log('[LiveQuiz] socketClient disconnected');
+                liveQuizState.isConnected = false;
+                    liveQuizState.hasJoined = false;
+            });
+        }
+    }
+
+    if (window.socketClient.connected) {
+            if (!liveQuizState.isConnected) {
+            console.log('[LiveQuiz] socketClient connected, joining session...');
+            liveQuizState.isConnected = true;
+                joinLiveQuiz();
+        }
+    } else {
+        console.log('[LiveQuiz] socketClient not connected yet, waiting to join...');
+            if (!window.__liveQuizJoinAfterConnectRegistered) {
+                window.__liveQuizJoinAfterConnectRegistered = true;
+                window.socketClient.on('connected', () => {
+                    console.log('[LiveQuiz] socketClient connected (delayed), joining session...');
+                    liveQuizState.isConnected = true;
+                            joinLiveQuiz();
+                });
+            }
+    }
+}
+
+// MVP: Show waiting screen when students join before instructor starts
+function showWaitingForInstructor() {
+  console.log('[MVP LiveQuiz] Showing waiting screen');
+  
+  // Clear any existing timers
+  if (liveQuizState.timerInterval) {
+    clearInterval(liveQuizState.timerInterval);
+    liveQuizState.timerInterval = null;
   }
   
-  liveQuizState.socket = io();
+  // Update status badge
+  const statusBadge = document.getElementById('quizStatusBadge');
+  if (statusBadge) {
+    statusBadge.textContent = 'Waiting for Instructor';
+    statusBadge.className = 'badge badge-warning';
+  }
   
-  liveQuizState.socket.on('connect', () => {
-    console.log('Connected to live quiz');
-    liveQuizState.isConnected = true;
-  });
+  // Reset timer display
+  const timerText = document.getElementById('timerText');
+  const timerCircle = document.getElementById('timerCircle');
+  if (timerText) {
+    timerText.textContent = '—';
+    timerText.style.color = '#94a3b8';
+  }
+  if (timerCircle) {
+    timerCircle.style.stroke = '#94a3b8';
+    timerCircle.style.strokeDashoffset = '0';
+  }
   
-  liveQuizState.socket.on('quiz_started', (data) => {
-    console.log('Quiz started:', data);
-    document.getElementById('quizStatusBadge').textContent = 'Active';
-    document.getElementById('quizStatusBadge').classList.add('active');
-    loadQuestion(0);
-  });
+  // Show waiting message in question area
+  const questionContainer = document.getElementById('quizQuestionContainer');
+  if (questionContainer) {
+    questionContainer.innerHTML = `
+      <div style="text-align: center; padding: 60px 20px;">
+        <div style="font-size: 4rem; color: var(--cyber-glow); margin-bottom: 20px;">
+          <i class="fas fa-hourglass-half fa-spin"></i>
+        </div>
+        <h2 style="color: var(--text-primary); margin-bottom: 16px; font-size: 1.8rem;">
+          MVP: Please Wait
+        </h2>
+        <p style="color: var(--text-secondary); font-size: 1.2rem; line-height: 1.6;">
+          Your instructor will start the live quiz shortly.<br>
+          You'll see the first question when the quiz begins.
+        </p>
+        <div style="margin-top: 30px; padding: 20px; background: rgba(0, 217, 255, 0.1); border: 1px solid var(--cyber-glow); border-radius: 8px; display: inline-block;">
+          <i class="fas fa-users" style="color: var(--cyber-glow); margin-right: 8px;"></i>
+          <span id="participantCountWaiting" style="color: var(--text-primary); font-weight: 600;">
+            Waiting for participant count...
+          </span>
+        </div>
+      </div>
+    `;
+  }
   
-  liveQuizState.socket.on('participant_joined', (data) => {
-    console.log('Participant joined:', data);
-    updateParticipantCount(data.participant_count);
-    
-    // Also fetch and update leaderboard to show new participant
-    if (liveQuizState.sessionId) {
-      fetch(`/api/live-quiz-mvp/leaderboard/${liveQuizState.sessionId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.leaderboard) {
-            updateLeaderboard(data.leaderboard);
-          }
-        })
-        .catch(err => console.error('Error fetching leaderboard:', err));
-    }
-  });
-  
-  liveQuizState.socket.on('quiz_state', (data) => {
-    console.log('Quiz state received:', data);
-    
-    // Update participant count if available
-    if (data.participant_count !== undefined) {
-      updateParticipantCount(data.participant_count);
-    }
-    
-    if (data.status === 'active') {
-      loadQuestion(data.current_question_index || 0);
-    } else if (data.status === 'waiting') {
-      // Quiz is waiting to start - show first question preview
-      console.log('Quiz is waiting, loading first question preview');
-      if (liveQuizState.questions && liveQuizState.questions.length > 0) {
-        loadQuestion(0);
-      }
-    }
-  });
-  
-  liveQuizState.socket.on('answer_result', (data) => {
-    console.log('Answer result:', data);
-    showAnswerFeedback(data);
-  });
-  
-  liveQuizState.socket.on('leaderboard_update', (data) => {
-    console.log('Leaderboard update:', data);
-    updateLeaderboard(data.leaderboard);
-  });
-  
-  liveQuizState.socket.on('next_question', (data) => {
-    console.log('Next question:', data);
-    loadQuestion(data.question_index);
-  });
-  
-  liveQuizState.socket.on('quiz_ended', (data) => {
-    console.log('Quiz ended:', data);
-    showQuizCompletion(data);
-  });
-  
-  liveQuizState.socket.on('live_quiz_error', (data) => {
-    console.error('Live quiz error:', data);
-    alert(data.message);
-  });
+  // Clear options area
+  const optionsContainer = document.getElementById('quizOptionsContainer');
+  if (optionsContainer) {
+    optionsContainer.innerHTML = '';
+  }
 }
 
 // Join Live Quiz
 function joinLiveQuiz() {
-  if (!liveQuizState.socket || !liveQuizState.isConnected) {
+    if (liveQuizState.hasJoined) {
+        console.log('[MVP LiveQuiz] Already joined session, skipping duplicate emit');
+        return;
+    }
+
+  if (!liveQuizState.socket) {
+    console.warn('[MVP LiveQuiz] Socket not initialized, waiting...');
     setTimeout(joinLiveQuiz, 500);
     return;
   }
   
-  console.log('[LiveQuiz] Joining session:', liveQuizState.sessionId);
-  console.log('[LiveQuiz] Questions available:', liveQuizState.questions.length);
+  if (!liveQuizState.isConnected) {
+    console.warn('[MVP LiveQuiz] Socket not connected yet, waiting...');
+    setTimeout(joinLiveQuiz, 500);
+    return;
+  }
+  
+  console.log('[MVP LiveQuiz] Joining session:', liveQuizState.sessionId);
+  console.log('[MVP LiveQuiz] Questions available:', liveQuizState.questions.length);
   
   liveQuizState.socket.emit('join_live_quiz', {
     session_id: liveQuizState.sessionId
   });
+    liveQuizState.hasJoined = true;
   
-  // Load first question immediately while waiting for server response
-  if (liveQuizState.questions && liveQuizState.questions.length > 0) {
-    console.log('[LiveQuiz] Loading first question immediately');
-    loadQuestion(0);
-  } else {
-    console.warn('[LiveQuiz] No questions available to load!');
-  }
+  // MVP: Do NOT load a question yet. Wait for instructor to start the quiz.
+  // Show waiting screen instead
+  showWaitingForInstructor();
 }
 
 // Load Question
@@ -4750,24 +5457,30 @@ function selectAnswer(answer, element) {
   });
 }
 
-// Start Question Timer
+// Start Question Timer (using liveQuizState)
 function startQuestionTimer() {
+  console.log('🕒 [TIMER] Starting question timer (liveQuizState version)');
   liveQuizState.timeRemaining = 30;
+  liveQuizState.answered = false;
   updateTimerDisplay();
   
   liveQuizState.timer = setInterval(() => {
     liveQuizState.timeRemaining--;
+    console.log('🕒 [TIMER] Time remaining:', liveQuizState.timeRemaining);
     updateTimerDisplay();
     
     if (liveQuizState.timeRemaining <= 0) {
+      console.log('⏰ [TIMER] Time expired!');
       stopQuestionTimer();
       // Auto-submit or show time's up message
+      handleQuizTimeout();
     }
   }, 1000);
 }
 
 // Stop Question Timer
 function stopQuestionTimer() {
+  console.log('🛑 [TIMER] Stopping timer');
   if (liveQuizState.timer) {
     clearInterval(liveQuizState.timer);
     liveQuizState.timer = null;
@@ -4776,22 +5489,73 @@ function stopQuestionTimer() {
 
 // Update Timer Display
 function updateTimerDisplay() {
-  document.getElementById('timerText').textContent = liveQuizState.timeRemaining;
+  const timerText = document.getElementById('timerText');
+  const timerCircle = document.getElementById('timerCircle');
+  
+  if (timerText) {
+    timerText.textContent = liveQuizState.timeRemaining;
+  }
   
   // Update circle progress
-  const circle = document.getElementById('timerCircle');
-  const circumference = 2 * Math.PI * 36;
-  const offset = circumference - (liveQuizState.timeRemaining / 30) * circumference;
-  circle.style.strokeDasharray = `${circumference} ${circumference}`;
-  circle.style.strokeDashoffset = offset;
+  if (timerCircle) {
+    const circumference = 2 * Math.PI * 36;
+    const offset = circumference - (liveQuizState.timeRemaining / 30) * circumference;
+    timerCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+    timerCircle.style.strokeDashoffset = offset;
+    
+    // Change color based on time
+    if (liveQuizState.timeRemaining <= 5) {
+      timerCircle.style.stroke = '#ef4444';
+      if (timerText) timerText.style.color = '#ef4444';
+    } else if (liveQuizState.timeRemaining <= 10) {
+      timerCircle.style.stroke = '#f59e0b';
+      if (timerText) timerText.style.color = '#f59e0b';
+    } else {
+      timerCircle.style.stroke = '#10b981';
+      if (timerText) timerText.style.color = '#10b981';
+    }
+  }
+}
+
+// Handle Quiz Timeout
+function handleQuizTimeout() {
+  console.log('⏰ [TIMEOUT] Handling quiz timeout');
   
-  // Change color based on time
-  if (liveQuizState.timeRemaining <= 5) {
-    circle.style.stroke = '#ef4444';
-  } else if (liveQuizState.timeRemaining <= 10) {
-    circle.style.stroke = '#f59e0b';
-  } else {
-    circle.style.stroke = '#10b981';
+  // GUARD: Don't do anything if already answered or quiz has ended
+  if (liveQuizState.answered) {
+    console.log('⏰ [TIMEOUT] Already answered, ignoring timeout');
+    return;
+  }
+  
+  if (liveQuizState.quizEnded) {
+    console.log('⏰ [TIMEOUT] Quiz already ended, ignoring timeout');
+    return;
+  }
+  
+  liveQuizState.answered = true;
+  
+  // Disable all options
+  document.querySelectorAll('.answer-option').forEach(el => {
+    el.style.pointerEvents = 'none';
+    el.style.opacity = '0.6';
+  });
+  
+  // Show timeout message
+  const feedbackEl = document.getElementById('answerFeedback');
+  if (feedbackEl) {
+    feedbackEl.querySelector('.feedback-title').textContent = 'Time\'s Up!';
+    feedbackEl.querySelector('.feedback-details').textContent = 'You ran out of time.';
+    feedbackEl.style.display = 'block';
+  }
+  
+  // Auto-submit with no answer
+  if (liveQuizState.socket && liveQuizState.sessionId && liveQuizState.currentQuestion) {
+    liveQuizState.socket.emit('submit_live_answer', {
+      session_id: liveQuizState.sessionId,
+      question_id: liveQuizState.currentQuestion.id,
+      selected_answer: null,
+      response_time: 30
+    });
   }
 }
 
@@ -4826,39 +5590,88 @@ function showAnswerFeedback(data) {
   feedbackEl.style.display = 'block';
 }
 
+// Normalize leaderboard entries to consistently flag the current user across different broadcasts
+function normalizeLeaderboardEntries(entries) {
+    if (!Array.isArray(entries)) {
+        return [];
+    }
+
+    const stateUserId = (typeof liveQuizState !== 'undefined' && liveQuizState && liveQuizState.currentUserId != null)
+        ? String(liveQuizState.currentUserId)
+        : null;
+    const globalUserId = (typeof window !== 'undefined' && window.__CURRENT_USER_ID != null)
+        ? String(window.__CURRENT_USER_ID)
+        : null;
+    const currentUserId = stateUserId || globalUserId;
+
+    return entries.map(participant => {
+        const normalized = Object.assign({}, participant);
+        const participantId = normalized.user_id != null ? String(normalized.user_id) : null;
+
+        if (currentUserId && participantId && participantId === currentUserId) {
+            normalized.is_current_user = true;
+        } else {
+            normalized.is_current_user = Boolean(normalized.is_current_user);
+        }
+
+        return normalized;
+    });
+}
+
 // Update Leaderboard
 function updateLeaderboard(leaderboard) {
+    const normalizedLeaderboard = normalizeLeaderboardEntries(leaderboard);
+
+  console.log('%c[STUDENT LEADERBOARD] ════════════════════════════════════════', 'color: #00ff99; font-weight: bold');
+  console.log('[STUDENT LEADERBOARD] 📊 Updating leaderboard display');
+    console.log('[STUDENT LEADERBOARD] Has leaderboard:', !!normalizedLeaderboard && normalizedLeaderboard.length > 0);
+    if (normalizedLeaderboard && normalizedLeaderboard.length > 0) {
+        console.log('[STUDENT LEADERBOARD] Total participants:', normalizedLeaderboard.length);
+        console.log('[STUDENT LEADERBOARD] Top 3 participants:');
+        normalizedLeaderboard.slice(0, 3).forEach((p, idx) => {
+      console.log(`  ${idx + 1}. ${p.display_name}: ${p.total_correct} correct (Rank #${p.rank})`);
+    });
+  }
+  
   const podiumEl = document.getElementById('leaderboardPodium');
   const listEl = document.getElementById('leaderboardList');
   
   podiumEl.innerHTML = '';
   listEl.innerHTML = '';
   
-  if (!leaderboard || leaderboard.length === 0) {
+    if (!normalizedLeaderboard || normalizedLeaderboard.length === 0) {
+    console.log('[STUDENT LEADERBOARD] ⚠️ No participants to display');
     listEl.innerHTML = `
       <div class="no-participants">
         <i class="fas fa-users-slash"></i>
         <p>No participants yet</p>
       </div>
     `;
+    console.log('%c[STUDENT LEADERBOARD] ════════════════════════════════════════', 'color: #00ff99; font-weight: bold');
     return;
   }
   
   // Show top 3 in podium
-  leaderboard.slice(0, 3).forEach((participant, index) => {
+  console.log('[STUDENT LEADERBOARD] Displaying top 3 in podium');
+    normalizedLeaderboard.slice(0, 3).forEach((participant, index) => {
     const rankClass = ['first', 'second', 'third'][index];
     const podiumItem = document.createElement('div');
     podiumItem.className = `podium-item ${rankClass}`;
     podiumItem.innerHTML = `
       <div class="podium-rank">#${participant.rank}</div>
       <div class="podium-name">${participant.display_name}</div>
-      <div class="podium-score">${participant.total_score}</div>
+      <div class="podium-score">${participant.total_correct}/${participant.questions_answered || participant.total_answered || 0} Correct</div>
     `;
     podiumEl.appendChild(podiumItem);
   });
+  console.log('[STUDENT LEADERBOARD] ✅ Podium updated');
   
   // Show remaining in list
-  leaderboard.slice(3).forEach(participant => {
+    const remainingCount = normalizedLeaderboard.length - 3;
+  if (remainingCount > 0) {
+    console.log('[STUDENT LEADERBOARD] Displaying remaining', remainingCount, 'participants in list');
+  }
+    normalizedLeaderboard.slice(3).forEach(participant => {
     const itemEl = document.createElement('div');
     itemEl.className = `leaderboard-item ${participant.is_current_user ? 'current-user' : ''}`;
     itemEl.innerHTML = `
@@ -4868,43 +5681,94 @@ function updateLeaderboard(leaderboard) {
       </div>
       <div class="item-stats">
         <div class="stat">
-          <span class="stat-value">${participant.total_score}</span>
-          <span class="stat-label">Points</span>
+                    <span class="stat-value">${participant.total_correct}/${participant.questions_answered || participant.total_answered || 0}</span>
+          <span class="stat-label">Correct</span>
         </div>
         <div class="stat">
-          <span class="stat-value">${participant.total_correct}/${participant.total_answered}</span>
-          <span class="stat-label">Correct</span>
+          <span class="stat-value">${participant.average_response_time || 0}s</span>
+          <span class="stat-label">Avg Time</span>
         </div>
       </div>
     `;
     listEl.appendChild(itemEl);
   });
+  
+        updateParticipantCount(normalizedLeaderboard.length);
+  
+  console.log('[STUDENT LEADERBOARD] ✅ Leaderboard display updated');
+  console.log('%c[STUDENT LEADERBOARD] ════════════════════════════════════════', 'color: #00ff99; font-weight: bold');
 }
 
 // Update Participant Count
 function updateParticipantCount(count) {
-  document.getElementById('participantCountNum').textContent = count;
+  // Update in main display
+  const mainCount = document.getElementById('participantCountNum');
+  if (mainCount) {
+    mainCount.textContent = count;
+  }
+  
+  // Also update in waiting screen if visible
+  const waitingCount = document.getElementById('participantCountWaiting');
+  if (waitingCount) {
+    waitingCount.textContent = `${count} student${count !== 1 ? 's' : ''} waiting to start`;
+  }
 }
 
 // Show Quiz Completion
 function showQuizCompletion(data) {
+  // CRITICAL: Stop timer and mark quiz as ended
+  stopQuestionTimer();
+  liveQuizState.quizEnded = true;
+  
   document.getElementById('questionArea').style.display = 'none';
   
   const completionEl = document.getElementById('quizCompletion');
+    const finalRankEl = document.getElementById('finalRank');
+    const finalCorrectEl = document.getElementById('finalCorrect');
+    const finalAccuracyEl = document.getElementById('finalAccuracy');
+
+    if (finalRankEl) finalRankEl.textContent = '--';
+    if (finalCorrectEl) finalCorrectEl.textContent = '--';
+    if (finalAccuracyEl) finalAccuracyEl.textContent = '--';
   
-  // Find current user in leaderboard
-  const currentUserData = data.leaderboard.find(p => p.is_current_user);
+    const leaderboardEntries = data && Array.isArray(data.leaderboard) ? data.leaderboard : [];
+    const normalizedLeaderboard = normalizeLeaderboardEntries(leaderboardEntries);
+    console.log('[STUDENT COMPLETION] Normalized leaderboard:', normalizedLeaderboard);
+  
+    // Find current user in leaderboard
+    const currentUserData = normalizedLeaderboard.find(p => p.is_current_user);
   
   if (currentUserData) {
-    document.getElementById('finalRank').textContent = `#${currentUserData.rank}`;
-    document.getElementById('finalScore').textContent = currentUserData.total_score;
-    document.getElementById('finalCorrect').textContent = currentUserData.total_correct;
+        const safeRank = currentUserData.rank != null ? `#${currentUserData.rank}` : '--';
+        const correctAnswers = typeof currentUserData.total_correct === 'number' ? currentUserData.total_correct : 0;
+        const totalAnswered = (typeof currentUserData.total_answered === 'number' && currentUserData.total_answered > 0)
+            ? currentUserData.total_answered
+            : (typeof currentUserData.questions_answered === 'number' && currentUserData.questions_answered > 0)
+                ? currentUserData.questions_answered
+                : (Array.isArray(liveQuizState.questions) ? liveQuizState.questions.length : 0);
+        const accuracy = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+
+        if (finalRankEl) finalRankEl.textContent = safeRank;
+        if (finalCorrectEl) finalCorrectEl.textContent = `${correctAnswers}/${totalAnswered}`;
+        if (finalAccuracyEl) finalAccuracyEl.textContent = `${accuracy}%`;
+    
+        console.log('[STUDENT COMPLETION] 🏁 Final stats calculated:', {
+            rank: safeRank,
+            correctAnswers,
+            totalAnswered,
+            accuracy
+        });
+    } else {
+        console.warn('[STUDENT COMPLETION] ⚠️ Could not identify current user in leaderboard payload', {
+            currentUserId: liveQuizState.currentUserId,
+            leaderboardSize: normalizedLeaderboard.length
+        });
   }
   
   completionEl.style.display = 'block';
   
   // Update final leaderboard
-  updateLeaderboard(data.leaderboard);
+    updateLeaderboard(normalizedLeaderboard);
 }
 
 // Exit Live Quiz and return to lesson

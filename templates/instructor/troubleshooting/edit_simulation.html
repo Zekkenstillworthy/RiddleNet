@@ -4179,15 +4179,23 @@
         renderDevice(device) {
             console.log('🎨 [ADMIN-EDIT] Rendering device:', device);
             console.log('📱 [ADMIN-EDIT] Current total devices in editor:', this.devices.length);
+            console.log('📍 [ADMIN-EDIT] Device position: x=' + device.x + ', y=' + device.y);
 
             const canvas = document.getElementById('canvas-content');
-            if (!canvas) return;
+            if (!canvas) {
+                console.error('❌ [ADMIN-EDIT] Canvas element not found!');
+                return;
+            }
+            
+            console.log('✅ [ADMIN-EDIT] Canvas found, dimensions:', canvas.offsetWidth, 'x', canvas.offsetHeight);
 
             const deviceElement = document.createElement('div');
             deviceElement.className = 'network-device enhanced-device';
             deviceElement.dataset.deviceId = device.id;
             deviceElement.style.left = device.x + 'px';
             deviceElement.style.top = device.y + 'px';
+            
+            console.log('🔧 [ADMIN-EDIT] Device element style.left:', deviceElement.style.left, 'style.top:', deviceElement.style.top);
 
             // Enhanced styling with icon and visual improvements
             const deviceIcons = {
@@ -4377,6 +4385,8 @@
             });
 
             canvas.appendChild(deviceElement);
+            console.log('✅ [ADMIN-EDIT] Device element appended to canvas. Total canvas children:', canvas.children.length);
+            console.log('📍 [ADMIN-EDIT] Device element in DOM:', deviceElement.parentElement !== null);
         }
 
         selectDevice(device) {
@@ -4807,6 +4817,22 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
                     console.log('📱 [ADMIN-EDIT] Initial topology devices:', this.simulationData.initial_topology.devices);
 
                     this.devices = [...this.simulationData.initial_topology.devices];
+                    
+                    // Ensure all devices have valid x, y coordinates
+                    this.devices.forEach((device, index) => {
+                        if (typeof device.x !== 'number' || typeof device.y !== 'number' || 
+                            device.x < 0 || device.y < 0 || isNaN(device.x) || isNaN(device.y)) {
+                            // Auto-arrange devices in a grid if they don't have valid positions
+                            const cols = Math.ceil(Math.sqrt(this.devices.length));
+                            const spacing = 120;
+                            const offsetX = 50;
+                            const offsetY = 50;
+                            device.x = offsetX + (index % cols) * spacing;
+                            device.y = offsetY + Math.floor(index / cols) * spacing;
+                            console.log(`🔧 [ADMIN-EDIT] Auto-positioned device ${device.id} at (${device.x}, ${device.y})`);
+                        }
+                    });
+                    
                     this.devices.forEach(device => {
                         this.renderDevice(device);
                         // Import any existing config into enhanced configurator
@@ -10199,60 +10225,6 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
         document.getElementById('fileInput').value = '';
         document.getElementById('fileInfo').style.display = 'none';
         document.getElementById('importBtn').disabled = true;
-    }
-
-    function handleFileSelect(event) {
-        const file = event.target.files[0];
-        if (file) {
-            document.getElementById('fileName').textContent = file.name;
-            document.getElementById('fileInfo').style.display = 'block';
-            document.getElementById('importBtn').disabled = false;
-        }
-    }
-
-    function performImport() {
-        const fileInput = document.getElementById('fileInput');
-        const file = fileInput.files[0];
-
-        if (!file) {
-            showToast('Please select a file to import', 'warning');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        // Show loading state
-        const importBtn = document.getElementById('importBtn');
-        const originalText = importBtn.innerHTML;
-        importBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
-        importBtn.disabled = true;
-
-        fetch('/instructor/simulation/import', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('Simulation imported successfully', 'success');
-                    closeImportModal();
-                    // Reload the page to show imported simulation
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    throw new Error(data.error || 'Import failed');
-                }
-            })
-            .catch(error => {
-                console.error('Import error:', error);
-                showToast('Error importing simulation: ' + error.message, 'danger');
-            })
-            .finally(() => {
-                importBtn.innerHTML = originalText;
-                importBtn.disabled = false;
-            });
     }
 
     document.addEventListener('DOMContentLoaded', function () {

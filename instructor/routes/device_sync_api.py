@@ -11,8 +11,8 @@ from __init__ import db
 import json
 from datetime import datetime
 
-# Create blueprint
-device_sync_bp = Blueprint('device_sync', __name__, url_prefix='/instructor/api/device-sync')
+# Create blueprint - use /admin prefix for compatibility with existing JavaScript
+device_sync_bp = Blueprint('device_sync', __name__, url_prefix='/admin/api/device-sync')
 
 simulation_controller = SimulationController()
 
@@ -161,16 +161,23 @@ def device_consistency_check(simulation_id):
     try:
         simulation = Simulation.query.get_or_404(simulation_id)
         
-        simulation_config = simulation.simulation_config or {}
-        if isinstance(simulation_config, str):
+        # Safely parse simulation_config
+        simulation_config = simulation.simulation_config
+        if simulation_config is None:
+            simulation_config = {}
+        elif isinstance(simulation_config, str):
             try:
                 simulation_config = json.loads(simulation_config)
-            except Exception:
+            except Exception as parse_error:
+                current_app.logger.warning(f"Failed to parse simulation_config for {simulation_id}: {parse_error}")
                 simulation_config = {}
+        elif not isinstance(simulation_config, dict):
+            simulation_config = {}
         
-        # Get device counts from different sources
-        network_topology_count = len(simulation_config.get('network_topology', {}).get('devices', []))
-        simulation_devices_count = len(simulation_config.get('devices', []))
+        # Get device counts from different sources (with safe dict access)
+        network_topology = simulation_config.get('network_topology', {}) if isinstance(simulation_config, dict) else {}
+        network_topology_count = len(network_topology.get('devices', [])) if isinstance(network_topology, dict) else 0
+        simulation_devices_count = len(simulation_config.get('devices', [])) if isinstance(simulation_config, dict) else 0
         
         # Get device count from the most recent user attempt (what dynamic page actually shows)
         from instructor.models.simulation import SimulationAttempt

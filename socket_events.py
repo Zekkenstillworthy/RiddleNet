@@ -326,9 +326,24 @@ def handle_join_module_room(data):
         module_id = data.get('module_id')
         if module_id:
             room = f'module_{module_id}'
+            print('\n' + '='*80)
+            print('[SERVER SOCKET] 🔌 JOIN MODULE ROOM REQUEST')
+            print('[SERVER SOCKET] Timestamp:', datetime.now().isoformat())
+            print('[SERVER SOCKET] User ID:', current_user.id)
+            print('[SERVER SOCKET] Username:', current_user.username)
+            print('[SERVER SOCKET] Module ID:', module_id)
+            print('[SERVER SOCKET] Room Name:', room)
+            print('[SERVER SOCKET] Request SID:', request.sid)
+            print('='*80 + '\n')
+            
             join_room(room)
             emit('joined_room', {'room': room, 'type': 'module', 'module_id': module_id})
-            print(f"📚 User {current_user.id} joined module room {room}")
+            
+            print('\n' + '✅'*40)
+            print('[SERVER SOCKET] ✅ USER JOINED ROOM SUCCESSFULLY')
+            print('[SERVER SOCKET] User', current_user.username, 'is now in room:', room)
+            print('[SERVER SOCKET] Will receive live_quiz_session_status_changed events for module', module_id)
+            print('✅'*40 + '\n')
 
 @socketio.on('leave_module_room')
 @authenticated_only
@@ -2368,7 +2383,7 @@ def handle_leave_team_chat_room(data):
 @socketio.on('join_live_quiz')
 @authenticated_only
 def handle_join_live_quiz(data):
-    """Handle student joining a live quiz session"""
+    """Handle student joining a live quiz session - MVP FIX"""
     try:
         session_id = data.get('session_id')
         
@@ -2383,6 +2398,8 @@ def handle_join_live_quiz(data):
         if not session:
             emit('live_quiz_error', {'message': 'Quiz session not found'})
             return
+        
+        print(f"[MVP LiveQuiz] User {current_user.username} joining session {session_id} with status: {session.status}")
         
         # Check if user already joined
         participant = LiveQuizParticipant.query.filter_by(
@@ -2399,30 +2416,44 @@ def handle_join_live_quiz(data):
             )
             db.session.add(participant)
             db.session.commit()
+            print(f"[MVP LiveQuiz] Created new participant for {current_user.username}")
         
         # Join the quiz room
         room = f'live_quiz_{session_id}'
         join_room(room)
+        print(f"[MVP LiveQuiz] User {current_user.username} joined room {room}")
         
-        # Notify all participants
+        # Get current leaderboard
+        from user.routes.live_quiz_routes import get_session_leaderboard
+        leaderboard = get_session_leaderboard(session_id)
+        
+        # Notify all participants of new joiner (broadcast to room)
         emit('participant_joined', {
             'participant_id': participant.id,
             'display_name': participant.display_name,
-            'participant_count': len(session.participants)
+            'participant_count': len(session.participants),
+            'session_id': session_id,
+            'leaderboard': leaderboard  # Include leaderboard in broadcast
         }, room=room)
         
-        # Send current quiz state to the joining user
+        print(f"[MVP LiveQuiz] Broadcast participant_joined to room {room} - Total participants: {len(session.participants)}")
+        
+        # Send current quiz state to the joining user ONLY
         emit('quiz_state', {
             'status': session.status,
             'current_question_index': session.current_question_index,
-            'participant': participant.to_dict()
+            'participant': participant.to_dict(),
+            'participant_count': len(session.participants),
+            'leaderboard': leaderboard  # Send initial leaderboard to joiner
         })
         
-        print(f"[OK] {current_user.username} joined live quiz {session_id}")
+        print(f"[MVP LiveQuiz] Sent quiz_state to {current_user.username} - Status: {session.status}, Question: {session.current_question_index}")
         
     except Exception as e:
         db.session.rollback()
         print(f"[ERROR] Error joining live quiz: {str(e)}")
+        import traceback
+        traceback.print_exc()
         emit('live_quiz_error', {'message': str(e)})
 
 
@@ -2521,7 +2552,8 @@ def handle_submit_live_answer(data):
             'answered_count': LiveQuizResponse.query.filter_by(
                 session_id=session_id,
                 question_id=question_id
-            ).count()
+            ).count(),
+            'session_id': session_id
         }, room=room)
         
         print(f"[OK] {current_user.username} submitted answer for question {question_id}")
@@ -2537,7 +2569,7 @@ def handle_submit_live_answer(data):
 @socketio.on('instructor_start_quiz')
 @instructor_required
 def handle_instructor_start_quiz(data):
-    """Instructor starts a live quiz"""
+    """Instructor starts a live quiz - MVP FIX"""
     try:
         session_id = data.get('session_id')
         
@@ -2548,30 +2580,77 @@ def handle_instructor_start_quiz(data):
             emit('live_quiz_error', {'message': 'Session not found'})
             return
         
+        if session.status != 'waiting':
+            emit('live_quiz_error', {'message': 'Quiz already started or completed'})
+            return
+        
+        print(f"\n{'='*80}")
+        print(f"[MVP REALTIME] Instructor starting session {session_id}")
+        print(f"[MVP REALTIME] Session title: {session.title}")
+        print(f"[MVP REALTIME] Module ID: {session.module_id}")
+        print(f"[MVP REALTIME] Lesson ID: {session.lesson_id}")
+        print(f"{'='*80}\n")
+        
         # Update session status
         session.status = 'active'
         session.started_at = datetime.utcnow()
+        session.current_question_index = 0
         db.session.commit()
         
-        # Broadcast to all participants
+        # Broadcast to quiz participants (students who already joined)
         room = f'live_quiz_{session_id}'
         emit('quiz_started', {
             'session_id': session_id,
-            'started_at': session.started_at.isoformat()
+            'started_at': session.started_at.isoformat(),
+            'current_question_index': 0
         }, room=room)
         
-        print(f"[OK] Instructor started live quiz {session_id}")
+        print(f"[MVP REALTIME] ✅ Broadcast 'quiz_started' to room: {room}")
+        
+        # CRITICAL: Broadcast to ALL students viewing the module page (not just joined)
+        module_room = f'module_{session.module_id}'
+        
+        broadcast_data = {
+            'session_id': session_id,
+            'status': 'active',
+            'class_id': session.class_id,
+            'module_id': session.module_id,
+            'lesson_id': session.lesson_id,
+            'title': session.title,
+            'session_code': session.session_code,
+            'started_at': session.started_at.isoformat()
+        }
+        
+        print(f"\n{'='*80}")
+        print(f"[MVP REALTIME] 🚀 Broadcasting to module room: {module_room}")
+        print(f"[MVP REALTIME] Event: live_quiz_session_status_changed")
+        print(f"[MVP REALTIME] Data: {broadcast_data}")
+        print(f"{'='*80}\n")
+        
+        emit('live_quiz_session_status_changed', broadcast_data, room=module_room, broadcast=True)
+        
+        print(f"[MVP REALTIME] ✅ Broadcast complete - All students on module {session.module_id} should see LIVE button")
+        
+        # Confirm to instructor
+        emit('quiz_start_confirmed', {
+            'success': True,
+            'session_id': session_id,
+            'status': 'active',
+            'current_question_index': 0
+        })
         
     except Exception as e:
         db.session.rollback()
         print(f"[ERROR] Error starting quiz: {str(e)}")
+        import traceback
+        traceback.print_exc()
         emit('live_quiz_error', {'message': str(e)})
 
 
 @socketio.on('instructor_next_question')
 @instructor_required
 def handle_instructor_next_question(data):
-    """Instructor advances to next question"""
+    """Instructor advances to next question - MVP FIX"""
     try:
         session_id = data.get('session_id')
         
@@ -2582,22 +2661,35 @@ def handle_instructor_next_question(data):
             emit('live_quiz_error', {'message': 'Session not found'})
             return
         
+        if session.status != 'active':
+            emit('live_quiz_error', {'message': 'Quiz is not active'})
+            return
+        
+        print(f"[MVP LiveQuiz] Instructor advancing session {session_id} from Q{session.current_question_index}")
+        
         # Advance to next question
         session.current_question_index += 1
         db.session.commit()
         
-        # Broadcast to all participants
+        # Get updated leaderboard after previous question
+        from user.routes.live_quiz_routes import get_session_leaderboard
+        leaderboard = get_session_leaderboard(session_id)
+        
+        # Broadcast to all participants in the room
         room = f'live_quiz_{session_id}'
         emit('next_question', {
             'question_index': session.current_question_index,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.utcnow().isoformat(),
+            'leaderboard': leaderboard  # Include updated leaderboard
         }, room=room)
         
-        print(f"[OK] Quiz {session_id} advanced to question {session.current_question_index}")
+        print(f"[MVP LiveQuiz] Broadcast next_question to room {room} - Now showing Q{session.current_question_index + 1}")
         
     except Exception as e:
         db.session.rollback()
         print(f"[ERROR] Error advancing question: {str(e)}")
+        import traceback
+        traceback.print_exc()
         emit('live_quiz_error', {'message': str(e)})
 
 
@@ -2624,7 +2716,7 @@ def handle_instructor_end_quiz(data):
         from user.routes.live_quiz_routes import get_session_leaderboard
         leaderboard = get_session_leaderboard(session_id)
         
-        # Broadcast to all participants
+        # Broadcast to all participants in quiz room
         room = f'live_quiz_{session_id}'
         emit('quiz_ended', {
             'session_id': session_id,
@@ -2632,7 +2724,19 @@ def handle_instructor_end_quiz(data):
             'leaderboard': leaderboard
         }, room=room)
         
+        # REALTIME UPDATE: Broadcast to module room to hide "Join Quiz" button
+        module_room = f'module_{session.module_id}'
+        emit('live_quiz_session_status_changed', {
+            'session_id': session_id,
+            'status': 'completed',
+            'class_id': session.class_id,
+            'module_id': session.module_id,
+            'lesson_id': session.lesson_id,
+            'ended_at': session.ended_at.isoformat()
+        }, room=module_room, broadcast=True)
+        
         print(f"[OK] Instructor ended live quiz {session_id}")
+        print(f"[REALTIME] Broadcast session end to module room: {module_room}")
         
     except Exception as e:
         db.session.rollback()

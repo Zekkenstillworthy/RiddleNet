@@ -68,6 +68,31 @@ def parse_rnet_file():
             print(f"[OK] JSON parsed successfully")
             print(f"[DATA] Top-level keys: {list(rnet_data.keys())}")
             
+            # Check if file is encrypted and decrypt if needed
+            from utils.rnet_encryption import decrypt_rnet_file, is_encrypted_rnet, validate_rnet_integrity
+            
+            if is_encrypted_rnet(rnet_data):
+                print("[INFO] Encrypted RNet file detected")
+                
+                # Validate integrity
+                is_valid, error_msg = validate_rnet_integrity(rnet_data)
+                if not is_valid:
+                    print(f"[ERROR] Integrity check failed: {error_msg}")
+                    return jsonify({'error': f'File integrity check failed: {error_msg}'}), 400
+                
+                print("[OK] Integrity check passed")
+                
+                # Decrypt
+                try:
+                    rnet_data = decrypt_rnet_file(rnet_data)
+                    print("[OK] File decrypted successfully")
+                    print(f"[DATA] Decrypted top-level keys: {list(rnet_data.keys())}")
+                except ValueError as decrypt_error:
+                    print(f"[ERROR] Decryption failed: {str(decrypt_error)}")
+                    return jsonify({'error': f'Decryption failed: {str(decrypt_error)}'}), 400
+            else:
+                print("[INFO] Unencrypted RNet file (legacy format)")
+            
         except UnicodeDecodeError as e:
             print(f"[ERROR] Unicode decode error: {str(e)}")
             return jsonify({'error': f'File encoding error: {str(e)}'}), 400

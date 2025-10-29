@@ -301,6 +301,14 @@ def get_session_leaderboard(session_id):
         is_active=True
     ).all()
     
+    # Cache current_user.id safely for comparisons during serialization
+    current_user_id = None
+    try:
+        if getattr(current_user, 'is_authenticated', False):
+            current_user_id = getattr(current_user, 'id', None)
+    except Exception:
+        current_user_id = None
+
     # Calculate rank scores and sort
     participant_scores = []
     for p in participants:
@@ -324,8 +332,10 @@ def get_session_leaderboard(session_id):
             'total_score': p.total_score,
             'total_correct': p.total_correct,
             'total_answered': p.total_answered,
-            'average_response_time': round(p.average_response_time, 2),
-            'is_current_user': (p.user_id == current_user.id)
+            'questions_answered': p.total_answered,
+            'user_id': p.user_id,
+            'average_response_time': round(p.average_response_time, 2) if p.average_response_time is not None else 0,
+            'is_current_user': bool(current_user_id is not None and p.user_id == current_user_id)
         })
     
     db.session.commit()

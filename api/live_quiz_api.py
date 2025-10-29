@@ -78,6 +78,8 @@ def join():
     """
     Join a live quiz session
     
+    MVP: Only allow joining if session status is 'active' (instructor-controlled)
+    
     Request body:
     {
         "session_id": "6",  // or "quiz_id"
@@ -110,46 +112,77 @@ def join():
     lesson_id = data.get('lesson_id')
 
     user_id = getattr(current_user, 'id', None)
-    print('[LIVE_QUIZ_MVP][JOIN] Incoming request', {
-        'user_id': user_id,
-        'session_id': session_id,
-        'quiz_id_field': data.get('quiz_id'),
-        'session_code': data.get('session_code'),
-        'class_id': class_id,
-        'module_id': module_id,
-        'lesson_id': lesson_id
-    })
+    print(f'\n{"="*80}')
+    print('[STUDENT JOIN] Incoming join request')
+    print(f'[STUDENT JOIN] User ID: {user_id}')
+    print(f'[STUDENT JOIN] Username: {getattr(current_user, "username", "Unknown")}')
+    print(f'[STUDENT JOIN] Session ID from request: {session_id}')
+    print(f'[STUDENT JOIN] Quiz ID from request: {data.get("quiz_id")}')
+    print(f'[STUDENT JOIN] Class ID: {class_id}')
+    print(f'[STUDENT JOIN] Module ID: {module_id}')
+    print(f'[STUDENT JOIN] Lesson ID: {lesson_id}')
 
     if not session_id:
-        print('[LIVE_QUIZ_MVP][JOIN][ERROR] Missing session identifier', {'user_id': user_id, 'payload': data})
+        print('[STUDENT JOIN] ❌ ERROR: Missing session identifier')
+        print(f'{"="*80}\n')
         return jsonify({'success': False, 'error': 'Missing session_id/quiz_id'}), 400
 
+    # MVP GUARD: Check database session status before allowing join
+    try:
+        from user.models.live_quiz import LiveQuizSession
+        from __init__ import db
+        
+        print(f'[STUDENT JOIN] Checking database for session {session_id}...')
+        
+        db_session = LiveQuizSession.query.get(int(session_id))
+        if db_session:
+            print(f'[STUDENT JOIN] ✅ Session found in database')
+            print(f'[STUDENT JOIN] Session title: {db_session.title}')
+            print(f'[STUDENT JOIN] Session status: {db_session.status}')
+            print(f'[STUDENT JOIN] Created by instructor: {db_session.created_by}')
+            
+            if db_session.status != 'active':
+                print(f'[STUDENT JOIN] ❌ BLOCKED: Session status is "{db_session.status}" (not "active")')
+                print(f'[STUDENT JOIN] User must wait for instructor to start the quiz')
+                print(f'{"="*80}\n')
+                return jsonify({
+                    'success': False,
+                    'error': 'MVP: The Live Quiz has not started yet. Please wait for your instructor to begin.',
+                    'status': db_session.status,
+                    'waiting': True
+                }), 403
+            
+            print(f'[STUDENT JOIN] ✅ Status check passed - session is active')
+        else:
+            print(f'[STUDENT JOIN] ⚠️ WARNING: Session {session_id} not found in database')
+    except Exception as db_err:
+        print(f'[STUDENT JOIN] ⚠️ Database error: {str(db_err)}')
+        print(f'[STUDENT JOIN] Continuing with in-memory store as fallback')
+
     s = _get_session(session_id)
-    print('[LIVE_QUIZ_MVP][JOIN] Session state snapshot', {
-        'session_id': session_id,
-        'participant_count': len(s['participants']),
-        'question_count': len(s['questions'])
-    })
+    print(f'[STUDENT JOIN] Session state retrieved')
+    print(f'[STUDENT JOIN] Current participants: {len(s["participants"])}')
+    print(f'[STUDENT JOIN] Current questions: {len(s["questions"])}')
 
     # Optional: seed questions for this session (client provides id + correct answer + explanation)
-    for q in data.get('questions', []) or []:
-        qid = str(q.get('id'))
-        if not qid:
-            continue
-        s['questions'][qid] = {
-            'correct_answer': q.get('correct_answer') or q.get('answer'),
-            'explanation': q.get('explanation'),
-        }
-    if data.get('questions'):
-        print('[LIVE_QUIZ_MVP][JOIN] Seeded questions', {
-            'session_id': session_id,
-            'seed_count': len(data.get('questions') or [])
-        })
+    questions_to_seed = data.get('questions', []) or []
+    if questions_to_seed:
+        print(f'[STUDENT JOIN] Seeding {len(questions_to_seed)} questions...')
+        for q in questions_to_seed:
+            qid = str(q.get('id'))
+            if not qid:
+                continue
+            s['questions'][qid] = {
+                'correct_answer': q.get('correct_answer') or q.get('answer'),
+                'explanation': q.get('explanation'),
+            }
+        print(f'[STUDENT JOIN] ✅ Questions seeded - total now: {len(s["questions"])}')
 
     uid = int(current_user.get_id())
     participants = s['participants']
     
     if uid not in participants:
+        print(f'[STUDENT JOIN] Creating new participant entry for user {uid}')
         participants[uid] = {
             'display_name': _display_name(),
             'total_score': 0,
@@ -158,16 +191,19 @@ def join():
             'total_time_sec': 0.0,
             'last_answer_at': None,
         }
+        print(f'[STUDENT JOIN] ✅ Participant created')
+    else:
+        print(f'[STUDENT JOIN] User {uid} already a participant - using existing data')
 
     leaderboard_snapshot = _leaderboard_payload(s, current_uid=uid)
 
-    print('[LIVE_QUIZ_MVP][JOIN] Participant ready', {
-        'session_id': session_id,
-        'user_id': uid,
-        'participant_total_score': participants[uid]['total_score'],
-        'participant_total_answered': participants[uid]['total_answered'],
-        'leaderboard_size': len(leaderboard_snapshot)
-    })
+    print(f'[STUDENT JOIN] ✅ Join successful!')
+    print(f'[STUDENT JOIN] Participant stats:')
+    print(f'   - Display name: {participants[uid]["display_name"]}')
+    print(f'   - Total score: {participants[uid]["total_score"]}')
+    print(f'   - Total answered: {participants[uid]["total_answered"]}')
+    print(f'[STUDENT JOIN] Leaderboard size: {len(leaderboard_snapshot)}')
+    print(f'{"="*80}\n')
 
     return jsonify({
         'success': True,
@@ -343,3 +379,112 @@ def get_state(session_id):
         'finalized': s['finalized'],
         'created_at': s['created_at']
     })
+
+
+@live_quiz_bp.route('/my-active-session', methods=['GET'])
+@login_required
+def get_my_active_session():
+    """
+    Check if current user has an active quiz session
+    
+    Query params:
+    - class_id: Filter by class (optional)
+    - module_id: Filter by module (optional)
+    
+    Response:
+    {
+        "success": true,
+        "has_active_session": true,
+        "session": {
+            "session_id": "6",
+            "class_id": 7,
+            "module_id": 1,
+            "lesson_id": 2,
+            "title": "Quiz Title",
+            "status": "active",
+            "current_question_index": 2,
+            "total_questions": 10,
+            "participant_stats": {...}
+        }
+    }
+    """
+    from user.models.live_quiz import LiveQuizSession
+    from __init__ import db
+    
+    user_id = getattr(current_user, 'id', None)
+    class_id = request.args.get('class_id', type=int)
+    module_id = request.args.get('module_id', type=int)
+    
+    print(f'\n{"="*80}')
+    print('[CHECK ACTIVE SESSION] Checking for active session')
+    print(f'[CHECK ACTIVE SESSION] User ID: {user_id}')
+    print(f'[CHECK ACTIVE SESSION] Class ID filter: {class_id}')
+    print(f'[CHECK ACTIVE SESSION] Module ID filter: {module_id}')
+    
+    try:
+        # Find active sessions from database
+        query = LiveQuizSession.query.filter(
+            LiveQuizSession.status.in_(['active', 'waiting'])
+        )
+        
+        if class_id:
+            query = query.filter_by(class_id=class_id)
+        if module_id:
+            query = query.filter_by(module_id=module_id)
+        
+        active_db_sessions = query.order_by(LiveQuizSession.created_at.desc()).all()
+        
+        print(f'[CHECK ACTIVE SESSION] Found {len(active_db_sessions)} active/waiting sessions in DB')
+        
+        # Check if user has joined any of these sessions
+        for db_session in active_db_sessions:
+            session_id = str(db_session.id)
+            memory_session = _sessions.get(session_id)
+            
+            if memory_session and user_id in memory_session['participants']:
+                participant = memory_session['participants'][user_id]
+                
+                print(f'[CHECK ACTIVE SESSION] ✅ User is participant in session {session_id}')
+                print(f'[CHECK ACTIVE SESSION] Session status: {db_session.status}')
+                print(f'[CHECK ACTIVE SESSION] Current question: {db_session.current_question_index}')
+                print(f'{"="*80}\n')
+                
+                return jsonify({
+                    'success': True,
+                    'has_active_session': True,
+                    'session': {
+                        'session_id': session_id,
+                        'class_id': db_session.class_id,
+                        'module_id': db_session.module_id,
+                        'lesson_id': db_session.lesson_id,
+                        'title': db_session.title,
+                        'status': db_session.status,
+                        'current_question_index': db_session.current_question_index or 0,
+                        'total_questions': db_session.question_count or 0,
+                        'participant_stats': {
+                            'total_score': participant.get('total_score', 0),
+                            'total_correct': participant.get('total_correct', 0),
+                            'total_answered': participant.get('total_answered', 0)
+                        }
+                    }
+                })
+        
+        print(f'[CHECK ACTIVE SESSION] User has not joined any active sessions')
+        print(f'{"="*80}\n')
+        
+        return jsonify({
+            'success': True,
+            'has_active_session': False,
+            'session': None
+        })
+        
+    except Exception as e:
+        print(f'[CHECK ACTIVE SESSION] ❌ Error: {e}')
+        print(f'{"="*80}\n')
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+

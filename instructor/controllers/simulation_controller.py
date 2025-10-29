@@ -4,6 +4,7 @@ from instructor.models.simulation import Simulation, SimulationAttempt
 # Learning Path models removed - feature deprecated
 # from instructor.models.learning_path import LearningPath, UserLearningProgress
 from datetime import datetime
+from sqlalchemy.orm.attributes import flag_modified
 import json
 
 class SimulationController:
@@ -683,71 +684,104 @@ class SimulationController:
                 
                 simulation.validation_rules = vr
             # Optional simulation config update with enhanced validation support
-            if 'simulation_config' in update_data and isinstance(update_data['simulation_config'], dict):
-                config = update_data['simulation_config']
-                
-                # Handle enhanced validation configuration
-                if 'enhanced_validation' in config:
-                    enhanced_config = config['enhanced_validation']
-                    # Validate and sanitize enhanced validation config
-                    if isinstance(enhanced_config, dict):
-                        # Sanitize configuration requirements
-                        if 'configuration_requirements' in enhanced_config:
-                            config_req = enhanced_config['configuration_requirements']
-                            if isinstance(config_req, dict):
-                                # Ensure boolean values for requirement flags
-                                for key in ['require_ip_assignment', 'require_device_modes', 'require_cable_configuration']:
-                                    if key in config_req:
-                                        config_req[key] = bool(config_req[key])
-                        
-                        # Sanitize physical validation rules
-                        if 'physical_validation' in enhanced_config:
-                            phys_val = enhanced_config['physical_validation']
-                            if isinstance(phys_val, dict):
-                                # Ensure boolean values for validation flags
-                                for key in ['enforce_compatible_connections', 'validate_device_capabilities', 'check_cable_types']:
-                                    if key in phys_val:
-                                        phys_val[key] = bool(phys_val[key])
-                                        
-                                # Sanitize connection rules
-                                if 'connection_rules' in phys_val and isinstance(phys_val['connection_rules'], list):
-                                    cleaned_rules = []
-                                    for rule in phys_val['connection_rules']:
-                                        if isinstance(rule, dict) and 'from_type' in rule and 'to_type' in rule:
-                                            cleaned_rule = {
-                                                'from_type': str(rule['from_type']).strip(),
-                                                'to_type': str(rule['to_type']).strip(),
-                                                'allowed_cables': rule.get('allowed_cables', []),
-                                                'description': str(rule.get('description', '')).strip()
-                                            }
-                                            cleaned_rules.append(cleaned_rule)
-                                    phys_val['connection_rules'] = cleaned_rules
-                        
-                        # Sanitize connectivity test configuration
-                        if 'connectivity_tests' in enhanced_config:
-                            conn_tests = enhanced_config['connectivity_tests']
-                            if isinstance(conn_tests, dict):
-                                # Ensure boolean values for test flags
-                                for key in ['require_ping_tests', 'require_route_validation', 'require_connectivity_matrix']:
-                                    if key in conn_tests:
-                                        conn_tests[key] = bool(conn_tests[key])
-                                        
-                                # Sanitize required test cases
-                                if 'required_tests' in conn_tests and isinstance(conn_tests['required_tests'], list):
-                                    cleaned_tests = []
-                                    for test in conn_tests['required_tests']:
-                                        if isinstance(test, dict) and 'source' in test and 'target' in test:
-                                            cleaned_test = {
-                                                'source': str(test['source']).strip(),
-                                                'target': str(test['target']).strip(),
-                                                'test_type': str(test.get('test_type', 'ping')).strip(),
-                                                'expected_result': test.get('expected_result', True),
-                                                'description': str(test.get('description', '')).strip()
-                                            }
-                                            cleaned_tests.append(cleaned_test)
-                                    conn_tests['required_tests'] = cleaned_tests
-                
-                simulation.simulation_config = config
+            if 'simulation_config' in update_data:
+                raw_config = update_data.get('simulation_config')
+                config = {}
+
+                # Normalize incoming payloads so JSON stored as strings still persist correctly
+                if isinstance(raw_config, str):
+                    try:
+                        config = json.loads(raw_config) or {}
+                        current_app.logger.info("[UPDATE_SIMULATION] Parsed simulation_config from JSON string payload")
+                    except Exception as parse_error:
+                        current_app.logger.warning(
+                            f"[UPDATE_SIMULATION] Failed to parse simulation_config string payload: {parse_error}"
+                        )
+                elif isinstance(raw_config, dict):
+                    config = raw_config
+                elif raw_config is None:
+                    config = {}
+                else:
+                    current_app.logger.warning(
+                        f"[UPDATE_SIMULATION] Unexpected simulation_config payload type: {type(raw_config)}. Coercing to empty dict."
+                    )
+                    config = {}
+
+                if isinstance(config, dict):
+                    # DEBUG: Log what we're saving
+                    current_app.logger.info(f"[UPDATE_SIMULATION] Updating simulation_config with keys: {list(config.keys())}")
+                    if 'network_topology' in config:
+                        network_topology = config['network_topology']
+                        device_count = len(network_topology.get('devices', [])) if isinstance(network_topology, dict) else 0
+                        current_app.logger.info(f"[UPDATE_SIMULATION] Network topology has {device_count} devices")
+                    
+                    # Handle enhanced validation configuration
+                    if 'enhanced_validation' in config:
+                        enhanced_config = config['enhanced_validation']
+                        # Validate and sanitize enhanced validation config
+                        if isinstance(enhanced_config, dict):
+                            # Sanitize configuration requirements
+                            if 'configuration_requirements' in enhanced_config:
+                                config_req = enhanced_config['configuration_requirements']
+                                if isinstance(config_req, dict):
+                                    # Ensure boolean values for requirement flags
+                                    for key in ['require_ip_assignment', 'require_device_modes', 'require_cable_configuration']:
+                                        if key in config_req:
+                                            config_req[key] = bool(config_req[key])
+                            
+                            # Sanitize physical validation rules
+                            if 'physical_validation' in enhanced_config:
+                                phys_val = enhanced_config['physical_validation']
+                                if isinstance(phys_val, dict):
+                                    # Ensure boolean values for validation flags
+                                    for key in ['enforce_compatible_connections', 'validate_device_capabilities', 'check_cable_types']:
+                                        if key in phys_val:
+                                            phys_val[key] = bool(phys_val[key])
+                                            
+                                    # Sanitize connection rules
+                                    if 'connection_rules' in phys_val and isinstance(phys_val['connection_rules'], list):
+                                        cleaned_rules = []
+                                        for rule in phys_val['connection_rules']:
+                                            if isinstance(rule, dict) and 'from_type' in rule and 'to_type' in rule:
+                                                cleaned_rule = {
+                                                    'from_type': str(rule['from_type']).strip(),
+                                                    'to_type': str(rule['to_type']).strip(),
+                                                    'allowed_cables': rule.get('allowed_cables', []),
+                                                    'description': str(rule.get('description', '')).strip()
+                                                }
+                                                cleaned_rules.append(cleaned_rule)
+                                        phys_val['connection_rules'] = cleaned_rules
+                            
+                            # Sanitize connectivity test configuration
+                            if 'connectivity_tests' in enhanced_config:
+                                conn_tests = enhanced_config['connectivity_tests']
+                                if isinstance(conn_tests, dict):
+                                    # Ensure boolean values for test flags
+                                    for key in ['require_ping_tests', 'require_route_validation', 'require_connectivity_matrix']:
+                                        if key in conn_tests:
+                                            conn_tests[key] = bool(conn_tests[key])
+                                            
+                                    # Sanitize required test cases
+                                    if 'required_tests' in conn_tests and isinstance(conn_tests['required_tests'], list):
+                                        cleaned_tests = []
+                                        for test in conn_tests['required_tests']:
+                                            if isinstance(test, dict) and 'source' in test and 'target' in test:
+                                                cleaned_test = {
+                                                    'source': str(test['source']).strip(),
+                                                    'target': str(test['target']).strip(),
+                                                    'test_type': str(test.get('test_type', 'ping')).strip(),
+                                                    'expected_result': test.get('expected_result', True),
+                                                    'description': str(test.get('description', '')).strip()
+                                                }
+                                                cleaned_tests.append(cleaned_test)
+                                        conn_tests['required_tests'] = cleaned_tests
+                    
+                    simulation.simulation_config = config
+                    flag_modified(simulation, 'simulation_config')
+                    current_app.logger.info(f"[UPDATE_SIMULATION] Flagged simulation_config as modified for DB commit")
+                else:
+                    current_app.logger.warning("[UPDATE_SIMULATION] Skipped simulation_config update because normalized payload was not a dict")
+            
             # Optional tags update
             if 'tags' in update_data:
                 tags = update_data.get('tags') or []

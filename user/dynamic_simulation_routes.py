@@ -5507,9 +5507,15 @@ def export_simulation(simulation_id):
         except TypeError:
             export_payload = json.loads(json.dumps(export_payload, default=str))
 
+        # DO NOT encrypt server-side for student exports
+        # Client-side JavaScript will apply Base64 encryption for basic obfuscation
+        # This prevents double-encryption (server AES + client Base64)
+        current_app.logger.info(f"[EXPORT] Student export for simulation {simulation_id} - client-side encryption will be applied")
+        final_payload = export_payload
+
         return jsonify({
             'success': True,
-            'data': export_payload,
+            'data': final_payload,
             'message': 'Simulation data exported successfully'
         })
 

@@ -47,7 +47,33 @@ def create_quiz_session():
         # Generate unique session code
         session_code = generate_session_code()
         
+        # CLEANUP: Reset any old active sessions for this class/module/lesson
+        # This prevents students from joining stale sessions
+        print(f'\n[SESSION CLEANUP] Checking for old active sessions...')
+        print(f'[SESSION CLEANUP] Class: {class_id}, Module: {module_id}, Lesson: {lesson_id}')
+        
+        old_sessions = LiveQuizSession.query.filter_by(
+            class_id=class_id,
+            module_id=module_id,
+            lesson_id=lesson_id,
+            status='active'
+        ).all()
+        
+        if old_sessions:
+            print(f'[SESSION CLEANUP] Found {len(old_sessions)} old active session(s)')
+            for old_session in old_sessions:
+                print(f'[SESSION CLEANUP] Resetting session {old_session.id} (code: {old_session.session_code})')
+                print(f'[SESSION CLEANUP] - Title: {old_session.title}')
+                print(f'[SESSION CLEANUP] - Started at: {old_session.started_at}')
+                old_session.status = 'completed'
+                old_session.ended_at = datetime.utcnow()
+            db.session.flush()  # Commit the cleanup before creating new session
+            print(f'[SESSION CLEANUP] ✅ Reset {len(old_sessions)} old session(s) to "completed"')
+        else:
+            print(f'[SESSION CLEANUP] ✅ No old active sessions found - database is clean')
+        
         # Create new session
+        print(f'[SESSION CREATE] Creating new session with code: {session_code}')
         session = LiveQuizSession(
             question_group_id=question_group_id,
             class_id=class_id,
@@ -66,6 +92,26 @@ def create_quiz_session():
         
         db.session.add(session)
         db.session.commit()
+        
+        # Broadcast to students in the module room via WebSocket
+        module_room = f'module_{module_id}'
+        broadcast_data = {
+            'session_id': session.id,
+            'status': session.status,
+            'title': session.title,
+            'session_code': session.session_code,
+            'class_id': session.class_id,
+            'module_id': session.module_id,
+            'lesson_id': session.lesson_id
+        }
+        
+        print(f"\n{'='*80}")
+        print(f"[SESSION CREATE] 📡 Broadcasting new session to module room: {module_room}")
+        print(f"[SESSION CREATE] Session ID: {session.id}, Status: {session.status}")
+        print(f"[SESSION CREATE] Broadcast data: {broadcast_data}")
+        print(f"{'='*80}\n")
+        
+        socketio.emit('live_quiz_session_status_changed', broadcast_data, room=module_room)
         
         return jsonify({
             'success': True,
@@ -140,23 +186,76 @@ def start_session(session_id):
     try:
         from user.models.live_quiz import LiveQuizSession
         
+        print(f'\n{"="*80}')
+        print(f'[INSTRUCTOR START QUIZ] Request received for session {session_id}')
+        print(f'[INSTRUCTOR START QUIZ] Instructor ID: {current_user.id}')
+        print(f'[INSTRUCTOR START QUIZ] Instructor username: {current_user.username}')
+        
         session = LiveQuizSession.query.get(session_id)
         if not session or session.created_by != current_user.id:
+            print(f'[INSTRUCTOR START QUIZ] ❌ ERROR: Session not found or not owned by instructor')
             return jsonify({'success': False, 'error': 'Session not found'}), 404
         
+        print(f'[INSTRUCTOR START QUIZ] Session found - Current status: {session.status}')
+        
         if session.status != 'waiting':
+            print(f'[INSTRUCTOR START QUIZ] ❌ ERROR: Quiz already started (status: {session.status})')
             return jsonify({'success': False, 'error': 'Quiz already started'}), 400
+        
+        print(f'[INSTRUCTOR START QUIZ] ✅ Status check passed - proceeding to start quiz')
         
         session.status = 'active'
         session.started_at = datetime.utcnow()
+        session.current_question_index = 0
         db.session.commit()
         
-        # Emit socket event to notify participants
+        print(f'[INSTRUCTOR START QUIZ] ✅ Database updated:')
+        print(f'   - Status: waiting → active')
+        print(f'   - Started at: {session.started_at.isoformat()}')
+        print(f'   - Question index: 0')
+        
+        # Emit socket event to notify all participants
         from socket_manager import socketio
+        room_name = f'live_quiz_{session_id}'
+        
+        print(f'[INSTRUCTOR START QUIZ] 📡 Broadcasting quiz_started event to room: {room_name}')
+        
         socketio.emit('quiz_started', {
             'session_id': session_id,
-            'started_at': session.started_at.isoformat()
-        }, room=f'live_quiz_{session_id}')
+            'started_at': session.started_at.isoformat(),
+            'current_question_index': 0
+        }, room=room_name)
+        
+        print(f'[INSTRUCTOR START QUIZ] ✅ Socket event broadcast complete')
+        
+        # ===== MVP REALTIME: Broadcast to module room for page-level updates =====
+        module_room = f'module_{session.module_id}'
+        
+        print(f'\n[MVP REALTIME] 🚀 Broadcasting session status change to module room: {module_room}')
+        print(f'[MVP REALTIME] Session details:')
+        print(f'   - Session ID: {session.id}')
+        print(f'   - Status: waiting → active')
+        print(f'   - Module ID: {session.module_id}')
+        print(f'   - Lesson ID: {session.lesson_id}')
+        print(f'   - Class ID: {session.class_id}')
+        
+        broadcast_data = {
+            'session_id': session.id,
+            'status': 'active',
+            'class_id': session.class_id,
+            'module_id': session.module_id,
+            'lesson_id': session.lesson_id,
+            'title': session.title,
+            'session_code': session.session_code,
+            'started_at': session.started_at.isoformat() if session.started_at else None
+        }
+        
+        socketio.emit('live_quiz_session_status_changed', broadcast_data, room=module_room)
+        
+        print(f'[MVP REALTIME] ✅ Module room broadcast complete')
+        print(f'[MVP REALTIME] 📢 All students on module page should now see LIVE button')
+        print(f'[INSTRUCTOR START QUIZ] 🎉 Quiz started successfully!')
+        print(f'{"="*80}\n')
         
         return jsonify({
             'success': True,
@@ -166,7 +265,9 @@ def start_session(session_id):
         
     except Exception as e:
         db.session.rollback()
-        print(f"Error starting quiz: {e}")
+        print(f"[MVP LiveQuiz] Error starting quiz: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -179,45 +280,78 @@ def next_question(session_id):
         from user.models.live_quiz import LiveQuizSession
         from instructor.models.question_group import QuestionGroup
 
+        print(f'\n{"="*80}')
+        print(f'[INSTRUCTOR NEXT QUESTION] Request received for session {session_id}')
+        print(f'[INSTRUCTOR NEXT QUESTION] Instructor ID: {current_user.id}')
+
         session = LiveQuizSession.query.get(session_id)
         if not session or session.created_by != current_user.id:
+            print(f'[INSTRUCTOR NEXT QUESTION] ❌ ERROR: Session not found or not owned')
             return jsonify({'success': False, 'error': 'Session not found'}), 404
 
+        print(f'[INSTRUCTOR NEXT QUESTION] Session status: {session.status}')
+        print(f'[INSTRUCTOR NEXT QUESTION] Current question index: {session.current_question_index}')
+
         if session.status == 'completed':
+            print(f'[INSTRUCTOR NEXT QUESTION] ❌ ERROR: Quiz already completed')
             return jsonify({'success': False, 'error': 'Quiz already completed'}), 400
 
         question_group = QuestionGroup.query.get(session.question_group_id)
         total_questions = len(getattr(question_group, 'questions', []) or [])
+        
+        print(f'[INSTRUCTOR NEXT QUESTION] Total questions in group: {total_questions}')
+        
         if total_questions == 0:
+            print(f'[INSTRUCTOR NEXT QUESTION] ❌ ERROR: No questions available')
             return jsonify({'success': False, 'error': 'No questions available for this quiz'}), 400
 
         from socket_manager import socketio
 
         quiz_completed = False
-        leaderboard = None
+        old_question_index = session.current_question_index
 
         if session.current_question_index >= total_questions - 1:
             session.status = 'completed'
             session.ended_at = datetime.utcnow()
             quiz_completed = True
+            print(f'[INSTRUCTOR NEXT QUESTION] 🏁 Quiz completing - was at last question')
         else:
             session.current_question_index += 1
+            print(f'[INSTRUCTOR NEXT QUESTION] ✅ Advancing: Q{old_question_index} → Q{session.current_question_index}')
 
         db.session.commit()
+        print(f'[INSTRUCTOR NEXT QUESTION] ✅ Database updated')
+
+        # Get updated leaderboard for both completion and advancement
+        from user.routes.live_quiz_routes import get_session_leaderboard
+        
+        print(f'[INSTRUCTOR NEXT QUESTION] 📊 Fetching updated leaderboard...')
+        leaderboard = get_session_leaderboard(session_id)
+        print(f'[INSTRUCTOR NEXT QUESTION] 📊 Leaderboard fetched: {len(leaderboard)} participants')
+
+        room_name = f'live_quiz_{session_id}'
 
         if quiz_completed:
-            from user.routes.live_quiz_routes import get_session_leaderboard
-            leaderboard = get_session_leaderboard(session_id)
+            print(f'[INSTRUCTOR NEXT QUESTION] 📡 Broadcasting quiz_ended to room: {room_name}')
             socketio.emit('quiz_ended', {
                 'session_id': session_id,
                 'ended_at': session.ended_at.isoformat() if session.ended_at else None,
                 'leaderboard': leaderboard
-            }, room=f'live_quiz_{session_id}')
+            }, room=room_name)
+            print(f'[INSTRUCTOR NEXT QUESTION] ✅ Quiz ended event broadcast complete')
         else:
+            print(f'[INSTRUCTOR NEXT QUESTION] 📡 Broadcasting next_question to room: {room_name}')
+            print(f'[INSTRUCTOR NEXT QUESTION]    - Question index: {session.current_question_index}')
+            print(f'[INSTRUCTOR NEXT QUESTION]    - Leaderboard size: {len(leaderboard)}')
+            
             socketio.emit('next_question', {
                 'question_index': session.current_question_index,
-                'timestamp': datetime.utcnow().isoformat()
-            }, room=f'live_quiz_{session_id}')
+                'timestamp': datetime.utcnow().isoformat(),
+                'leaderboard': leaderboard  # Include updated leaderboard
+            }, room=room_name)
+            
+            print(f'[INSTRUCTOR NEXT QUESTION] ✅ Next question event broadcast complete')
+            print(f'[INSTRUCTOR NEXT QUESTION] 🎯 Students should now see Q{session.current_question_index + 1}')
 
         current_question_number = min(session.current_question_index + 1, total_questions)
 
@@ -225,17 +359,23 @@ def next_question(session_id):
             'success': True,
             'current_question': current_question_number,
             'quiz_completed': quiz_completed,
-            'total_questions': total_questions
+            'total_questions': total_questions,
+            'leaderboard': leaderboard  # Always include leaderboard in response
         }
 
-        if leaderboard is not None:
-            response['leaderboard'] = leaderboard
+        print(f'[INSTRUCTOR NEXT QUESTION] 📤 Sending response to instructor:')
+        print(f'   - Current question: {current_question_number}/{total_questions}')
+        print(f'   - Quiz completed: {quiz_completed}')
+        print(f'   - Leaderboard participants: {len(leaderboard)}')
+        print(f'{"="*80}\n')
 
         return jsonify(response)
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error advancing quiz: {e}")
+        print(f"[MVP LiveQuiz] Error advancing quiz: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -266,6 +406,27 @@ def end_session(session_id):
             'ended_at': session.ended_at.isoformat(),
             'leaderboard': leaderboard
         }, room=f'live_quiz_{session_id}')
+        
+        # ===== MVP REALTIME: Broadcast to module room for page-level updates =====
+        module_room = f'module_{session.module_id}'
+        
+        print(f'\n[MVP REALTIME] 🏁 Broadcasting session END to module room: {module_room}')
+        print(f'[MVP REALTIME] Session {session.id} status: active → completed')
+        
+        broadcast_data = {
+            'session_id': session.id,
+            'status': 'completed',
+            'class_id': session.class_id,
+            'module_id': session.module_id,
+            'lesson_id': session.lesson_id,
+            'title': session.title,
+            'session_code': session.session_code,
+            'ended_at': session.ended_at.isoformat() if session.ended_at else None
+        }
+        
+        socketio.emit('live_quiz_session_status_changed', broadcast_data, room=module_room)
+        
+        print(f'[MVP REALTIME] ✅ Module room broadcast complete - students should see button disappear')
         
         return jsonify({
             'success': True,
@@ -317,8 +478,11 @@ def get_instructor_leaderboard(session_id):
         from user.models.live_quiz import LiveQuizSession
         from user.routes.live_quiz_routes import get_session_leaderboard
         
+        print(f'[INSTRUCTOR LEADERBOARD] GET request for session {session_id}')
+        
         session = LiveQuizSession.query.get(session_id)
         if not session or session.created_by != current_user.id:
+            print(f'[INSTRUCTOR LEADERBOARD] ❌ ERROR: Session not found or not owned')
             return jsonify({'success': False, 'error': 'Session not found'}), 404
         
         # Get leaderboard without current_user context
@@ -329,6 +493,8 @@ def get_instructor_leaderboard(session_id):
             is_active=True
         ).all()
         
+        print(f'[INSTRUCTOR LEADERBOARD] Found {len(participants)} active participants')
+        
         # Calculate rank scores and sort
         participant_scores = []
         for p in participants:
@@ -337,6 +503,7 @@ def get_instructor_leaderboard(session_id):
                 'participant': p,
                 'rank_score': rank_score
             })
+            print(f'[INSTRUCTOR LEADERBOARD]   - {p.display_name}: score={p.total_score}, correct={p.total_correct}/{p.total_answered}')
         
         participant_scores.sort(key=lambda x: x['rank_score'], reverse=True)
         
@@ -355,6 +522,8 @@ def get_instructor_leaderboard(session_id):
             })
         
         db.session.commit()
+        
+        print(f'[INSTRUCTOR LEADERBOARD] ✅ Returning leaderboard with {len(leaderboard)} entries')
         
         return jsonify({
             'success': True,
