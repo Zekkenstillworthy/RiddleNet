@@ -965,6 +965,9 @@ html, body {
           <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">OSI Model</div>
           <div style="font-size: 0.95rem; color: var(--text-secondary);">7 Layers to arrange</div>
         </div>
+        <div id="level1ProgressBadge" style="background: rgba(0, 212, 255, 0.2); padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; color: var(--cyber-glow);">
+          Start
+        </div>
       </div>
       
       <!-- Level 2: TCP/IP Model (4 Layers) - Locked -->
@@ -3964,9 +3967,28 @@ function initializeChallengeUI() {
     console.log('  Level 2 Complete:', level2Complete, '- Score:', level2Score);
     // Debug: values already captured in level1Complete/level2Complete via Jinja at variable init
     
-    // Update Level 1 status
+    // Update Level 1 status and progress badge
     const level1Card = document.getElementById('level1Card');
     const level1Status = document.getElementById('level1Status');
+    const level1ProgressBadge = document.getElementById('level1ProgressBadge');
+    
+    // Update Level 1 progress badge
+    if (level1ProgressBadge) {
+        if (level1Complete) {
+            // Show completion status
+            level1ProgressBadge.innerHTML = `<i class="fas fa-check-circle"></i> ${level1Score}%`;
+            level1ProgressBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+            level1ProgressBadge.style.color = 'var(--success-color)';
+            console.log('✅ Level 1 completed:', level1Score + '%');
+        } else if (level1Score > 0) {
+            // Show progress percentage
+            level1ProgressBadge.innerHTML = `Progress: ${level1Score}%`;
+            level1ProgressBadge.style.background = 'rgba(0, 212, 255, 0.2)';
+            level1ProgressBadge.style.color = 'var(--cyber-glow)';
+            console.log('🔄 Level 1 progress:', level1Score + '%');
+        }
+        // else: Keep default "Start" text for fresh starts
+    }
     
     if (level1Complete && level1Status) {
         level1Status.innerHTML = `<i class="fas fa-check-circle"></i> Completed (${level1Score}%)`;
@@ -4007,12 +4029,21 @@ function initializeChallengeUI() {
             if (level2Subtitle) level2Subtitle.style.color = 'var(--text-secondary)';
         }
         
-        // Hide lock badge and show unlocked badge
+        // Show progress percentage instead of "Unlocked"
         if (level2LockBadge) {
-            level2LockBadge.innerHTML = '<i class="fas fa-unlock"></i> Unlocked';
-            level2LockBadge.style.background = 'rgba(245, 158, 11, 0.2)';
-            level2LockBadge.style.color = 'var(--warning-color)';
-            console.log('🔓 Level 2 lock badge updated to "Unlocked"');
+            if (level2Complete) {
+                // Show completion status
+                level2LockBadge.innerHTML = `<i class="fas fa-check-circle"></i> ${level2Score}%`;
+                level2LockBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+                level2LockBadge.style.color = 'var(--success-color)';
+                console.log('✅ Level 2 completed:', level2Score + '%');
+            } else {
+                // Show progress percentage
+                level2LockBadge.innerHTML = `Progress: ${level2Score}%`;
+                level2LockBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+                level2LockBadge.style.color = 'var(--warning-color)';
+                console.log('🔓 Level 2 progress:', level2Score + '%');
+            }
         }
         
         if (level2Status) {
