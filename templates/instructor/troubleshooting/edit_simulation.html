@@ -1786,6 +1786,34 @@
         font-size: 0.9rem;
         margin-bottom: 4px;
     }
+    
+    /* Chat message structure styling */
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .message-header strong {
+        color: var(--cyber-glow);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .message-header small {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+    }
+    
+    .chat-message .message-content {
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
 
     .message-time {
         font-size: 0.75rem;
@@ -3495,6 +3523,38 @@
                 </div>
             </div>
 
+            <!-- Live Student Monitoring -->
+            <div class="feedback-section" id="live-monitoring-section">
+                <h4 style="margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-chart-line"></i> Live Student Progress
+                    <button class="action-btn secondary" onclick="toggleMonitoringWidget()" style="margin-left: auto; padding: 4px 8px; font-size: 0.75rem;">
+                        <i class="fas fa-eye"></i> Toggle
+                    </button>
+                </h4>
+                <div id="live-monitoring-widget" style="background: rgba(255,255,255,0.03); border-radius: 8px; min-height: 100px;">
+                    <div class="empty-state" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                        <i class="fas fa-user-clock" style="font-size: 2rem; opacity: 0.5; margin-bottom: 8px; display: block;"></i>
+                        <p style="margin: 0; font-size: 0.9rem;">No active students</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Participants -->
+            <div class="feedback-section" id="session-participants-section">
+                <h4 style="margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-users"></i> Session Participants
+                    <span id="participant-count-badge" class="badge" style="margin-left: auto; background: rgba(59, 130, 246, 0.2); color: var(--cyber-glow); padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem;">
+                        <span id="participant-count">0</span> online
+                    </span>
+                </h4>
+                <div id="current-participants-list" class="members-grid">
+                    <div class="empty-state" style="text-align: center; padding: 24px; color: var(--text-muted); background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <i class="fas fa-user-slash" style="font-size: 2rem; opacity: 0.5; margin-bottom: 8px; display: block;"></i>
+                        <p style="margin: 0; font-size: 0.9rem;">No participants yet. Create or join a lobby.</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Active Lobbies List -->
             <div class="feedback-section" id="active-lobbies-section">
                 <h4 style="margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
@@ -3624,7 +3684,7 @@
             <div class="feedback-section" id="chat-section">
                 <h4><i class="fas fa-comments"></i> Team Chat</h4>
                 <div class="chat-container" id="team-chat">
-                    <div class="chat-messages-container" id="collaboration-chat-messages">
+                    <div class="chat-messages-container" id="chat-messages">
                         <div class="chat-message system">
                             <div class="message-content">
                                 <i class="fas fa-info-circle"></i>
@@ -3636,7 +3696,7 @@
                     <div class="chat-input-container">
                         <div class="chat-input-wrapper">
                             <input type="text" id="chat-input" class="chat-input" placeholder="Type your message..." maxlength="500" onkeypress="handleChatInput(event)">
-                            <button class="chat-send-btn" onclick="sendChatMessage()" title="Send Message">
+                            <button class="chat-send-btn" onclick="sendMessage()" title="Send Message">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
@@ -7139,6 +7199,9 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
     }
     // MVP FIX END - Unified viewAsStudent function
 
+    // DEPRECATED: Old chat functions - now using sendMessage() and handleChatInput() with WebSocket support (see line ~8093)
+    // Keeping these commented for reference only
+    /*
     function handleChatInput(event) {
         if (event.key === 'Enter') {
             sendChatMessage();
@@ -7167,6 +7230,7 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
         console.log('Sent message:', message);
         // TODO: Send message via WebSocket
     }
+    */
 
     function saveCollaborationSettings() {
         console.log('Saving collaboration settings...');
@@ -7439,6 +7503,10 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
 
             socket.on('connect', function () {
                 console.log('Connected to WebSocket server');
+                // Initialize collaboration system after socket connection
+                if (typeof initializeCollaboration === 'function') {
+                    initializeCollaboration();
+                }
             });
 
             socket.on('disconnect', function () {
@@ -7601,9 +7669,16 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
     let collaborationParticipants = new Map();
     let userCursors = new Map();
     let isCollaborationActive = false;
+    let collaborationInitialized = false; // Guard to prevent double initialization
 
     // Initialize collaboration features
     function initializeCollaboration() {
+        // Prevent double initialization
+        if (collaborationInitialized) {
+            console.log('Collaboration already initialized - skipping');
+            return;
+        }
+
         if (!socket) {
             console.warn('WebSocket not available - collaboration disabled');
             return;
@@ -7622,6 +7697,7 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
             console.log('Collaboration object initialized');
         }
 
+        collaborationInitialized = true; // Mark as initialized
         console.log('Collaboration system initialized');
     }
 
@@ -7634,8 +7710,8 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
         collaborationSocket.on('participant_joined', handleParticipantJoined);
         collaborationSocket.on('participant_left', handleParticipantLeft);
 
-        // Communication events
-        collaborationSocket.on('chat_message', handleChatMessage);
+        // Communication events - MVP FIX: Use team_chat_message to match server handler
+        collaborationSocket.on('team_chat_message', handleChatMessage);
         collaborationSocket.on('cursor_moved', handleCursorMoved);
 
         // Device sync events
@@ -7925,9 +8001,36 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
 
         // Update participants
         updateParticipantsList(data.lobby.participants);
+
+        // MVP FIX START - Join collaboration session room for chat
+        // Join the session room so we receive chat message broadcasts
+        if (collaborationSocket && data.lobby.id) {
+            collaborationSocket.emit('join_collaboration_session', {
+                session_id: data.lobby.id
+            });
+            console.log('✅ [CHAT-FIX] Joined collaboration session room:', data.lobby.id);
+        }
+        // MVP FIX END - Join collaboration session room
+
+        // MVP FIX START - Auto-show chat tab when collaboration starts
+        // Switch to chat tab to make the chat interface visible
+        if (window.editor && typeof window.editor.switchTab === 'function') {
+            window.editor.switchTab('chat');
+            console.log('✅ [CHAT-FIX] Auto-switched to chat tab after joining lobby');
+        }
+        // MVP FIX END - Auto-show chat tab
     }
 
     function handleLobbyLeft(data) {
+        // MVP FIX START - Leave collaboration session room
+        if (collaborationSocket && currentLobby) {
+            collaborationSocket.emit('leave_collaboration_session', {
+                session_id: currentLobby.id
+            });
+            console.log('✅ [CHAT-FIX] Left collaboration session room:', currentLobby.id);
+        }
+        // MVP FIX END - Leave collaboration session room
+
         currentLobby = null;
         isCollaborationActive = false;
 
@@ -7999,21 +8102,46 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
     }
 
     function handleParticipantJoined(data) {
-        collaborationParticipants.set(data.participant.id, data.participant);
+        // Safety check for participant data - handle both data structures
+        if (!data || (!data.user_id && !data.participant)) {
+            console.warn('⚠️ Invalid participant data received:', data);
+            return;
+        }
+        
+        // Support both data formats: {user_id, username, participant_data} or {participant: {id, username}}
+        const participant = data.participant || {
+            id: data.user_id,
+            username: data.username,
+            ...data.participant_data
+        };
+        
+        if (!participant.id) {
+            console.warn('⚠️ Participant missing ID:', data);
+            return;
+        }
+        
+        collaborationParticipants.set(participant.id, participant);
         updateParticipantsList(Array.from(collaborationParticipants.values()));
 
         addChatMessage({
             type: 'system',
-            message: `${data.participant.username} joined the lobby`
+            message: `${participant.username || 'User'} joined the lobby`
         });
     }
 
     function handleParticipantLeft(data) {
+        if (!data || !data.participant_id) {
+            console.warn('⚠️ Invalid participant_id received:', data);
+            return;
+        }
+        
         collaborationParticipants.delete(data.participant_id);
         updateParticipantsList(Array.from(collaborationParticipants.values()));
 
-        // Remove cursor
-        removeCursor(data.participant_id);
+        // Remove cursor if function exists
+        if (typeof removeCursor === 'function') {
+            removeCursor(data.participant_id);
+        }
     }
 
     function handleChatMessage(data) {
@@ -8021,7 +8149,10 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
     }
 
     function handleCursorMoved(data) {
-        updateCursor(data.user_id, data.x, data.y, data.username);
+        // Only update cursor if function exists
+        if (typeof updateCursor === 'function') {
+            updateCursor(data.user_id, data.x, data.y, data.username);
+        }
     }
 
     // Participants List Management
@@ -8094,12 +8225,16 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
         const message = input.value.trim();
 
         if (message && collaborationSocket && currentLobby) {
-            collaborationSocket.emit('chat_message', {
+            // MVP FIX: Use team_chat_message to match server handler
+            collaborationSocket.emit('team_chat_message', {
                 lobby_id: currentLobby.id,
-                message: message
+                message: message,
+                username: '{{ current_user.username }}',  // Add username for display
+                user_id: '{{ current_user.id }}'  // Add user_id for tracking
             });
 
             input.value = '';
+            console.log('✅ [CHAT-FIX] Sent message to server via team_chat_message event');
         }
     }
 
@@ -8111,6 +8246,11 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
 
     function addChatMessage(data) {
         const messagesContainer = document.getElementById('chat-messages');
+        if (!messagesContainer) {
+            console.error('Chat messages container not found');
+            return;
+        }
+        
         const messageDiv = document.createElement('div');
 
         if (data.type === 'system') {
@@ -8130,6 +8270,10 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
         messagesContainer.appendChild(messageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
+    
+    // Make chat functions globally accessible
+    window.addChatMessage = addChatMessage;
+    window.handleChatMessage = handleChatMessage;
 
     function clearChat() {
         const messagesContainer = document.getElementById('chat-messages');
@@ -8157,6 +8301,52 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
             }
         }
     });
+
+    // Cursor Management Functions
+    function updateCursor(userId, x, y, username) {
+        let cursor = userCursors.get(userId);
+        
+        if (!cursor) {
+            // Create new cursor element
+            cursor = document.createElement('div');
+            cursor.className = 'collaboration-cursor';
+            cursor.innerHTML = `
+                <div class="cursor-pointer"></div>
+                <div class="cursor-label">${username || 'User'}</div>
+            `;
+            cursor.style.cssText = `
+                position: absolute;
+                pointer-events: none;
+                z-index: 9999;
+                transition: transform 0.1s ease-out;
+            `;
+            
+            const canvas = document.getElementById('simulation-canvas') || document.body;
+            canvas.appendChild(cursor);
+            userCursors.set(userId, cursor);
+        }
+        
+        // Update cursor position
+        cursor.style.left = x + 'px';
+        cursor.style.top = y + 'px';
+    }
+
+    function removeCursor(userId) {
+        const cursor = userCursors.get(userId);
+        if (cursor && cursor.parentNode) {
+            cursor.parentNode.removeChild(cursor);
+            userCursors.delete(userId);
+        }
+    }
+
+    function clearAllCursors() {
+        userCursors.forEach((cursor, userId) => {
+            if (cursor && cursor.parentNode) {
+                cursor.parentNode.removeChild(cursor);
+            }
+        });
+        userCursors.clear();
+    }
 
     // Device Sync Event Handlers
     function handleDeviceAdded(data) {
@@ -11097,6 +11287,39 @@ async function loadActiveStudents() {
     } catch (error) {
         console.error('📊 [ADMIN MONITORING] Error loading students:', error);
     }
+}
+
+function renderLiveMonitoringWidget() {
+    // Render live monitoring widget for active students
+    const widget = document.getElementById('live-monitoring-widget');
+    if (!widget) {
+        console.warn('📊 [ADMIN MONITORING] Widget element not found');
+        return;
+    }
+
+    if (activeStudents.size === 0) {
+        widget.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted);">No active students</div>';
+        return;
+    }
+
+    let html = '<div style="padding: 0.5rem;">';
+    html += '<h5 style="margin: 0 0 0.5rem 0; color: var(--text-primary);">Active Students</h5>';
+    activeStudents.forEach((student, userId) => {
+        const timeAgo = getTimeAgo(student.last_update);
+        html += `
+            <div style="padding: 0.5rem; margin-bottom: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: var(--text-primary);">${student.username}</strong>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">${timeAgo}</span>
+                </div>
+                <div style="margin-top: 0.25rem; font-size: 0.85rem; color: var(--text-secondary);">
+                    Progress: ${student.completion_percentage}% | Score: ${student.auto_grade_score}%
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    widget.innerHTML = html;
 }
 
 function updateStudentProgress(data) {
