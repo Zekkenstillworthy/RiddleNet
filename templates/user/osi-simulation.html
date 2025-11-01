@@ -581,8 +581,8 @@ html, body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.9);
-  backdrop-filter: blur(10px);
+  background: rgba(2, 6, 15, 0.95);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -591,23 +591,23 @@ html, body {
 }
 
 .model-selection-content {
-  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-  border-radius: 20px;
-  padding: 30px 25px;
-  max-width: 700px;
+  background: linear-gradient(135deg, #0a0e1a 0%, #0f1620 50%, #141824 100%);
+  border-radius: 24px;
+  padding: 40px 30px;
+  max-width: 680px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(0, 212, 255, 0.3),
-    0 0 100px rgba(0, 212, 255, 0.1);
-  border: 2px solid rgba(0, 212, 255, 0.2);
+    0 30px 60px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(0, 217, 255, 0.25),
+    0 0 80px rgba(0, 217, 255, 0.15);
+  border: 2px solid rgba(0, 217, 255, 0.25);
   position: relative;
   animation: slideInUp 0.5s ease-out;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
 }
 
 @keyframes slideInUp {
@@ -778,14 +778,14 @@ html, body {
   }
   
   .model-selection-content {
-    padding: 25px 20px;
+    padding: 32px 20px;
     width: 95%;
     max-height: 95vh;
   }
   
   .model-selection-content h2 {
-    font-size: 22px;
-    margin-bottom: 20px;
+    font-size: 1.5rem;
+    margin-bottom: 24px;
     gap: 8px;
   }
   
@@ -795,19 +795,34 @@ html, body {
     width: 36px;
     height: 36px;
   }
+  
+  /* Adjust level cards for mobile */
+  #level1Card, #level2Card {
+    padding: 16px 18px !important;
+  }
+  
+  #level1Card > div:first-child, 
+  #level2Card > div:first-child {
+    font-size: 2rem !important;
+  }
+  
+  #level1Card > div:nth-child(2) > div:first-child,
+  #level2Card > div:nth-child(2) > div:first-child {
+    font-size: 1rem !important;
+  }
 }
 
 /* Additional responsive handling for very small screens */
 @media (max-width: 480px) {
   .model-selection-content {
-    padding: 20px 15px;
+    padding: 24px 16px;
     width: 98%;
     border-radius: 16px;
   }
   
   .model-selection-content h2 {
-    font-size: 20px;
-    margin-bottom: 15px;
+    font-size: 1.3rem;
+    margin-bottom: 20px;
   }
   
   .model-option {
@@ -826,6 +841,27 @@ html, body {
   
   .option-subtitle {
     font-size: 12px;
+  }
+  
+  /* Level cards mobile optimization */
+  #level1Card, #level2Card {
+    padding: 14px 16px !important;
+    gap: 12px !important;
+  }
+  
+  #level1Card > div:first-child, 
+  #level2Card > div:first-child {
+    font-size: 1.8rem !important;
+  }
+  
+  #level1Card > div:nth-child(2) > div:first-child,
+  #level2Card > div:nth-child(2) > div:first-child {
+    font-size: 0.95rem !important;
+  }
+  
+  #level1Card > div:nth-child(2) > div:last-child,
+  #level2Card > div:nth-child(2) > div:last-child {
+    font-size: 0.85rem !important;
   }
 }
 
@@ -897,44 +933,69 @@ html, body {
 {% endblock %}
 
 {% block content %}
-<!-- OSI Challenge Start Modal - Level 1 Required -->
+<!-- OSI Challenge Start Modal - Minimal Design -->
 <div class="model-selection-modal" id="osiChallengeStartModal" style="display: flex;">
-  <div class="model-selection-content">
+  <div class="model-selection-content" style="max-width: 680px; padding: 40px 30px;">
     <button class="close-model-btn" onclick="closeOSISimulation()">
       <i class="fas fa-times"></i>
     </button>
-    <h2>🌐 OSI & TCP/IP Challenge</h2>
     
-    <div style="background: rgba(0, 212, 255, 0.1); border: 2px solid var(--cyber-glow); border-radius: 16px; padding: 24px; margin: 20px 0; text-align: center;">
-      <div style="font-size: 3rem; margin-bottom: 16px;">🎯</div>
-      <h3 style="color: var(--cyber-glow); margin-bottom: 16px;">Two-Level Challenge</h3>
-      <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 20px;">
-        Complete <strong style="color: var(--neon-green);">Level 1: OSI Model</strong> to unlock 
-        <strong style="color: var(--warning-color);">Level 2: TCP/IP Model</strong>
-      </p>
-      
-      <!-- Level Progress Indicator -->
-      <div style="display: flex; gap: 16px; justify-content: center; margin: 24px 0;">
-        <div id="level1Card" onclick="startOSIChallenge()" style="flex: 1; max-width: 200px; background: rgba(57, 255, 20, 0.2); border: 2px solid var(--neon-green); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(57, 255, 20, 0.3)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
-          <div style="font-size: 2rem; margin-bottom: 8px;">🔷</div>
-          <div style="color: var(--neon-green); font-weight: 600;">Level 1</div>
-          <div style="font-size: 0.9rem; color: var(--text-muted);">OSI Model (7 Layers)</div>
-          <div id="level1Status" style="margin-top: 8px; color: var(--neon-green);">
-            <i class="fas fa-play-circle"></i> Start Here
-          </div>
-        </div>
-        
-        <div id="level2Card" onclick="handleLevel2Click()" style="flex: 1; max-width: 200px; background: rgba(100, 116, 139, 0.2); border: 2px solid var(--text-muted); border-radius: 12px; padding: 16px; opacity: 0.5; cursor: pointer; transition: all 0.3s ease;">
-          <div style="font-size: 2rem; margin-bottom: 8px;">🔶</div>
-          <div style="color: var(--text-muted); font-weight: 600;">Level 2</div>
-          <div style="font-size: 0.9rem; color: var(--text-muted);">TCP/IP Model (4 Layers)</div>
-          <div id="level2Status" style="margin-top: 8px; color: var(--text-muted);">
-            <i class="fas fa-lock"></i> Locked
-          </div>
+    <!-- Title with Icon -->
+    <h2 style="text-align: center; font-size: 2rem; margin-bottom: 32px; color: var(--neon-green); display: flex; align-items: center; justify-content: center; gap: 12px;">
+      <i class="fas fa-network-wired"></i> Start OSI Challenge!
+    </h2>
+    
+    <!-- Level Selection Cards - Minimal Design -->
+    <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+      <!-- Level 1: OSI Model (7 Layers) -->
+      <div id="level1Card" onclick="startOSIChallenge()" 
+           style="background: rgba(0, 212, 255, 0.08); 
+                  border: 2px solid rgba(0, 212, 255, 0.4); 
+                  border-radius: 16px; 
+                  padding: 20px 24px; 
+                  cursor: pointer; 
+                  transition: all 0.3s ease;
+                  display: flex;
+                  align-items: center;
+                  gap: 16px;"
+           onmouseover="this.style.background='rgba(0, 212, 255, 0.15)'; this.style.borderColor='var(--cyber-glow)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0, 212, 255, 0.3)';"
+           onmouseout="this.style.background='rgba(0, 212, 255, 0.08)'; this.style.borderColor='rgba(0, 212, 255, 0.4)'; this.style.transform=''; this.style.boxShadow='';">
+        <div style="font-size: 2.5rem;">☀️</div>
+        <div style="flex: 1;">
+          <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">OSI Model</div>
+          <div style="font-size: 0.95rem; color: var(--text-secondary);">7 Layers to arrange</div>
         </div>
       </div>
       
+      <!-- Level 2: TCP/IP Model (4 Layers) - Locked -->
+      <div id="level2Card" onclick="handleLevel2Click()" 
+           style="background: rgba(100, 116, 139, 0.08); 
+                  border: 2px solid rgba(100, 116, 139, 0.3); 
+                  border-radius: 16px; 
+                  padding: 20px 24px; 
+                  opacity: 0.5; 
+                  cursor: not-allowed;
+                  display: flex;
+                  align-items: center;
+                  gap: 16px;
+                  transition: all 0.3s ease;">
+        <div style="font-size: 2.5rem;">⚡</div>
+        <div style="flex: 1;">
+          <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">TCP/IP Model</div>
+          <div style="font-size: 0.95rem; color: var(--text-muted);">4 Layers to master</div>
+        </div>
+        <div id="level2LockBadge" style="background: rgba(100, 116, 139, 0.2); padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; color: var(--text-muted);">
+          <i class="fas fa-lock"></i> Locked
+        </div>
+      </div>
       
+    
+    </div>
+    
+    <!-- Helper Text -->
+    <div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; padding: 16px; background: rgba(0, 212, 255, 0.05); border-radius: 12px; border: 1px solid rgba(0, 212, 255, 0.1);">
+      <i class="fas fa-lightbulb" style="color: var(--warning-color); margin-right: 6px;"></i>
+      <strong>New to OSI?</strong> Start easy to build the basics—finish each level to unlock the next.
     </div>
   </div>
 </div>
@@ -962,13 +1023,21 @@ html, body {
     </div>
     
     <!-- Performance Stats -->
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 24px 0;">
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0;">
       <div style="background: rgba(57, 255, 20, 0.1); border: 2px solid var(--neon-green); border-radius: 12px; padding: 20px; text-align: center;">
         <div style="font-size: 2.5rem; color: var(--neon-green); margin-bottom: 8px;">
-          <i class="fas fa-layer-group"></i>
+          <i class="fas fa-check-circle"></i>
         </div>
         <div style="font-size: 1.8rem; font-weight: 700; color: var(--text-primary);" id="level1LayersCorrect">7/7</div>
-        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 4px;">Layers Correct</div>
+        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 4px;">Correct Drops</div>
+      </div>
+      
+      <div style="background: rgba(255, 68, 68, 0.1); border: 2px solid #ff4444; border-radius: 12px; padding: 20px; text-align: center;">
+        <div style="font-size: 2.5rem; color: #ff4444; margin-bottom: 8px;">
+          <i class="fas fa-times-circle"></i>
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 700; color: var(--text-primary);" id="level1IncorrectDrops">0</div>
+        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 4px;">Wrong Drops</div>
       </div>
       
       <div style="background: rgba(0, 212, 255, 0.1); border: 2px solid var(--cyber-glow); border-radius: 12px; padding: 20px; text-align: center;">
@@ -1580,6 +1649,7 @@ function resetChallengeState() {
   score = 0;
   unitsCompleted = 0;
   correctPlacements = 0;
+  incorrectPlacements = 0; // MVP: Reset incorrect counter
   zone1Complete = false;
   zone2Complete = false;
   zone1Placements = 0;
@@ -1626,6 +1696,7 @@ let currentLayer = 0;
 let animationInterval;
 let draggedElement = null;
 let correctPlacements = 0; // still tracks layer placements
+let incorrectPlacements = 0; // MVP: Track incorrect drops for summary
 // UPDATED: Score based ONLY on layer placements (quiz doesn't affect score)
 let currentModel = 'osi'; // 'osi' or 'tcpip'
 const TOTAL_UNITS_OSI = 7; // 7 layer placements only (quiz is educational, not scored)
@@ -2464,10 +2535,19 @@ window.drop = function(ev) {
         correctPlacements++; // still for layer logic
         unitsCompleted = Math.min(unitsCompleted + 1, TOTAL_UNITS); // increment a unit (layer placement only)
         updateScore();
-        showSuccessAnimation(dropSlot);
         
-        // Show success modal for correct placement
-        showSuccessModal(draggedLayer);
+        // MVP: Subtle inline feedback only - no popup animation
+        dropSlot.style.transition = 'all 0.3s ease';
+        dropSlot.style.borderColor = 'var(--neon-green)';
+        dropSlot.style.boxShadow = '0 0 20px rgba(57, 255, 20, 0.5)';
+        setTimeout(() => {
+            dropSlot.style.borderColor = '';
+            dropSlot.style.boxShadow = '';
+        }, 800);
+        
+        // Removed per-item modal and animations - results shown at the end
+        // showSuccessAnimation(dropSlot);
+        // showSuccessModal(draggedLayer);
         
         // Note: Zone completion message will be shown after quiz is answered
         if (!zone2Complete) {
@@ -2479,9 +2559,22 @@ window.drop = function(ev) {
         }
     } else {
         if (OSI_SIM_DEBUG) console.debug('[OSI] Incorrect placement', { draggedLayer, targetLayer });
+        incorrectPlacements++; // MVP: Track incorrect attempts
         dropSlot.classList.add('incorrect-placement');
-        showErrorAnimation(dropSlot);
-        setTimeout(()=>dropSlot.classList.remove('incorrect-placement'),1000);
+        
+        // MVP: Subtle inline feedback only - no popup animation
+        dropSlot.style.transition = 'all 0.3s ease';
+        dropSlot.style.borderColor = '#ff4444';
+        dropSlot.style.boxShadow = '0 0 20px rgba(255, 68, 68, 0.5)';
+        setTimeout(() => {
+            dropSlot.classList.remove('incorrect-placement');
+            dropSlot.style.borderColor = '';
+            dropSlot.style.boxShadow = '';
+        }, 800);
+        
+        // Removed per-item error animation
+        // showErrorAnimation(dropSlot);
+        
         resetIdleTimer();
     }
 }
@@ -2540,38 +2633,239 @@ function showZoneCompleteMessage(zoneName) {
     }, 2500);
 }
 
+// Quiz questions for Network Models Challenge
+const networkModelQuizzes = {
+    osi: [
+        {
+            question: "How many layers does the OSI model have?",
+            options: ["5 layers", "7 layers", "4 layers", "6 layers"],
+            correct: 1,
+            explanation: "The OSI model has 7 layers: Physical, Data Link, Network, Transport, Session, Presentation, and Application."
+        },
+        {
+            question: "Which OSI layer is responsible for routing and IP addressing?",
+            options: ["Transport Layer", "Data Link Layer", "Network Layer", "Session Layer"],
+            correct: 2,
+            explanation: "The Network Layer (Layer 3) handles routing, logical addressing (IP addresses), and path determination."
+        },
+        {
+            question: "What is the main purpose of the OSI model?",
+            options: ["To speed up internet connections", "To standardize network communication", "To encrypt data", "To compress files"],
+            correct: 1,
+            explanation: "The OSI model standardizes network communication by dividing it into 7 layers, making it easier to understand and troubleshoot."
+        },
+        {
+            question: "Which layer handles end-to-end communication and flow control?",
+            options: ["Application Layer", "Session Layer", "Transport Layer", "Presentation Layer"],
+            correct: 2,
+            explanation: "The Transport Layer (Layer 4) manages end-to-end communication, flow control, and error recovery using protocols like TCP and UDP."
+        },
+        {
+            question: "What does the Physical Layer transmit?",
+            options: ["Packets", "Frames", "Bits", "Segments"],
+            correct: 2,
+            explanation: "The Physical Layer (Layer 1) transmits raw bits (0s and 1s) over physical media like cables, radio waves, or fiber optics."
+        }
+    ],
+    tcpip: [
+        {
+            question: "How many layers does the TCP/IP model have?",
+            options: ["3 layers", "4 layers", "5 layers", "7 layers"],
+            correct: 1,
+            explanation: "The TCP/IP model has 4 layers: Network Access, Internet, Transport, and Application."
+        },
+        {
+            question: "Which TCP/IP layer is equivalent to OSI's Network layer?",
+            options: ["Application Layer", "Transport Layer", "Internet Layer", "Network Access Layer"],
+            correct: 2,
+            explanation: "The Internet Layer in TCP/IP corresponds to the Network Layer in OSI, handling IP addressing and routing."
+        },
+        {
+            question: "What is the main difference between TCP/IP and OSI models?",
+            options: ["TCP/IP is theoretical, OSI is practical", "TCP/IP has fewer layers", "OSI is newer", "They are identical"],
+            correct: 1,
+            explanation: "The TCP/IP model has 4 layers compared to OSI's 7 layers. TCP/IP is based on actual internet protocols, while OSI is a conceptual framework."
+        },
+        {
+            question: "Which protocols operate at the Transport layer of TCP/IP?",
+            options: ["HTTP and FTP", "TCP and UDP", "IP and ICMP", "Ethernet and Wi-Fi"],
+            correct: 1,
+            explanation: "TCP (Transmission Control Protocol) and UDP (User Datagram Protocol) operate at the Transport Layer, managing data delivery."
+        },
+        {
+            question: "What does the Network Access layer handle?",
+            options: ["Email routing", "Physical transmission and data framing", "Encryption", "User authentication"],
+            correct: 1,
+            explanation: "The Network Access Layer handles physical transmission of data and data framing, similar to OSI's Physical and Data Link layers combined."
+        }
+    ]
+};
+
+let currentNetworkQuiz = null;
+let currentNetworkQuizIndex = 0;
+
 function automaticDataFlow() {
+    // Instead of showing data flow animation, show Network Model Quiz
+    const modelType = currentChallengeLevel === 1 ? 'osi' : 'tcpip';
+    const modelName = currentChallengeLevel === 1 ? 'OSI Model' : 'TCP/IP Model';
+    const quizPool = networkModelQuizzes[modelType];
+    
+    // Select a random quiz question
+    currentNetworkQuiz = quizPool[Math.floor(Math.random() * quizPool.length)];
+    
     const modal = document.getElementById('layerModal');
     const content = document.getElementById('modalContent');
     
     content.innerHTML = `
         <button class="close" onclick="skipToResults()">&times;</button>
         <div style="text-align: center; padding: 20px;">
-            <div style="font-size: 4rem; margin-bottom: 20px;">🎉</div>
-            <h2 style="color: #4ade80; margin-bottom: 15px;">
-                <i class="fas fa-trophy"></i> Zone Complete!
+            <div style="font-size: 3rem; margin-bottom: 20px;">🧠</div>
+            <h2 style="color: #a78bfa; margin-bottom: 10px;">
+                <i class="fas fa-graduation-cap"></i> Network Models Challenge
             </h2>
+            <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 20px;">
+                ${modelName} Knowledge Check
+            </p>
             
-            <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 20px; margin: 20px 0;">
-                <p style="font-size: 1.3rem; margin: 10px 0;">
-                    🌊 Automatic Data Flow Starting...
+            <div style="background: rgba(139, 92, 246, 0.2); border: 2px solid #a78bfa; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left;">
+                <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; color: #fff; line-height: 1.6;">
+                    ${currentNetworkQuiz.question}
                 </p>
-                <p style="font-size: 1.1rem; color: #fbbf24; margin: 10px 0;">
-                    Watch as data flows through all OSI layers!
-                </p>
+                <div id="networkQuizOptions" style="display: flex; flex-direction: column; gap: 10px;">
+                    ${currentNetworkQuiz.options.map((option, index) => `
+                        <button onclick="checkNetworkQuizAnswer(${index})" 
+                                class="network-quiz-option-button" 
+                                data-index="${index}"
+                                style="background: rgba(255, 255, 255, 0.1); 
+                                       border: 2px solid rgba(255, 255, 255, 0.3); 
+                                       color: white; 
+                                       padding: 14px 18px; 
+                                       border-radius: 10px; 
+                                       cursor: pointer; 
+                                       transition: all 0.3s ease; 
+                                       text-align: left; 
+                                       font-size: 1rem; 
+                                       font-weight: 500;
+                                       display: flex;
+                                       align-items: center;
+                                       gap: 12px;">
+                            <span style="background: rgba(139, 92, 246, 0.4); 
+                                         padding: 4px 10px; 
+                                         border-radius: 6px; 
+                                         font-weight: 700; 
+                                         min-width: 30px; 
+                                         text-align: center;">
+                                ${String.fromCharCode(65 + index)}
+                            </span>
+                            <span>${option}</span>
+                        </button>
+                    `).join('')}
+                </div>
+                <div id="networkQuizFeedback" style="margin-top: 20px; padding: 15px; border-radius: 10px; display: none;"></div>
             </div>
             
-            <button onclick="closeModal(); executeDataFlow();" class="control-button primary" style="margin-top: 20px; padding: 12px 24px;">
-                <i class="fas fa-play"></i> Start Animation
-            </button>
-            
             <button onclick="skipToResults();" class="control-button secondary" style="margin-top: 12px; padding: 10px 20px; width: 100%;">
-                <i class="fas fa-forward"></i> Skip to Results
+                <i class="fas fa-forward"></i> Skip Quiz
             </button>
         </div>
     `;
     
     modal.classList.add('show');
+    
+    // Add hover effects to quiz buttons
+    setTimeout(() => {
+        document.querySelectorAll('.network-quiz-option-button').forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                if (!this.disabled) {
+                    this.style.background = 'rgba(139, 92, 246, 0.3)';
+                    this.style.borderColor = '#a78bfa';
+                    this.style.transform = 'translateX(5px)';
+                }
+            });
+            btn.addEventListener('mouseleave', function() {
+                if (!this.disabled) {
+                    this.style.background = 'rgba(255, 255, 255, 0.1)';
+                    this.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                    this.style.transform = 'translateX(0)';
+                }
+            });
+        });
+    }, 100);
+}
+
+window.checkNetworkQuizAnswer = function(selected) {
+    const feedback = document.getElementById('networkQuizFeedback');
+    const buttons = document.querySelectorAll('.network-quiz-option-button');
+    const correctIndex = currentNetworkQuiz.correct;
+    
+    // Disable all buttons
+    buttons.forEach((btn, index) => {
+        btn.disabled = true;
+        btn.style.cursor = 'not-allowed';
+        
+        if (index === correctIndex) {
+            // Highlight correct answer
+            btn.style.background = 'linear-gradient(135deg, rgba(74, 222, 128, 0.5), rgba(34, 197, 94, 0.5))';
+            btn.style.borderColor = '#4ade80';
+            btn.style.transform = 'scale(1.02)';
+            btn.style.boxShadow = '0 0 20px rgba(74, 222, 128, 0.5)';
+        } else if (index === selected && selected !== correctIndex) {
+            // Highlight wrong answer
+            btn.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.5), rgba(220, 38, 38, 0.5))';
+            btn.style.borderColor = '#ef4444';
+            btn.style.animation = 'shake 0.5s ease-in-out';
+            btn.style.boxShadow = '0 0 20px rgba(239, 68, 68, 0.5)';
+        } else {
+            btn.style.opacity = '0.5';
+        }
+    });
+    
+    // Show feedback
+    feedback.style.display = 'block';
+    
+    if (selected === correctIndex) {
+        feedback.innerHTML = `
+            <div style="background: linear-gradient(135deg, rgba(74, 222, 128, 0.3), rgba(34, 197, 94, 0.2)); 
+                        border: 2px solid #4ade80; 
+                        border-radius: 10px; 
+                        padding: 16px;">
+                <p style="margin: 0; color: #4ade80; font-weight: 700; margin-bottom: 10px; font-size: 1.1rem;">
+                    <i class="fas fa-check-circle"></i> Excellent! You're correct! 🎉
+                </p>
+                <p style="margin: 0; font-size: 1rem; line-height: 1.6; color: rgba(255,255,255,0.95); margin-bottom: 15px;">
+                    ${currentNetworkQuiz.explanation}
+                </p>
+                <button onclick="proceedToResults()" class="control-button success" style="margin-top: 8px; padding: 12px 24px; width: 100%; font-size: 1.05rem;">
+                    <i class="fas fa-arrow-right"></i> Continue to Results
+                </button>
+            </div>
+        `;
+        
+        // Bonus: Mark this as a correct quiz answer (doesn't affect placement score but tracked)
+        // This will be reflected in the results modal
+    } else {
+        feedback.innerHTML = `
+            <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.2)); 
+                        border: 2px solid #ef4444; 
+                        border-radius: 10px; 
+                        padding: 16px;">
+                <p style="margin: 0; color: #fbbf24; font-weight: 700; margin-bottom: 10px; font-size: 1.1rem;">
+                    <i class="fas fa-info-circle"></i> Not quite right!
+                </p>
+                <p style="margin: 0; font-size: 1rem; line-height: 1.6; color: rgba(255,255,255,0.95); margin-bottom: 15px;">
+                    ${currentNetworkQuiz.explanation}
+                </p>
+                <button onclick="proceedToResults()" class="control-button primary" style="margin-top: 8px; padding: 12px 24px; width: 100%; font-size: 1.05rem;">
+                    <i class="fas fa-arrow-right"></i> Continue to Results
+                </button>
+            </div>
+        `;
+    }
+}
+
+function proceedToResults() {
+    closeModal();
+    skipToResults();
 }
 
 function executeDataFlow() {
@@ -3258,7 +3552,10 @@ function populateLevel1Results(finalScore) {
   
   // Calculate layers correct (from correctPlacements)
   const layersCorrect = Math.min(correctPlacements, totalLayers);
-  document.getElementById('level1LayersCorrect').textContent = `${layersCorrect}/${totalLayers}`;
+  document.getElementById('level1LayersCorrect').textContent = `${layersCorrect}`;
+  
+  // MVP: Show incorrect drops count
+  document.getElementById('level1IncorrectDrops').textContent = `${incorrectPlacements}`;
   
   // Calculate quiz answers correct (from quizAnswered)
   const quizCorrect = Object.keys(quizAnswered).filter(key => quizAnswered[key] === true).length;
@@ -3680,22 +3977,42 @@ function initializeChallengeUI() {
     // Update Level 2 status and unlock if Level 1 is complete
     const level2Card = document.getElementById('level2Card');
     const level2Status = document.getElementById('level2Status');
+    const level2LockBadge = document.getElementById('level2LockBadge');
     
     if (level1Complete) {
         if (level2Card) {
             level2Card.style.opacity = '1';
-            level2Card.style.background = 'rgba(245, 158, 11, 0.2)';
-            level2Card.style.borderColor = 'var(--warning-color)';
+            level2Card.style.background = 'rgba(245, 158, 11, 0.08)';
+            level2Card.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+            level2Card.style.cursor = 'pointer';
             
             // Add hover effects for unlocked Level 2
             level2Card.onmouseover = function() {
-                this.style.transform = 'translateY(-4px)';
+                this.style.background = 'rgba(245, 158, 11, 0.15)';
+                this.style.borderColor = 'var(--warning-color)';
+                this.style.transform = 'translateY(-2px)';
                 this.style.boxShadow = '0 8px 24px rgba(245, 158, 11, 0.3)';
             };
             level2Card.onmouseout = function() {
+                this.style.background = 'rgba(245, 158, 11, 0.08)';
+                this.style.borderColor = 'rgba(245, 158, 11, 0.4)';
                 this.style.transform = '';
                 this.style.boxShadow = '';
             };
+            
+            // Change text colors to active
+            const level2Title = level2Card.querySelector('div:nth-child(2) > div:first-child');
+            const level2Subtitle = level2Card.querySelector('div:nth-child(2) > div:last-child');
+            if (level2Title) level2Title.style.color = 'var(--text-primary)';
+            if (level2Subtitle) level2Subtitle.style.color = 'var(--text-secondary)';
+        }
+        
+        // Hide lock badge and show unlocked badge
+        if (level2LockBadge) {
+            level2LockBadge.innerHTML = '<i class="fas fa-unlock"></i> Unlocked';
+            level2LockBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+            level2LockBadge.style.color = 'var(--warning-color)';
+            console.log('🔓 Level 2 lock badge updated to "Unlocked"');
         }
         
         if (level2Status) {

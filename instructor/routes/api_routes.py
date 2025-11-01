@@ -1,5 +1,5 @@
 ﻿from flask import Blueprint, jsonify, request, render_template, current_app, session
-from flask_login import current_user
+from flask_login import current_user, login_required
 from __init__ import db
 from instructor.models.class_model import Class
 from instructor.models.question_group import QuestionGroup
@@ -34,6 +34,107 @@ def instructor_api_write_guard():
     else:
         print(f"[OK] Auth check passed")
     return result
+
+
+def _is_super_admin():
+    return getattr(current_user, 'role', None) == 'super_admin'
+
+
+def _resolve_policy_payload(data):
+    payload = data or {}
+    frontend_type = (payload.get('type') or payload.get('policy_type') or 'percentage').strip().lower()
+
+    def _as_float(value, default):
+        try:
+            if value in (None, '', []):
+                return float(default)
+            return float(value)
+        except (TypeError, ValueError):
+            return float(default)
+
+    def _as_int(value, default):
+        try:
+            if value in (None, '', []):
+                return int(default)
+            return int(float(value))
+        except (TypeError, ValueError):
+            return int(default)
+
+    penalty_rate = payload.get('penalty_rate')
+    if penalty_rate is None:
+        penalty_rate = payload.get('simple_penalty_per_day')
+    if penalty_rate is None and frontend_type in {'percentage', 'grace', 'zero', 'simple'}:
+        penalty_rate = 10.0
+
+    grace_hours = payload.get('grace_period_hours')
+    if grace_hours is None:
+        grace_hours = payload.get('gracePeriodHours')
+    grace_hours = _as_int(grace_hours, 0)
+
+    hard_cutoff_enabled = payload.get('hard_cutoff_enabled')
+    hard_cutoff_days = _as_int(payload.get('hard_cutoff_days'), 7)
+    max_penalty = _as_float(payload.get('max_penalty_percentage'), 100.0)
+
+    if hard_cutoff_enabled is None:
+        hard_cutoff_enabled = False
+
+    allow_partial_credit = payload.get('allow_partial_credit')
+    round_penalty_up = payload.get('round_penalty_up')
+
+    internal_type = 'simple'
+
+    if frontend_type in {'percentage', 'simple'}:
+        internal_type = 'simple'
+    elif frontend_type == 'grace':
+        internal_type = 'simple'
+        if grace_hours == 0:
+            grace_hours = 24
+    elif frontend_type == 'fixed':
+        internal_type = 'fixed'
+        if penalty_rate is None:
+            penalty_rate = 50.0
+    elif frontend_type == 'zero':
+        internal_type = 'simple'
+        penalty_rate = 100.0 if penalty_rate is None else penalty_rate
+        max_penalty = 100.0
+        hard_cutoff_enabled = True
+        hard_cutoff_days = 0
+        allow_partial_credit = False if allow_partial_credit is None else allow_partial_credit
+    elif frontend_type in {'tiered', 'exponential'}:
+        internal_type = frontend_type
+        if penalty_rate is None:
+            penalty_rate = 10.0
+    else:
+        internal_type = 'simple'
+        if penalty_rate is None:
+            penalty_rate = 10.0
+
+    if allow_partial_credit is None:
+        allow_partial_credit = True
+    if round_penalty_up is None:
+        round_penalty_up = False
+
+    penalty_interval = payload.get('penalty_interval') or payload.get('penaltyInterval') or 'day'
+
+    return {
+        'frontend_type': frontend_type,
+        'policy_type': internal_type,
+        'penalty_rate': _as_float(penalty_rate, 10.0),
+        'grace_period_hours': grace_hours,
+        'hard_cutoff_enabled': bool(hard_cutoff_enabled),
+        'hard_cutoff_days': hard_cutoff_days,
+        'max_penalty_percentage': max_penalty,
+        'penalty_interval': penalty_interval,
+        'allow_partial_credit': bool(allow_partial_credit),
+        'round_penalty_up': bool(round_penalty_up)
+    }
+
+
+def _serialize_policy_response(policy, override=None):
+    data = policy.to_dict()
+    if override:
+        data.update(override)
+    return data
 
 @api_bp.route('/deadlines/<int:class_id>', methods=['GET'])
 def get_deadlines(class_id):
@@ -1205,159 +1306,178 @@ def get_class_grades(class_id):
 # DEADLINE MANAGEMENT API ENDPOINTS
 
 @api_bp.route('/deadline-policies', methods=['GET'])
+@login_required
 def get_deadline_policies():
-    """Get all deadline policies"""
+    """Get all deadline policies visible to the current instructor."""
     try:
         from instructor.models.deadline_policy import DeadlinePolicy
-        
-        policies = DeadlinePolicy.query.all()
-        return jsonify({
-            'success': True,
-            'policies': [policy.to_dict() for policy in policies]
-        })
+
+        query = DeadlinePolicy.query.order_by(DeadlinePolicy.created_at.desc())
+        if not _is_super_admin():
+            query = query.filter_by(created_by=current_user.id)
+
+        policies = [_serialize_policy_response(policy) for policy in query.all()]
+        return jsonify({'success': True, 'policies': policies})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @api_bp.route('/deadline-policies', methods=['POST'])
+@login_required
 def create_deadline_policy():
-    """Create a new deadline policy"""
+    """Create a new deadline policy."""
     try:
         from instructor.models.deadline_policy import DeadlinePolicy, PenaltyTier
-        from flask_login import current_user
-        
-        data = request.get_json()
-        
+
+        data = request.get_json() or {}
+
+        name = (data.get('name') or '').strip()
+        if not name:
+            return jsonify({'success': False, 'error': 'Policy name is required'}), 400
+
+        resolved = _resolve_policy_payload(data)
+
         policy = DeadlinePolicy(
-            name=data['name'],
+            name=name,
             description=data.get('description'),
-            policy_type=data.get('policy_type', 'simple'),
-            simple_penalty_per_day=data.get('simple_penalty_per_day', 10.0),
-            max_penalty_percentage=data.get('max_penalty_percentage', 100.0),
-            grace_period_hours=data.get('grace_period_hours', 0),
-            hard_cutoff_enabled=data.get('hard_cutoff_enabled', False),
-            hard_cutoff_days=data.get('hard_cutoff_days', 7),
+            policy_type=resolved['policy_type'],
+            simple_penalty_per_day=resolved['penalty_rate'],
+            max_penalty_percentage=resolved['max_penalty_percentage'],
+            grace_period_hours=resolved['grace_period_hours'],
+            hard_cutoff_enabled=resolved['hard_cutoff_enabled'],
+            hard_cutoff_days=resolved['hard_cutoff_days'],
             exclude_weekends=data.get('exclude_weekends', False),
             exclude_holidays=data.get('exclude_holidays', False),
-            allow_partial_credit=data.get('allow_partial_credit', True),
-            round_penalty_up=data.get('round_penalty_up', False),
+            allow_partial_credit=resolved['allow_partial_credit'],
+            round_penalty_up=resolved['round_penalty_up'],
             created_by=current_user.id
         )
-        
+
         db.session.add(policy)
-        db.session.flush()  # Get the policy ID
-        
-        # Add penalty tiers if specified
-        if 'penalty_tiers' in data:
-            for tier_data in data['penalty_tiers']:
-                tier = PenaltyTier(
-                    policy_id=policy.id,
-                    start_day=tier_data['start_day'],
-                    end_day=tier_data.get('end_day'),
-                    penalty_percentage=tier_data['penalty_percentage'],
-                    penalty_type=tier_data.get('penalty_type', 'per_day'),
-                    description=tier_data.get('description')
-                )
-                db.session.add(tier)
-        
+        db.session.flush()
+
+        # Support advanced tier creation payloads when provided
+        for tier_data in data.get('penalty_tiers', []) or []:
+            if not tier_data:
+                continue
+            tier = PenaltyTier(
+                policy_id=policy.id,
+                start_day=tier_data.get('start_day', 1),
+                end_day=tier_data.get('end_day'),
+                penalty_percentage=tier_data.get('penalty_percentage', resolved['penalty_rate']),
+                penalty_type=tier_data.get('penalty_type', 'per_day'),
+                description=tier_data.get('description')
+            )
+            db.session.add(tier)
+
         db.session.commit()
-        
+
+        response_policy = _serialize_policy_response(policy, {
+            'type': resolved['frontend_type'] or policy._frontend_type(),
+            'penalty_interval': resolved['penalty_interval']
+        })
+
         return jsonify({
             'success': True,
             'message': 'Deadline policy created successfully',
-            'policy': policy.to_dict()
+            'policy': response_policy
         })
-        
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/deadline-policies/<int:policy_id>', methods=['PUT'])
+@login_required
 def update_deadline_policy(policy_id):
-    """Update a deadline policy"""
+    """Update a deadline policy."""
     try:
         from instructor.models.deadline_policy import DeadlinePolicy, PenaltyTier
-        
+
         policy = DeadlinePolicy.query.get_or_404(policy_id)
-        data = request.get_json()
-        
-        # Update policy fields
-        for field in ['name', 'description', 'policy_type', 'simple_penalty_per_day',
-                     'max_penalty_percentage', 'grace_period_hours', 'hard_cutoff_enabled',
-                     'hard_cutoff_days', 'exclude_weekends', 'exclude_holidays',
-                     'allow_partial_credit', 'round_penalty_up']:
-            if field in data:
-                setattr(policy, field, data[field])
-        
-        # Update penalty tiers if specified
+        if not _is_super_admin() and policy.created_by != current_user.id:
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        data = request.get_json() or {}
+        resolved = _resolve_policy_payload(data)
+
+        if 'name' in data:
+            policy.name = (data.get('name') or '').strip() or policy.name
+        if 'description' in data:
+            policy.description = data.get('description')
+
+        policy.policy_type = resolved['policy_type']
+        policy.simple_penalty_per_day = resolved['penalty_rate']
+        policy.max_penalty_percentage = resolved['max_penalty_percentage']
+        policy.grace_period_hours = resolved['grace_period_hours']
+        policy.hard_cutoff_enabled = resolved['hard_cutoff_enabled']
+        policy.hard_cutoff_days = resolved['hard_cutoff_days']
+        policy.exclude_weekends = data.get('exclude_weekends', policy.exclude_weekends)
+        policy.exclude_holidays = data.get('exclude_holidays', policy.exclude_holidays)
+        policy.allow_partial_credit = resolved['allow_partial_credit']
+        policy.round_penalty_up = resolved['round_penalty_up']
+
         if 'penalty_tiers' in data:
-            # Remove existing tiers
             PenaltyTier.query.filter_by(policy_id=policy.id).delete()
-            
-            # Add new tiers
-            for tier_data in data['penalty_tiers']:
+            for tier_data in data.get('penalty_tiers', []) or []:
+                if not tier_data:
+                    continue
                 tier = PenaltyTier(
                     policy_id=policy.id,
-                    start_day=tier_data['start_day'],
+                    start_day=tier_data.get('start_day', 1),
                     end_day=tier_data.get('end_day'),
-                    penalty_percentage=tier_data['penalty_percentage'],
+                    penalty_percentage=tier_data.get('penalty_percentage', resolved['penalty_rate']),
                     penalty_type=tier_data.get('penalty_type', 'per_day'),
                     description=tier_data.get('description')
                 )
                 db.session.add(tier)
-        
+
         db.session.commit()
-        
+
+        response_policy = _serialize_policy_response(policy, {
+            'type': resolved['frontend_type'] or policy._frontend_type(),
+            'penalty_interval': resolved['penalty_interval']
+        })
+
         return jsonify({
             'success': True,
             'message': 'Deadline policy updated successfully',
-            'policy': policy.to_dict()
+            'policy': response_policy
         })
-        
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @api_bp.route('/deadline-policies/<int:policy_id>', methods=['DELETE'])
+@login_required
 def delete_deadline_policy(policy_id):
-    """Delete a deadline policy"""
+    """Delete a deadline policy."""
     try:
         from instructor.models.deadline_policy import DeadlinePolicy
-        
+
         policy = DeadlinePolicy.query.get_or_404(policy_id)
-        
-        # Check if policy is in use
+        if not _is_super_admin() and policy.created_by != current_user.id:
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
         from instructor.models.deadline_policy import AssignmentAvailabilityWindow
         in_use = AssignmentAvailabilityWindow.query.filter_by(deadline_policy_id=policy.id).first()
-        
+
         if in_use:
             return jsonify({
                 'success': False,
                 'error': 'Cannot delete policy that is currently in use by assignments'
             }), 400
-        
+
         db.session.delete(policy)
         db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Deadline policy deleted successfully'
-        })
-        
+
+        return jsonify({'success': True, 'message': 'Deadline policy deleted successfully'})
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/assignments/<int:assignment_id>/availability', methods=['GET'])
 def get_assignment_availability(assignment_id):

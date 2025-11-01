@@ -20,6 +20,7 @@ from flask_login import login_user, logout_user, current_user
 from .utils import user_login_required
 # Import media utilities
 from utils.media_utils import serve_optimized_video, serve_optimized_audio
+from utils.security import safe_next_or_fallback
 # Static content imports removed - using database-driven content
 # Create blueprint as expected by main __init__.py
 user_bp = Blueprint('user', __name__)
@@ -934,10 +935,17 @@ def login():
             if user:
                 return redirect(url_for('user.dashboard'))
         
-        next_url = request.args.get('next', '')
+        # Only propagate a safe next for display; unsafe values are dropped
+        requested_next = request.args.get('next', '')
+        next_url = requested_next if safe_next_or_fallback(requested_next, 'user', '/') == requested_next else ''
         return render_template('user/index.html', next=next_url)
     
     # Otherwise, handle the login POST request
+    # Session hardening: drop any pre-existing session to prevent poisoning/fixation
+    try:
+        session.clear()
+    except Exception:
+        pass
     email = request.form.get('email')  # Changed from username
     password = request.form.get('password')
     otp = request.form.get('otp')
@@ -1221,13 +1229,16 @@ def login():
     except Exception as ws_error:
         print(f"WebSocket login success notification failed: {str(ws_error)}")
     
-    # Check if there's a next parameter in the query string or form
-    next_url = request.args.get('next') or request.form.get('next')
-    if next_url:
-        # Make sure the next URL is safe (belongs to the same site)
-        if next_url.startswith('/'):
-            print(f"Redirecting to: {next_url}")
-            return redirect(next_url)
+    # Check if there's a next parameter in the query string or form and validate for user namespace
+    next_url = request.args.get('next') or request.form.get('next') or ''
+    target = safe_next_or_fallback(
+        next_url=next_url,
+        namespace='user',
+        fallback=url_for('user.dashboard')
+    )
+    if target != url_for('user.dashboard'):
+        print(f"Redirecting to: {target}")
+        return redirect(target)
     
     # Redirect to dashboard on successful login if no next URL
     print("Redirecting to dashboard")

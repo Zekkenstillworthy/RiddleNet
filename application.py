@@ -151,7 +151,6 @@ def register_blueprints():
     except Exception as e:
         print(f"⚠️ Error registering live quiz blueprint: {e}")
     
-    # Register Live Quiz MVP API
     try:
         from api.live_quiz_api import live_quiz_bp as live_quiz_api_bp
         if live_quiz_api_bp.name not in application.blueprints:

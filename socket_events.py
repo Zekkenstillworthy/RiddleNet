@@ -2417,12 +2417,24 @@ def handle_join_live_quiz(data):
             db.session.add(participant)
             db.session.commit()
             print(f"[MVP LiveQuiz] Created new participant for {current_user.username}")
+        else:
+            # Ensure existing participant stays marked active when rejoining lobby
+            if not participant.is_active:
+                participant.is_active = True
+                db.session.commit()
+                print(f"[MVP LiveQuiz] Reactivated participant record for {current_user.username}")
         
         # Join the quiz room
         room = f'live_quiz_{session_id}'
         join_room(room)
         print(f"[MVP LiveQuiz] User {current_user.username} joined room {room}")
         
+        # Always calculate participant count fresh to include reloaded relationships
+        participant_count = LiveQuizParticipant.query.filter_by(
+            session_id=session_id,
+            is_active=True
+        ).count()
+
         # Get current leaderboard
         from user.routes.live_quiz_routes import get_session_leaderboard
         leaderboard = get_session_leaderboard(session_id)
@@ -2431,29 +2443,84 @@ def handle_join_live_quiz(data):
         emit('participant_joined', {
             'participant_id': participant.id,
             'display_name': participant.display_name,
-            'participant_count': len(session.participants),
+            'participant_count': participant_count,
             'session_id': session_id,
             'leaderboard': leaderboard  # Include leaderboard in broadcast
         }, room=room)
         
-        print(f"[MVP LiveQuiz] Broadcast participant_joined to room {room} - Total participants: {len(session.participants)}")
+        print(
+            f"[MVP LiveQuiz] Broadcast participant_joined to room {room} "
+            f"- Total participants: {participant_count}"
+        )
         
         # Send current quiz state to the joining user ONLY
         emit('quiz_state', {
             'status': session.status,
             'current_question_index': session.current_question_index,
             'participant': participant.to_dict(),
-            'participant_count': len(session.participants),
+            'participant_count': participant_count,
             'leaderboard': leaderboard  # Send initial leaderboard to joiner
         })
         
-        print(f"[MVP LiveQuiz] Sent quiz_state to {current_user.username} - Status: {session.status}, Question: {session.current_question_index}")
+        print(
+            f"[MVP LiveQuiz] Sent quiz_state to {current_user.username} "
+            f"- Status: {session.status}, Question: {session.current_question_index}, "
+            f"Participants: {participant_count}"
+        )
         
     except Exception as e:
         db.session.rollback()
         print(f"[ERROR] Error joining live quiz: {str(e)}")
         import traceback
         traceback.print_exc()
+        emit('live_quiz_error', {'message': str(e)})
+
+
+@socketio.on('instructor_join_live_quiz')
+@instructor_required
+def handle_instructor_join_live_quiz(data):
+    """Allow instructors to join the live quiz room for real-time monitoring."""
+    try:
+        session_id = data.get('session_id')
+
+        if not session_id:
+            emit('live_quiz_error', {'message': 'No session ID provided'})
+            return
+
+        from user.models.live_quiz import LiveQuizSession, LiveQuizParticipant
+        from user.routes.live_quiz_routes import get_session_leaderboard
+
+        session = LiveQuizSession.query.get(session_id)
+        if not session:
+            emit('live_quiz_error', {'message': 'Quiz session not found'})
+            return
+
+        room = f'live_quiz_{session_id}'
+        join_room(room)
+        print(f"[MVP LiveQuiz] Instructor {current_user.username} joined room {room}")
+
+        participant_count = LiveQuizParticipant.query.filter_by(
+            session_id=session_id,
+            is_active=True
+        ).count()
+
+        leaderboard = get_session_leaderboard(session_id)
+
+        emit('instructor_joined_live_quiz', {
+            'session_id': session_id,
+            'participant_count': participant_count,
+            'status': session.status,
+            'current_question_index': session.current_question_index,
+            'leaderboard': leaderboard
+        })
+
+        print(
+            f"[MVP LiveQuiz] Sent instructor_joined_live_quiz to {current_user.username} "
+            f"- Participants: {participant_count}, Status: {session.status}"
+        )
+
+    except Exception as e:
+        print(f"[ERROR] Instructor join live quiz: {str(e)}")
         emit('live_quiz_error', {'message': str(e)})
 
 
@@ -2497,7 +2564,12 @@ def handle_submit_live_answer(data):
             emit('live_quiz_error', {'message': 'Question not found'})
             return
         
-        is_correct = (selected_answer.strip().lower() == question.answer.strip().lower())
+        # Handle cases where selected_answer is None (e.g., timer expired without answer)
+        if selected_answer is None or selected_answer == '':
+            is_correct = False
+            selected_answer = ''  # Convert None to empty string for database NOT NULL constraint
+        else:
+            is_correct = (selected_answer.strip().lower() == question.answer.strip().lower())
         
         # Create response
         response = LiveQuizResponse(
@@ -2757,6 +2829,20 @@ def handle_leave_live_quiz(data):
         room = f'live_quiz_{session_id}'
         leave_room(room)
         
+        try:
+            from user.models.live_quiz import LiveQuizParticipant
+            participant = LiveQuizParticipant.query.filter_by(
+                session_id=session_id,
+                user_id=current_user.id
+            ).first()
+            if participant and participant.is_active:
+                participant.is_active = False
+                db.session.commit()
+                print(f"[OK] Marked {current_user.username} inactive for live quiz {session_id}")
+        except Exception as inner_err:
+            db.session.rollback()
+            print(f"[WARN] Could not mark participant inactive: {inner_err}")
+
         print(f"[OK] {current_user.username} left live quiz {session_id}")
         
     except Exception as e:

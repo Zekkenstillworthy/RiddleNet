@@ -7,6 +7,7 @@ from __init__ import db, mail  # Use the main app's db instance and mail
 from instructor.models.user import Instructor, InstructorPasswordReset
 from utils.render_utils import render_safe_template
 from utils.password_validator import validate_password
+from utils.security import safe_next_or_fallback
 import os
 
 auth_bp = Blueprint('auth', __name__)
@@ -56,6 +57,12 @@ class AuthController:
                 flash('You were logged out of the student session. Please log in with admin credentials.', 'info')
             
         if request.method == 'POST':
+            # Session hardening: drop any pre-existing session to prevent poisoning/fixation
+            try:
+                session.clear()
+            except Exception:
+                pass
+
             email = request.form.get('email')
             password = request.form.get('password')
             
@@ -100,7 +107,7 @@ class AuthController:
                 session['session_token'] = new_session.session_token  # Store session token for validation
                 session.permanent = True  # Make session permanent to persist across requests
                 session.modified = True  # Force Flask to save the session
-                
+
                 # Use Flask-Login to log in the user with remember=True
                 login_user(admin, remember=True)
                 
@@ -113,13 +120,14 @@ class AuthController:
                 
                 flash('Welcome to Admin Dashboard', 'success')
                 
-                # Check if there's a next parameter in the query string or form data
-                next_url = request.args.get('next') or request.form.get('next')
-                if next_url and next_url.startswith('/instructor'):
-                    # Only redirect to admin URLs to prevent open redirects
-                    return redirect(next_url)
-                # Redirect to the canonical admin dashboard
-                return redirect(url_for('dashboard.dashboard_alias'))
+                # Check if there's a next parameter and validate it against instructor namespace
+                next_url = request.args.get('next') or request.form.get('next') or ''
+                target = safe_next_or_fallback(
+                    next_url=next_url,
+                    namespace='instructor',
+                    fallback=url_for('dashboard.dashboard_alias')
+                )
+                return redirect(target)
             else:
                 flash('Invalid admin credentials', 'error')
         

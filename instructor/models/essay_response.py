@@ -1,5 +1,5 @@
 ﻿from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Float, DateTime, Boolean, ForeignKey, Index
 from sqlalchemy.orm import relationship
 
 # Use the main app's db
@@ -8,13 +8,24 @@ from __init__ import db
 class EssayResponse(db.Model):
     """
     Model for storing user essay responses to essay questions
+    
+    MVP linking:
+    - user_id: FK to user.id (existing)
+    - question_id: FK to question.id (quiz question table)
+    - class linkage: via class_students join in queries (no direct class_id column)
+    - grades: stored inline as graded_score/is_graded/feedback
     """
     __tablename__ = 'essay_response'
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = (
+        # MVP indexes for fast class and quiz queries
+        Index('ix_essay_user_id', 'user_id'),
+        Index('ix_essay_question_id', 'question_id'),
+        {'extend_existing': True},
+    )
     
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
-    question_id = Column(Integer, nullable=False)
+    question_id = Column(Integer, ForeignKey('question.id'), nullable=False)
     question_text = Column(Text, nullable=False)
     response_text = Column(Text, nullable=False)
     feedback = Column(Text, nullable=True)
@@ -25,6 +36,7 @@ class EssayResponse(db.Model):
     
     # Define the relationship using string reference to avoid circular imports
     user = relationship("User")
+    question = relationship("Question", foreign_keys=[question_id])
     
     def __repr__(self):
         return f'<EssayResponse {self.id}: {self.question_text[:20]}...>'

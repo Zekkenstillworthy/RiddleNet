@@ -498,6 +498,30 @@ class SocketClient {
                 data.type || 'info'
             );
         }));
+
+        // Live quiz + module broadcast events (exposed to pages via socketClient.on)
+        this.socket.on('module_content_updated', safeHandler('module_content_updated', (data) => {
+            console.log('📘 Module content updated broadcast:', data);
+            this.trigger('module_content_updated', data);
+        }));
+
+        this.socket.on('class_module_updated', safeHandler('class_module_updated', (data) => {
+            console.log('🏷️ Class module updated broadcast:', data);
+            this.trigger('class_module_updated', data);
+        }));
+
+        this.socket.on('joined_room', safeHandler('joined_room', (payload) => {
+            this.trigger('joined_room', payload);
+        }));
+
+        this.socket.on('live_quiz_session_status_changed', safeHandler('live_quiz_session_status_changed', (data) => {
+            console.log('📡 Live quiz session status broadcast:', data);
+            this.trigger('live_quiz_session_status_changed', data);
+        }));
+
+        this.socket.on('live_quiz_error', safeHandler('live_quiz_error', (data) => {
+            this.trigger('live_quiz_error', data);
+        }));
     }
 
     /**

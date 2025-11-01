@@ -665,25 +665,31 @@ textarea.form-control {
 }
 
 .detail-group h6 {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--cyber-glow);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0;
+    letter-spacing: 0.8px;
+    margin: 0 0 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .detail-group p {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--text-primary);
     margin: 0;
-    padding: 12px;
+    padding: 12px 16px;
     background: var(--surface-hover);
     border: 1px solid var(--glass-border);
     border-radius: 8px;
-    min-height: 20px;
+    min-height: 44px;
     white-space: pre-wrap;
     word-wrap: break-word;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
 }
 
 .detail-row {
@@ -2633,262 +2639,713 @@ textarea.form-control {
 
 .grade-filter-tabs {
     display: flex;
-    gap: 8px;
-    margin-bottom: 24px;
-    padding: 4px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    border: 1px solid var(--glass-border);
+    gap: 12px;
+    margin-bottom: 32px;
+    padding: 8px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.2));
+    border-radius: 16px;
+    border: 1px solid rgba(0, 217, 255, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .grade-filter-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
+    gap: 10px;
+    padding: 14px 24px;
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     color: var(--text-secondary);
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 0.9rem;
-    font-weight: 500;
+    font-size: 0.95rem;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+}
+
+.grade-filter-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+}
+
+.grade-filter-btn.active::before,
+.grade-filter-btn:hover::before {
+    opacity: 1;
 }
 
 .grade-filter-btn.active,
 .grade-filter-btn:hover {
-    background: var(--cyber-glow);
     color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+    border-color: var(--cyber-glow);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4);
+}
+
+.grade-filter-btn i {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.grade-filter-btn:hover i {
+    transform: scale(1.15);
 }
 
 .grade-summary-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 32px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
 }
 
 .grade-summary-card {
-    background: var(--card-bg);
-    border: var(--card-border);
-    border-radius: var(--border-radius);
-    padding: 24px;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
+    border: 1px solid rgba(0, 217, 255, 0.2);
+    border-radius: 16px;
+    padding: 28px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    transition: all 0.3s ease;
+    gap: 20px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+}
+
+.grade-summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(138, 92, 246, 0.1));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.grade-summary-card:hover::before {
+    opacity: 1;
 }
 
 .grade-summary-card:hover {
-    transform: var(--card-hover-transform);
-    box-shadow: var(--card-hover-shadow);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.3);
     border-color: var(--cyber-glow);
 }
 
 .summary-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     color: white;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    transition: transform 0.4s ease;
+    z-index: 1;
+}
+
+.grade-summary-card:hover .summary-icon {
+    transform: rotate(5deg) scale(1.1);
 }
 
 .summary-icon.assignments {
     background: linear-gradient(135deg, #3B82F6, #1E40AF);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
 }
 
 .summary-icon.simulations {
     background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
 }
 
 .summary-icon.quizzes {
     background: linear-gradient(135deg, #10B981, #047857);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
 }
 
 .summary-icon.average {
     background: linear-gradient(135deg, #F59E0B, #D97706);
+    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+}
+
+.summary-content {
+    z-index: 1;
 }
 
 .summary-content h3 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0 0 4px 0;
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 6px 0;
     line-height: 1;
 }
 
 .summary-content p {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    margin: 0 0 4px 0;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+    margin: 0 0 6px 0;
     font-weight: 600;
 }
 
 .summary-detail {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
+    font-weight: 500;
 }
 
 .gradebook-container {
-    background: var(--card-bg);
-    border: var(--card-border);
-    border-radius: var(--border-radius);
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
+    border: 1px solid rgba(0, 217, 255, 0.2);
+    border-radius: 16px;
     margin-bottom: 32px;
     overflow: hidden;
     backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .gradebook-controls {
     display: flex;
     gap: 12px;
     align-items: center;
+    padding: 16px 24px;
+    background: rgba(0, 217, 255, 0.05);
+    border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+}
+
+.gradebook-controls select {
+    padding: 10px 16px;
+    background: rgba(0, 217, 255, 0.1);
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.gradebook-controls select:hover {
+    background: rgba(0, 217, 255, 0.15);
+    border-color: var(--cyber-glow);
 }
 
 .gradebook-table-wrapper {
     overflow-x: auto;
     max-height: 600px;
     overflow-y: auto;
+    position: relative;
+}
+
+.gradebook-table-wrapper::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.gradebook-table-wrapper::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.gradebook-table-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(0, 217, 255, 0.3);
+    border-radius: 5px;
+}
+
+.gradebook-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 217, 255, 0.5);
 }
 
 .gradebook-table {
     width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.95rem;
 }
 
 .gradebook-table th {
-    background: rgba(0, 217, 255, 0.1);
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(138, 92, 246, 0.2));
     color: var(--cyber-glow);
-    padding: 16px 12px;
+    padding: 18px 16px;
     text-align: left;
     font-weight: 600;
     position: sticky;
     top: 0;
     z-index: 10;
     border-bottom: 2px solid var(--cyber-glow);
+    white-space: nowrap;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.gradebook-table thead th:first-child {
+    border-radius: 0;
+}
+
+.gradebook-table tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gradebook-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.gradebook-table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(0, 217, 255, 0.08), rgba(138, 92, 246, 0.08));
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(0, 217, 255, 0.2);
 }
 
 .gradebook-table td {
-    padding: 12px;
-    border-bottom: 1px solid var(--glass-border);
+    padding: 16px;
     color: var(--text-primary);
+    transition: all 0.3s ease;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gradebook-table td:last-child {
+    border-right: none;
 }
 
 .student-column {
-    min-width: 200px;
+    min-width: 250px;
     position: sticky;
     left: 0;
-    background: var(--card-bg);
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(22, 33, 62, 0.98));
     z-index: 5;
+    box-shadow: 4px 0 8px rgba(0, 0, 0, 0.2);
+    font-weight: 600;
+    border-right: 2px solid rgba(0, 217, 255, 0.3);
+}
+
+.gradebook-table tbody tr:hover .student-column {
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.12), rgba(138, 92, 246, 0.12));
+}
+
+.gradebook-table tbody tr:nth-child(even) .student-column {
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(22, 33, 62, 0.98));
+}
+
+.student-column strong {
+    display: block;
+    color: var(--cyber-glow);
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.student-column div {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 400;
 }
 
 .average-column {
-    min-width: 100px;
+    min-width: 120px;
     text-align: center;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 1.1rem;
+    background: rgba(0, 217, 255, 0.05);
 }
 
 .grade-cell {
     text-align: center;
-    min-width: 80px;
+    min-width: 100px;
+    font-weight: 600;
+    font-size: 0.95rem;
 }
 
 .grade-cell.empty {
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.3);
     font-style: italic;
+    opacity: 0.5;
 }
 
 .grade-cell.graded {
-    color: var(--success-color);
-    font-weight: 600;
+    color: #10B981;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
 }
 
 .grade-cell.pending {
-    color: var(--warning-color);
+    color: #F59E0B;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Gradebook Pagination */
+.gradebook-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 28px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.3));
+    border-top: 2px solid rgba(0, 217, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.gradebook-pagination-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.gradebook-pagination-btn {
+    padding: 10px 18px;
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    background: rgba(0, 217, 255, 0.05);
+    color: var(--text-secondary);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.gradebook-pagination-btn:hover:not(:disabled) {
+    border-color: var(--cyber-glow);
+    color: var(--cyber-glow);
+    background: rgba(0, 217, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+}
+
+.gradebook-pagination-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.gradebook-pagination-btn.active {
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: white;
+    border-color: var(--cyber-glow);
+    box-shadow: 0 4px 16px rgba(0, 217, 255, 0.4);
+    transform: scale(1.05);
+}
+
+.gradebook-pagination-info {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    background: rgba(0, 217, 255, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+.gradebook-page-size {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.gradebook-page-size select {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    background: rgba(0, 217, 255, 0.1);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.gradebook-page-size select:hover {
+    background: rgba(0, 217, 255, 0.15);
+    border-color: var(--cyber-glow);
+}
+
+.gradebook-page-size select:focus {
+    outline: none;
+    border-color: var(--cyber-glow);
+    box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2);
 }
 
 .loading-cell {
     text-align: center;
-    padding: 40px;
+    padding: 60px 40px;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.loading-state i {
+    font-size: 2.5rem;
+    color: var(--cyber-glow);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-state p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 40px;
+    color: var(--text-muted);
+}
+
+.empty-state i {
+    font-size: 3.5rem;
+    color: rgba(0, 217, 255, 0.3);
+    margin-bottom: 16px;
+}
+
+.empty-state h3 {
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+    margin: 0 0 8px 0;
+}
+
+.empty-state p {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0;
 }
 
 .grade-items-container {
-    background: var(--card-bg);
-    border: var(--card-border);
-    border-radius: var(--border-radius);
-    padding: 24px;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
+    border: 1px solid rgba(0, 217, 255, 0.2);
+    border-radius: 16px;
+    padding: 32px;
     backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .grade-items-list {
     display: grid;
-    gap: 16px;
+    gap: 20px;
+    margin-bottom: 24px;
 }
 
 .grade-item {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    padding: 20px;
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(138, 92, 246, 0.05));
+    border: 1px solid rgba(0, 217, 255, 0.2);
+    border-radius: 12px;
+    padding: 24px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.grade-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--cyber-glow), var(--network-purple));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.grade-item:hover::before {
+    opacity: 1;
 }
 
 .grade-item:hover {
     border-color: var(--cyber-glow);
-    transform: translateY(-2px);
+    transform: translateX(4px) translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.3);
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(138, 92, 246, 0.1));
+}
+
+/* Grade Items Pagination */
+.grade-items-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    margin-top: 20px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.grade-items-pagination-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.grade-items-pagination-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.grade-items-pagination-btn:hover:not(:disabled) {
+    border-color: var(--cyber-glow);
+    color: var(--cyber-glow);
+    background: rgba(0, 217, 255, 0.1);
+}
+
+.grade-items-pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.grade-items-pagination-btn.active {
+    background: var(--cyber-glow);
+    color: white;
+    border-color: var(--cyber-glow);
+}
+
+.grade-items-pagination-info {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.grade-items-page-size {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.grade-items-page-size select {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--glass-border);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    cursor: pointer;
 }
 
 .grade-item-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(0, 217, 255, 0.1);
 }
 
 .grade-item-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 4px 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--cyber-glow);
+    margin: 0 0 8px 0;
+    text-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
 }
 
 .grade-item-meta {
     display: flex;
-    gap: 16px;
-    font-size: 0.85rem;
-    color: var(--text-muted);
+    gap: 20px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.grade-item-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.grade-item-meta i {
+    color: var(--cyber-glow);
+    font-size: 0.9rem;
 }
 
 .grade-item-stats {
     display: flex;
-    gap: 24px;
-    margin-top: 12px;
+    gap: 32px;
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    border: 1px solid rgba(0, 217, 255, 0.1);
 }
 
 .grade-stat {
     text-align: center;
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.grade-stat:hover {
+    background: rgba(0, 217, 255, 0.1);
+    transform: translateY(-2px);
 }
 
 .grade-stat-value {
     display: block;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--cyber-glow);
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     line-height: 1;
+    margin-bottom: 6px;
 }
 
 .grade-stat-label {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
-    margin-top: 4px;
+    margin-top: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* Responsive Design */
@@ -3443,6 +3900,204 @@ select::-webkit-scrollbar-thumb {
     flex-wrap: wrap;
 }
 
+/* Essay View Modal Layout */
+.essay-view-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    padding: 4px;
+}
+
+.essay-view-layout > * + * {
+    position: relative;
+}
+
+.essay-view-layout > * + *::before {
+    content: '';
+    position: absolute;
+    top: -14px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(0, 217, 255, 0.15) 20%, 
+        rgba(0, 217, 255, 0.15) 80%, 
+        transparent
+    );
+}
+
+.essay-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.essay-info-grid .detail-group:nth-child(1) h6::before {
+    content: '👤';
+    margin-right: 6px;
+}
+
+.essay-info-grid .detail-group:nth-child(2) h6::before {
+    content: '❓';
+    margin-right: 6px;
+}
+
+.essay-info-grid .detail-group:nth-child(3) h6::before {
+    content: '📂';
+    margin-right: 6px;
+}
+
+.essay-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.essay-meta-grid .detail-group:nth-child(1) h6::before {
+    content: '📅';
+    margin-right: 6px;
+}
+
+.essay-meta-grid .detail-group:nth-child(2) h6::before {
+    content: '✓';
+    margin-right: 6px;
+}
+
+.essay-meta-grid .detail-group:nth-child(3) h6::before {
+    content: '🎯';
+    margin-right: 6px;
+}
+
+.essay-view-layout .detail-group p {
+    transition: all 0.2s ease;
+}
+
+.essay-view-layout .detail-group:hover p {
+    background: var(--glass-bg);
+    border-color: rgba(0, 217, 255, 0.3);
+}
+
+.essay-response-section {
+    width: 100%;
+}
+
+.essay-response-section h6::before {
+    content: '📝';
+    margin-right: 8px;
+}
+
+.essay-response-content {
+    background: linear-gradient(135deg, 
+        rgba(0, 217, 255, 0.03), 
+        rgba(138, 92, 246, 0.03)
+    );
+    color: var(--text-primary);
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid var(--cyber-glow);
+    border: 1px solid var(--glass-border);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.7;
+    min-height: 140px;
+    max-height: 450px;
+    overflow-y: auto;
+    font-size: 0.98rem;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.essay-response-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.essay-response-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.essay-response-content::-webkit-scrollbar-thumb {
+    background: var(--cyber-glow);
+    border-radius: 4px;
+}
+
+.essay-response-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 217, 255, 0.8);
+}
+
+.essay-feedback-section {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.essay-feedback-section h6::before {
+    content: '💬';
+    margin-right: 8px;
+}
+
+.essay-feedback-content {
+    background: linear-gradient(135deg, 
+        rgba(255, 193, 7, 0.08), 
+        rgba(255, 152, 0, 0.05)
+    );
+    color: var(--text-primary);
+    padding: 18px;
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.6;
+    font-size: 0.95rem;
+    font-style: italic;
+}
+
+.essay-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid rgba(0, 217, 255, 0.1);
+    background: linear-gradient(135deg, 
+        rgba(0, 217, 255, 0.02), 
+        transparent
+    );
+}
+
+.essay-modal-footer .btn {
+    min-width: 130px;
+    padding: 10px 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.essay-modal-footer .btn i {
+    margin-right: 6px;
+}
+
+/* Responsive Design for Essay Modal */
+@media (max-width: 768px) {
+    .essay-info-grid,
+    .essay-meta-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .essay-response-content {
+        max-height: 300px;
+        padding: 16px;
+    }
+    
+    .essay-modal-footer {
+        flex-direction: column-reverse;
+    }
+    
+    .essay-modal-footer .btn {
+        width: 100%;
+    }
+}
+
 .essay-score {
     padding: 4px 8px;
     border-radius: 12px;
@@ -3463,6 +4118,13 @@ select::-webkit-scrollbar-thumb {
 .essay-score.low {
     background: rgba(239, 68, 68, 0.2);
     color: var(--danger-color);
+}
+
+@media (max-width: 992px) {
+    .essay-info-grid,
+    .essay-meta-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 768px) {
@@ -5331,6 +5993,106 @@ select::-webkit-scrollbar-thumb {
     }
 }
 
+/* Policy Management Styles */
+.policies-management {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.policies-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.policy-card {
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(138, 92, 246, 0.05));
+    border: 1px solid rgba(0, 217, 255, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.policy-card:hover {
+    border-color: rgba(0, 217, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 217, 255, 0.15);
+}
+
+.policy-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.policy-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.policy-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.policy-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.policy-description {
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.policy-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.policy-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.policy-meta i {
+    color: var(--cyber-glow);
+}
+
+.form-section {
+    background: rgba(0, 217, 255, 0.03);
+    border: 1px solid rgba(0, 217, 255, 0.1);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.form-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-section-title i {
+    color: var(--cyber-glow);
+}
+
 /* Bulk Extension Options Styling */
 .bulk-extension-options {
     display: grid;
@@ -5497,6 +6259,54 @@ select::-webkit-scrollbar-thumb {
 
 .form-section-title i {
     font-size: 1rem;
+}
+
+/* Grade Item Modal Styles */
+.detail-group {
+    margin-bottom: 16px;
+}
+
+.detail-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-group p {
+    margin: 0;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    margin-top: 16px;
+}
+
+#gradeItemSubmissions .badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+#gradeItemSubmissions .badge-success {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid #10b981;
+}
+
+#gradeItemSubmissions .badge-warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border: 1px solid #f59e0b;
+}
+
+#gradeItemSubmissions .btn-sm {
+    padding: 4px 12px;
+    font-size: 0.85rem;
 }
 
 </style>
@@ -5907,6 +6717,40 @@ select::-webkit-scrollbar-thumb {
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Gradebook Pagination -->
+                    <div class="gradebook-pagination" id="gradebookPagination" style="display: none;">
+                        <div class="gradebook-page-size">
+                            <label for="gradebookPageSize">Show:</label>
+                            <select id="gradebookPageSize" onchange="changeGradebookPageSize()">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <span>per page</span>
+                        </div>
+                        
+                        <div class="gradebook-pagination-info" id="gradebookPaginationInfo">
+                            Showing 0-0 of 0 students
+                        </div>
+                        
+                        <div class="gradebook-pagination-controls">
+                            <button class="gradebook-pagination-btn" id="gradebookFirstPage" onclick="gradebookGoToPage(1)">
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                            <button class="gradebook-pagination-btn" id="gradebookPrevPage" onclick="gradebookPreviousPage()">
+                                <i class="fas fa-angle-left"></i> Prev
+                            </button>
+                            <div id="gradebookPageNumbers"></div>
+                            <button class="gradebook-pagination-btn" id="gradebookNextPage" onclick="gradebookNextPage()">
+                                Next <i class="fas fa-angle-right"></i>
+                            </button>
+                            <button class="gradebook-pagination-btn" id="gradebookLastPage" onclick="gradebookGoToLastPage()">
+                                <i class="fas fa-angle-double-right"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Individual Grade Items -->
@@ -5922,6 +6766,40 @@ select::-webkit-scrollbar-thumb {
                         <div class="loading-state">
                             <i class="fas fa-spinner fa-spin"></i>
                             <p>Loading grade items...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Grade Items Pagination -->
+                    <div class="grade-items-pagination" id="gradeItemsPagination" style="display: none;">
+                        <div class="grade-items-page-size">
+                            <label for="gradeItemsPageSize">Show:</label>
+                            <select id="gradeItemsPageSize" onchange="changeGradeItemsPageSize()">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                            <span>per page</span>
+                        </div>
+                        
+                        <div class="grade-items-pagination-info" id="gradeItemsPaginationInfo">
+                            Showing 0-0 of 0 items
+                        </div>
+                        
+                        <div class="grade-items-pagination-controls">
+                            <button class="grade-items-pagination-btn" id="gradeItemsFirstPage" onclick="gradeItemsGoToPage(1)">
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                            <button class="grade-items-pagination-btn" id="gradeItemsPrevPage" onclick="gradeItemsPreviousPage()">
+                                <i class="fas fa-angle-left"></i> Prev
+                            </button>
+                            <div id="gradeItemsPageNumbers"></div>
+                            <button class="grade-items-pagination-btn" id="gradeItemsNextPage" onclick="gradeItemsNextPage()">
+                                Next <i class="fas fa-angle-right"></i>
+                            </button>
+                            <button class="grade-items-pagination-btn" id="gradeItemsLastPage" onclick="gradeItemsGoToLastPage()">
+                                <i class="fas fa-angle-double-right"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -6020,7 +6898,7 @@ select::-webkit-scrollbar-thumb {
                             <i class="fas fa-user-plus"></i>
                             Student Extensions
                         </h3>
-                        <button class="action-btn primary" onclick="grantExtension()">
+                        <button class="action-btn primary" onclick="showGrantExtensionModal()">
                             <i class="fas fa-plus"></i>
                             Grant Extension
                         </button>
@@ -6041,8 +6919,8 @@ select::-webkit-scrollbar-thumb {
                             <i class="fas fa-cog"></i>
                             Deadline Policies
                         </h3>
-                        <button class="action-btn secondary" onclick="managePolicies()">
-                            <i class="fas fa-settings"></i>
+                        <button class="action-btn secondary" onclick="showPoliciesModal()">
+                            <i class="fas fa-cog"></i>
                             Manage Policies
                         </button>
                     </div>
@@ -6328,12 +7206,12 @@ select::-webkit-scrollbar-thumb {
 
                     <div id="customPolicySettings" class="custom-policy-settings" style="display: none;">
                         <div class="form-group">
-                            <label for="penaltyPerDay" class="form-label">Penalty Per Day (%)</label>
-                            <input type="number" class="form-control" id="penaltyPerDay" min="0" max="100" value="10">
+                            <label for="assignmentPenaltyPerDay" class="form-label">Penalty Per Day (%)</label>
+                            <input type="number" class="form-control" id="assignmentPenaltyPerDay" min="0" max="100" value="10">
                         </div>
                         <div class="form-group">
-                            <label for="gracePeriodHours" class="form-label">Grace Period (Hours)</label>
-                            <input type="number" class="form-control" id="gracePeriodHours" min="0" value="0">
+                            <label for="assignmentGracePeriodHours" class="form-label">Grace Period (Hours)</label>
+                            <input type="number" class="form-control" id="assignmentGracePeriodHours" min="0" value="0">
                         </div>
                         <div class="form-group">
                             <label for="maxPenalty" class="form-label">Maximum Penalty (%)</label>
@@ -6429,18 +7307,18 @@ select::-webkit-scrollbar-thumb {
         <div class="modal-body">
             <form id="createDeadlinePolicyForm">
                 <div class="form-group">
-                    <label for="policyName" class="form-label">Policy Name *</label>
-                    <input type="text" class="form-control" id="policyName" required>
+                    <label for="oldPolicyName" class="form-label">Policy Name *</label>
+                    <input type="text" class="form-control" id="oldPolicyName" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="policyDescription" class="form-label">Description</label>
-                    <textarea class="form-control" id="policyDescription" rows="2"></textarea>
+                    <label for="oldPolicyDescription" class="form-label">Description</label>
+                    <textarea class="form-control" id="oldPolicyDescription" rows="2"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="policyType" class="form-label">Policy Type *</label>
-                    <select class="form-control" id="policyType" onchange="updatePolicyTypeFields()" required>
+                    <label for="oldPolicyType" class="form-label">Policy Type *</label>
+                    <select class="form-control" id="oldPolicyType" onchange="updatePolicyTypeFields()" required>
                         <option value="simple">Simple (Fixed % per day)</option>
                         <option value="tiered">Tiered (Escalating penalties)</option>
                         <option value="exponential">Exponential (Rapidly increasing)</option>
@@ -6655,6 +7533,107 @@ select::-webkit-scrollbar-thumb {
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeModal('grantExtensionModal')">Cancel</button>
             <button type="button" class="btn btn-primary" onclick="grantExtension()">Grant Extension</button>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Policies Modal -->
+<div class="modal-overlay" id="managePoliciesModal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h5 class="modal-title">Manage Deadline Policies</h5>
+            <button type="button" class="modal-close" onclick="closeModal('managePoliciesModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="policies-management">
+                <!-- Add New Policy Section -->
+                <div class="form-section">
+                    <h6 class="form-section-title">
+                        <i class="fas fa-plus-circle"></i>
+                        Create New Policy
+                    </h6>
+                    <form id="newPolicyForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="policyName" class="form-label">Policy Name *</label>
+                                    <input type="text" class="form-control" id="policyName" 
+                                           placeholder="e.g., Standard Late Policy" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="policyType" class="form-label">Policy Type *</label>
+                                    <select class="form-control" id="policyType" required>
+                                        <option value="">Select type...</option>
+                                        <option value="percentage">Percentage Deduction</option>
+                                        <option value="fixed">Fixed Points Deduction</option>
+                                        <option value="grace">Grace Period</option>
+                                        <option value="zero">Zero After Deadline</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" id="percentageSettings" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="penaltyPercentage" class="form-label">Penalty Percentage</label>
+                                    <input type="number" class="form-control" id="penaltyPercentage" 
+                                           min="0" max="100" placeholder="e.g., 10% per day">
+                                    <small class="form-text">Percentage deducted per time unit</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="penaltyInterval" class="form-label">Time Interval</label>
+                                    <select class="form-control" id="penaltyInterval">
+                                        <option value="hour">Per Hour</option>
+                                        <option value="day" selected>Per Day</option>
+                                        <option value="week">Per Week</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" id="gracePeriodSettings" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="gracePeriodHours" class="form-label">Grace Period (Hours)</label>
+                                    <input type="number" class="form-control" id="gracePeriodHours" 
+                                           min="0" placeholder="e.g., 24">
+                                    <small class="form-text">No penalty during this period</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="policyDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="policyDescription" rows="2" 
+                                      placeholder="Describe when and how this policy should be applied..."></textarea>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="policyIsDefault">
+                            <label class="form-check-label" for="policyIsDefault">
+                                Set as default policy for new assignments
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus"></i> Create Policy
+                        </button>
+                    </form>
+                </div>
+
+               
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" onclick="savePolicyAndClose()">
+                <i class="fas fa-save"></i> Save &amp; Close
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('managePoliciesModal')">Close</button>
         </div>
     </div>
 </div>
@@ -7056,6 +8035,139 @@ select::-webkit-scrollbar-thumb {
             </button>
             <button type="button" class="btn btn-primary" onclick="submitCreateModule()">
                 <i class="fas fa-plus"></i> Create Module
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Grade Item Modal -->
+<div class="modal-overlay" id="gradeItemModal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h5 class="modal-title">
+                <i class="fas fa-edit"></i>
+                Grade <span id="gradeItemTitle"></span>
+            </h5>
+            <button type="button" class="modal-close" onclick="closeModal('gradeItemModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="gradeItemId">
+            <input type="hidden" id="gradeItemType">
+            
+            <!-- Loading State -->
+            <div id="gradeItemLoading" class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading submissions...</p>
+            </div>
+            
+            <!-- Submissions List -->
+            <div id="gradeItemContent" style="display: none;">
+                <!-- Item Info -->
+                <div class="form-section">
+                    <h6 class="form-section-title">
+                        <i class="fas fa-info-circle"></i>
+                        Assignment Information
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="detail-group">
+                                <label class="form-label">Type</label>
+                                <p id="gradeItemTypeDisplay" class="detail-text"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="detail-group">
+                                <label class="form-label">Max Points</label>
+                                <p id="gradeItemMaxPoints" class="detail-text"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="detail-group">
+                                <label class="form-label">Submissions</label>
+                                <p id="gradeItemSubmissionCount" class="detail-text">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submissions Table -->
+                <div class="form-section">
+                    <h6 class="form-section-title">
+                        <i class="fas fa-users"></i>
+                        Student Submissions
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Submitted</th>
+                                    <th>Status</th>
+                                    <th>Grade</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gradeItemSubmissions">
+                                <tr>
+                                    <td colspan="5" class="text-center">No submissions found</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('gradeItemModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Grade Individual Submission Modal -->
+<div class="modal-overlay" id="gradeSubmissionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">
+                <i class="fas fa-star"></i>
+                Grade Submission
+            </h5>
+            <button type="button" class="modal-close" onclick="closeModal('gradeSubmissionModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="gradeSubmissionId">
+            <input type="hidden" id="gradeSubmissionType">
+            
+            <div class="form-group">
+                <label for="gradeSubmissionStudent" class="form-label">Student</label>
+                <input type="text" class="form-control" id="gradeSubmissionStudent" readonly>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="gradeSubmissionScore" class="form-label">Grade *</label>
+                        <input type="number" class="form-control" id="gradeSubmissionScore" 
+                               min="0" max="100" step="0.1" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="gradeSubmissionMaxPoints" class="form-label">Max Points</label>
+                        <input type="number" class="form-control" id="gradeSubmissionMaxPoints" readonly>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="gradeSubmissionFeedback" class="form-label">Feedback</label>
+                <textarea class="form-control" id="gradeSubmissionFeedback" rows="4" 
+                          placeholder="Provide feedback for the student..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('gradeSubmissionModal')">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="submitGrade()">
+                <i class="fas fa-check"></i> Save Grade
             </button>
         </div>
     </div>
@@ -7537,32 +8649,15 @@ function showSimulationAssignmentModal() {
                                 <input type="text" id="simTitle" class="form-input" placeholder="Enter simulation title" required>
                             </div>
                             
-                            <div class="form-row">
-                                <div class="form-group half">
-                                    <label class="form-label">Simulation Type *</label>
-                                    <select id="simType" class="form-select" required>
-                                        <option value="">Select type...</option>
-                                        <option value="Networking 1">Networking 1</option>
-                                        <option value="Networking 2">Networking 2</option>
-                                        
-                                    </select>
-                                </div>
-                            </div>
                             
-                            <div class="form-group">
-                                <label class="form-label">Duration (minutes)</label>
-                                <input type="number" id="simDuration" class="form-input" placeholder="30" min="5" max="180">
-                            </div>
+                            
                             
                             <div class="form-group">
                                 <label class="form-label">Description *</label>
                                 <textarea id="simDescription" class="form-textarea" rows="3" placeholder="Describe what students will learn..." required></textarea>
                             </div>
                             
-                            <div class="form-group">
-                                <label class="form-label">Learning Objectives</label>
-                                <textarea id="simObjectives" class="form-textarea" rows="2" placeholder="List learning objectives (one per line)"></textarea>
-                            </div>
+                            
                             
                             <!-- Assignment Options for New Simulation -->
                             <div class="form-group">
@@ -11041,8 +12136,26 @@ function filterGrades(type) {
     });
     document.querySelector(`[onclick="filterGrades('${type}')"]`).classList.add('active');
     
+    // Reset pagination when filtering
+    gradeItemsPagination.currentPage = 1;
+    
     updateGradeDisplay();
 }
+
+// Pagination state
+const gradebookPagination = {
+    currentPage: 1,
+    pageSize: 25,
+    totalItems: 0,
+    totalPages: 0
+};
+
+const gradeItemsPagination = {
+    currentPage: 1,
+    pageSize: 10,
+    totalItems: 0,
+    totalPages: 0
+};
 
 async function loadGradeData() {
     if (!moduleBuilder.currentClass) {
@@ -11051,15 +12164,49 @@ async function loadGradeData() {
     }
 
     try {
-        const data = await adminFetch(`/instructor/api/grades/${moduleBuilder.currentClass.id}`);
+        console.log('[GRADES] Loading grade data for class', moduleBuilder.currentClass.id);
+        const response = await fetch(`/instructor/api/grades/${moduleBuilder.currentClass.id}`, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
         if (data) {
             gradeData = data;
+            // Reset pagination when loading new data
+            gradebookPagination.currentPage = 1;
+            gradeItemsPagination.currentPage = 1;
             updateGradeDisplay();
         } else {
             console.warn('No grade data returned');
+            showGradeError('No grade data available');
         }
     } catch (error) {
-        console.error('Error loading grades:', error);
+        console.error('[GRADES] Failed to load:', error);
+        showGradeError(`Failed to load grades: ${error.message}`);
+    }
+}
+
+function showGradeError(message) {
+    const tableBody = document.querySelector('.gradebook-table tbody');
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="99" class="empty-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>${message}</p>
+                    <button class="btn-primary" onclick="loadGradeData()">
+                        <i class="fas fa-sync"></i> Retry
+                    </button>
+                </td>
+            </tr>
+        `;
     }
 }
 
@@ -11084,58 +12231,180 @@ function updateGradeSummary() {
     if (simulationCard) simulationCard.textContent = filtered.simulations ? filtered.simulations.length : '0';
     if (quizCard) quizCard.textContent = filtered.quizzes ? filtered.quizzes.length : '0';
     
-    // Calculate average grade
+    // Calculate average grade with normalization
     const allGrades = [...(filtered.assignments || []), ...(filtered.simulations || []), ...(filtered.quizzes || [])];
-    const average = allGrades.length > 0 ? 
-        allGrades.reduce((sum, item) => sum + (item.average_grade || 0), 0) / allGrades.length : 0;
-    if (averageCard) averageCard.textContent = average > 0 ? Math.round(average) + '%' : 'N/A';
+    if (allGrades.length > 0) {
+        const normalizedGrades = allGrades.map(item => normalizeGradePercent(item.average_grade || 0, item.type));
+        const sum = normalizedGrades.reduce((acc, grade) => acc + grade, 0);
+        const average = Math.round(sum / normalizedGrades.length);
+        if (averageCard) averageCard.textContent = average > 0 ? average + '%' : 'N/A';
+    } else {
+        if (averageCard) averageCard.textContent = 'N/A';
+    }
 }
 
 function updateGradebook() {
     const tableBody = document.querySelector('.gradebook-table tbody');
+    const paginationContainer = document.getElementById('gradebookPagination');
+    
     if (!tableBody || !gradeData.students) return;
 
+    // Update pagination state
+    gradebookPagination.totalItems = gradeData.students.length;
+    gradebookPagination.totalPages = Math.ceil(gradebookPagination.totalItems / gradebookPagination.pageSize);
+    
+    // Show/hide pagination
+    if (paginationContainer) {
+        paginationContainer.style.display = gradebookPagination.totalItems > gradebookPagination.pageSize ? 'flex' : 'none';
+    }
+    
+    // Calculate pagination range
+    const startIndex = (gradebookPagination.currentPage - 1) * gradebookPagination.pageSize;
+    const endIndex = Math.min(startIndex + gradebookPagination.pageSize, gradebookPagination.totalItems);
+    const paginatedStudents = gradeData.students.slice(startIndex, endIndex);
+    
     tableBody.innerHTML = '';
     
-    gradeData.students.forEach(student => {
+    paginatedStudents.forEach(student => {
         const row = document.createElement('tr');
+        const average = calculateStudentAverage(student);
         row.innerHTML = `
             <td class="student-column">
-                <strong>${student.first_name} ${student.last_name}</strong>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">${student.email}</div>
+                <strong>${student.username || 'Unknown'}</strong>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">${student.email || ''}</div>
             </td>
-            ${generateGradeCells(student)}
-            <td class="average-column">${calculateStudentAverage(student)}%</td>
+            <td class="average-column">${average}%</td>
         `;
         tableBody.appendChild(row);
     });
+    
+    // Update pagination controls
+    updateGradebookPaginationControls();
+}
+
+function updateGradebookPaginationControls() {
+    const infoElement = document.getElementById('gradebookPaginationInfo');
+    const firstBtn = document.getElementById('gradebookFirstPage');
+    const prevBtn = document.getElementById('gradebookPrevPage');
+    const nextBtn = document.getElementById('gradebookNextPage');
+    const lastBtn = document.getElementById('gradebookLastPage');
+    const pageNumbers = document.getElementById('gradebookPageNumbers');
+    
+    if (!infoElement) return;
+    
+    const startIndex = (gradebookPagination.currentPage - 1) * gradebookPagination.pageSize + 1;
+    const endIndex = Math.min(gradebookPagination.currentPage * gradebookPagination.pageSize, gradebookPagination.totalItems);
+    
+    infoElement.textContent = `Showing ${startIndex}-${endIndex} of ${gradebookPagination.totalItems} students`;
+    
+    // Update button states
+    if (firstBtn) firstBtn.disabled = gradebookPagination.currentPage === 1;
+    if (prevBtn) prevBtn.disabled = gradebookPagination.currentPage === 1;
+    if (nextBtn) nextBtn.disabled = gradebookPagination.currentPage === gradebookPagination.totalPages;
+    if (lastBtn) lastBtn.disabled = gradebookPagination.currentPage === gradebookPagination.totalPages;
+    
+    // Generate page numbers (show max 5 pages)
+    if (pageNumbers) {
+        pageNumbers.innerHTML = '';
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, gradebookPagination.currentPage - 2);
+        let endPage = Math.min(gradebookPagination.totalPages, startPage + maxPagesToShow - 1);
+        
+        if (endPage - startPage < maxPagesToShow - 1) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement('button');
+            btn.className = `gradebook-pagination-btn ${i === gradebookPagination.currentPage ? 'active' : ''}`;
+            btn.textContent = i;
+            btn.onclick = () => gradebookGoToPage(i);
+            pageNumbers.appendChild(btn);
+        }
+    }
+}
+
+function gradebookGoToPage(page) {
+    gradebookPagination.currentPage = Math.max(1, Math.min(page, gradebookPagination.totalPages));
+    updateGradebook();
+}
+
+function gradebookNextPage() {
+    if (gradebookPagination.currentPage < gradebookPagination.totalPages) {
+        gradebookPagination.currentPage++;
+        updateGradebook();
+    }
+}
+
+function gradebookPreviousPage() {
+    if (gradebookPagination.currentPage > 1) {
+        gradebookPagination.currentPage--;
+        updateGradebook();
+    }
+}
+
+function gradebookGoToLastPage() {
+    gradebookPagination.currentPage = gradebookPagination.totalPages;
+    updateGradebook();
+}
+
+function changeGradebookPageSize() {
+    const select = document.getElementById('gradebookPageSize');
+    if (select) {
+        gradebookPagination.pageSize = parseInt(select.value);
+        gradebookPagination.currentPage = 1; // Reset to first page
+        updateGradebook();
+    }
 }
 
 function updateGradeItems() {
     const container = document.querySelector('.grade-items-list');
+    const paginationContainer = document.getElementById('gradeItemsPagination');
+    
     if (!container) return;
 
     const filtered = filterGradeDataByType(gradeData, currentGradeFilter);
     const allItems = [...(filtered.assignments || []), ...(filtered.simulations || []), ...(filtered.quizzes || [])];
     
+    // Update pagination state
+    gradeItemsPagination.totalItems = allItems.length;
+    gradeItemsPagination.totalPages = Math.ceil(gradeItemsPagination.totalItems / gradeItemsPagination.pageSize);
+    
+    // Show/hide pagination
+    if (paginationContainer) {
+        paginationContainer.style.display = gradeItemsPagination.totalItems > gradeItemsPagination.pageSize ? 'flex' : 'none';
+    }
+    
+    // Calculate pagination range
+    const startIndex = (gradeItemsPagination.currentPage - 1) * gradeItemsPagination.pageSize;
+    const endIndex = Math.min(startIndex + gradeItemsPagination.pageSize, gradeItemsPagination.totalItems);
+    const paginatedItems = allItems.slice(startIndex, endIndex);
+    
     container.innerHTML = '';
     
-    allItems.forEach(item => {
+    if (paginatedItems.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-tasks"></i><p>No grade items found</p></div>';
+        if (paginationContainer) paginationContainer.style.display = 'none';
+        return;
+    }
+    
+    paginatedItems.forEach(item => {
         const itemElement = document.createElement('div');
         itemElement.className = 'grade-item';
+        const normalizedAverage = normalizeGradePercent(item.average_grade || 0, item.type);
         itemElement.innerHTML = `
             <div class="grade-item-header">
                 <div>
                     <h3 class="grade-item-title">${item.title}</h3>
                     <div class="grade-item-meta">
-                        <span>Type: ${item.type}</span>
-                        <span>Due: ${item.due_date || 'No due date'}</span>
-                        <span>Max Points: ${item.max_points || 'N/A'}</span>
+                        <span><i class="fas fa-tag"></i> Type: ${item.type}</span>
+                        <span><i class="fas fa-calendar"></i> Due: ${item.due_date || 'No due date'}</span>
+                        <span><i class="fas fa-star"></i> Max Points: ${item.max_points || 'N/A'}</span>
                     </div>
                 </div>
                 <div class="grade-actions">
                     <button class="btn-secondary" onclick="gradeItem('${item.id}', '${item.type}')">
-                        Grade
+                        <i class="fas fa-edit"></i> Grade
                     </button>
                 </div>
             </div>
@@ -11149,13 +12418,91 @@ function updateGradeItems() {
                     <span class="grade-stat-label">Graded</span>
                 </div>
                 <div class="grade-stat">
-                    <span class="grade-stat-value">${Math.round(item.average_grade || 0)}%</span>
+                    <span class="grade-stat-value">${normalizedAverage}%</span>
                     <span class="grade-stat-label">Average</span>
                 </div>
             </div>
         `;
         container.appendChild(itemElement);
     });
+    
+    // Update pagination controls
+    updateGradeItemsPaginationControls();
+}
+
+function updateGradeItemsPaginationControls() {
+    const infoElement = document.getElementById('gradeItemsPaginationInfo');
+    const firstBtn = document.getElementById('gradeItemsFirstPage');
+    const prevBtn = document.getElementById('gradeItemsPrevPage');
+    const nextBtn = document.getElementById('gradeItemsNextPage');
+    const lastBtn = document.getElementById('gradeItemsLastPage');
+    const pageNumbers = document.getElementById('gradeItemsPageNumbers');
+    
+    if (!infoElement) return;
+    
+    const startIndex = (gradeItemsPagination.currentPage - 1) * gradeItemsPagination.pageSize + 1;
+    const endIndex = Math.min(gradeItemsPagination.currentPage * gradeItemsPagination.pageSize, gradeItemsPagination.totalItems);
+    
+    infoElement.textContent = `Showing ${startIndex}-${endIndex} of ${gradeItemsPagination.totalItems} items`;
+    
+    // Update button states
+    if (firstBtn) firstBtn.disabled = gradeItemsPagination.currentPage === 1;
+    if (prevBtn) prevBtn.disabled = gradeItemsPagination.currentPage === 1;
+    if (nextBtn) nextBtn.disabled = gradeItemsPagination.currentPage === gradeItemsPagination.totalPages;
+    if (lastBtn) lastBtn.disabled = gradeItemsPagination.currentPage === gradeItemsPagination.totalPages;
+    
+    // Generate page numbers (show max 5 pages)
+    if (pageNumbers) {
+        pageNumbers.innerHTML = '';
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, gradeItemsPagination.currentPage - 2);
+        let endPage = Math.min(gradeItemsPagination.totalPages, startPage + maxPagesToShow - 1);
+        
+        if (endPage - startPage < maxPagesToShow - 1) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement('button');
+            btn.className = `grade-items-pagination-btn ${i === gradeItemsPagination.currentPage ? 'active' : ''}`;
+            btn.textContent = i;
+            btn.onclick = () => gradeItemsGoToPage(i);
+            pageNumbers.appendChild(btn);
+        }
+    }
+}
+
+function gradeItemsGoToPage(page) {
+    gradeItemsPagination.currentPage = Math.max(1, Math.min(page, gradeItemsPagination.totalPages));
+    updateGradeItems();
+}
+
+function gradeItemsNextPage() {
+    if (gradeItemsPagination.currentPage < gradeItemsPagination.totalPages) {
+        gradeItemsPagination.currentPage++;
+        updateGradeItems();
+    }
+}
+
+function gradeItemsPreviousPage() {
+    if (gradeItemsPagination.currentPage > 1) {
+        gradeItemsPagination.currentPage--;
+        updateGradeItems();
+    }
+}
+
+function gradeItemsGoToLastPage() {
+    gradeItemsPagination.currentPage = gradeItemsPagination.totalPages;
+    updateGradeItems();
+}
+
+function changeGradeItemsPageSize() {
+    const select = document.getElementById('gradeItemsPageSize');
+    if (select) {
+        gradeItemsPagination.pageSize = parseInt(select.value);
+        gradeItemsPagination.currentPage = 1; // Reset to first page
+        updateGradeItems();
+    }
 }
 
 function filterGradeDataByType(data, type) {
@@ -11169,6 +12516,28 @@ function filterGradeDataByType(data, type) {
     };
 }
 
+// Normalize any score to 0-100 percentage
+function normalizeGradePercent(score, itemType) {
+    const n = Number(score);
+    if (!isFinite(n)) return 0;
+    
+    // If already a valid percentage (0-100)
+    if (n >= 0 && n <= 100) return Math.round(n);
+    
+    // If it's a fraction (0-1), convert to percentage
+    if (n > 0 && n < 1) return Math.round(n * 100);
+    
+    // If it's raw points (>100), this shouldn't happen after backend fix,
+    // but clamp to 100 as fallback
+    if (n > 100) {
+        console.warn(`[GRADES] Received out-of-range score ${n} for ${itemType}, clamping to 100`);
+        return 100;
+    }
+    
+    // Default: clamp to [0, 100]
+    return Math.max(0, Math.min(100, Math.round(n)));
+}
+
 function generateGradeCells(student) {
     // Generate grade cells for each assignment/simulation/quiz
     const filtered = filterGradeDataByType(gradeData, currentGradeFilter);
@@ -11177,7 +12546,8 @@ function generateGradeCells(student) {
     return allItems.map(item => {
         const grade = student.grades?.[item.id];
         if (grade) {
-            return `<td class="grade-cell graded">${grade.score}%</td>`;
+            const normalizedScore = normalizeGradePercent(grade.score, item.type);
+            return `<td class="grade-cell graded">${normalizedScore}%</td>`;
         } else if (student.submissions?.[item.id]) {
             return `<td class="grade-cell pending">Pending</td>`;
         } else {
@@ -11189,12 +12559,268 @@ function generateGradeCells(student) {
 function calculateStudentAverage(student) {
     const grades = Object.values(student.grades || {});
     if (grades.length === 0) return 0;
-    return Math.round(grades.reduce((sum, grade) => sum + grade.score, 0) / grades.length);
+    
+    // Normalize each grade before averaging
+    const normalizedGrades = grades.map(grade => normalizeGradePercent(grade.score, 'average'));
+    const sum = normalizedGrades.reduce((acc, score) => acc + score, 0);
+    return Math.round(sum / normalizedGrades.length);
 }
 
-function gradeItem(itemId, itemType) {
-    // Navigate to grading interface for specific item
-    window.location.href = `/instructor/grade/${itemType}/${itemId}`;
+async function gradeItem(itemId, itemType) {
+    // Open modal and load submissions for grading
+    const modal = document.getElementById('gradeItemModal');
+    const loadingDiv = document.getElementById('gradeItemLoading');
+    const contentDiv = document.getElementById('gradeItemContent');
+    const titleSpan = document.getElementById('gradeItemTitle');
+    const typeDisplay = document.getElementById('gradeItemTypeDisplay');
+    
+    // Store current item
+    document.getElementById('gradeItemId').value = itemId;
+    document.getElementById('gradeItemType').value = itemType;
+    
+    // Find item data from gradeData
+    const filtered = filterGradeDataByType(gradeData, 'all');
+    let item = null;
+    
+    if (itemType === 'assignment') {
+        item = filtered.assignments?.find(a => a.id === itemId);
+    } else if (itemType === 'simulation') {
+        item = filtered.simulations?.find(s => s.id === itemId);
+    } else if (itemType === 'quiz') {
+        item = filtered.quizzes?.find(q => q.id === itemId);
+    } else if (itemType === 'essay') {
+        item = filtered.essays?.find(e => e.id === itemId);
+    }
+    
+    if (item) {
+        titleSpan.textContent = item.title;
+        typeDisplay.textContent = itemType.charAt(0).toUpperCase() + itemType.slice(1);
+        document.getElementById('gradeItemMaxPoints').textContent = item.max_points || 100;
+    } else {
+        titleSpan.textContent = 'Item';
+        typeDisplay.textContent = itemType;
+    }
+    
+    // Show modal with loading state
+    openModal('gradeItemModal');
+    loadingDiv.style.display = 'block';
+    contentDiv.style.display = 'none';
+    
+    try {
+        // Load submissions for this item
+        await loadItemSubmissions(itemId, itemType);
+    } catch (error) {
+        console.error('Error loading submissions:', error);
+        alert('Failed to load submissions. Please try again.');
+        closeModal('gradeItemModal');
+    }
+}
+
+async function loadItemSubmissions(itemId, itemType) {
+    const loadingDiv = document.getElementById('gradeItemLoading');
+    const contentDiv = document.getElementById('gradeItemContent');
+    const submissionsTable = document.getElementById('gradeItemSubmissions');
+    const countSpan = document.getElementById('gradeItemSubmissionCount');
+    
+    if (!moduleBuilder.currentClass || !gradeData) {
+        throw new Error('No class or grade data available');
+    }
+    
+    let submissions = [];
+    
+    // Try to fetch from API for assignments (blueprint is now registered)
+    if (itemType === 'assignment') {
+        try {
+            const actualId = itemId.replace('assignment_', '');
+            const response = await fetch(`/instructor/api/assignments/${actualId}/submissions`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                submissions = data.submissions || [];
+                console.log('Loaded submissions from API:', submissions);
+            } else {
+                console.warn('API fetch failed, falling back to gradeData');
+                submissions = buildSubmissionsFromGradeData(itemId);
+            }
+        } catch (error) {
+            console.warn('API fetch error, falling back to gradeData:', error);
+            submissions = buildSubmissionsFromGradeData(itemId);
+        }
+    } else {
+        // For essays, quizzes, and simulations, use gradeData
+        submissions = buildSubmissionsFromGradeData(itemId);
+    }
+    
+    // Update count
+    countSpan.textContent = submissions.length;
+    
+    // Render submissions table
+    if (submissions.length === 0) {
+        submissionsTable.innerHTML = '<tr><td colspan="5" class="text-center">No submissions found</td></tr>';
+    } else {
+        submissionsTable.innerHTML = submissions.map(sub => {
+            const formattedDate = sub.submitted_at ? 
+                new Date(sub.submitted_at).toLocaleString() : 'Not submitted';
+            
+            const displayGrade = sub.grade !== null && sub.grade !== undefined ? 
+                `${sub.grade}%` : '-';
+            
+            const statusClass = sub.status === 'graded' ? 'badge-success' : 
+                              sub.status === 'submitted' ? 'badge-warning' : 'badge-secondary';
+            
+            return `
+                <tr>
+                    <td>${sub.student_name}</td>
+                    <td>${formattedDate}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${sub.status}
+                        </span>
+                    </td>
+                    <td>${displayGrade}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" 
+                                onclick="openGradeSubmissionModal(${sub.student_id}, '${itemId}', '${itemType}', '${sub.student_name}', ${sub.grade || 0})">
+                            <i class="fas fa-edit"></i> Grade
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    // Hide loading, show content
+    loadingDiv.style.display = 'none';
+    contentDiv.style.display = 'block';
+}
+
+// Helper function to build submissions from gradeData
+function buildSubmissionsFromGradeData(itemId) {
+    const students = gradeData.students || [];
+    
+    return students.map(student => {
+        const hasGrade = student.grades && student.grades[itemId];
+        const hasSubmission = student.submissions && student.submissions[itemId];
+        
+        if (!hasGrade && !hasSubmission) {
+            return null; // Skip students with no submission
+        }
+        
+        const grade = hasGrade ? student.grades[itemId].score : null;
+        const submissionInfo = hasSubmission ? student.submissions[itemId] : null;
+        const submittedDate = submissionInfo?.submitted_at || null;
+        const status = hasGrade ? 'graded' : (hasSubmission ? 'submitted' : 'not_submitted');
+        
+        return {
+            student_id: student.id,
+            student_name: student.username,
+            student_email: student.email,
+            submitted_at: submittedDate,
+            status: status,
+            grade: grade
+        };
+    }).filter(s => s !== null); // Remove null entries
+}
+
+function openGradeSubmissionModal(studentId, itemId, itemType, studentName, currentGrade) {
+    // Get max points from the item
+    const maxPoints = document.getElementById('gradeItemMaxPoints').textContent;
+    
+    // Set form values - store student_id and itemId
+    document.getElementById('gradeSubmissionId').value = studentId;
+    document.getElementById('gradeSubmissionType').value = itemType;
+    document.getElementById('gradeSubmissionStudent').value = studentName;
+    document.getElementById('gradeSubmissionScore').value = currentGrade;
+    document.getElementById('gradeSubmissionMaxPoints').value = maxPoints;
+    document.getElementById('gradeSubmissionFeedback').value = '';
+    
+    // Store itemId in a data attribute
+    document.getElementById('gradeSubmissionModal').setAttribute('data-item-id', itemId);
+    
+    // Open the grading modal
+    openModal('gradeSubmissionModal');
+}
+
+async function submitGrade() {
+    const studentId = document.getElementById('gradeSubmissionId').value;
+    const itemType = document.getElementById('gradeSubmissionType').value;
+    const score = parseFloat(document.getElementById('gradeSubmissionScore').value);
+    const feedback = document.getElementById('gradeSubmissionFeedback').value;
+    const itemId = document.getElementById('gradeSubmissionModal').getAttribute('data-item-id');
+    
+    if (isNaN(score) || score < 0 || score > 100) {
+        alert('Please enter a valid grade between 0 and 100');
+        return;
+    }
+    
+    // Simulations and quizzes are auto-graded
+    if (itemType === 'simulation' || itemType === 'quiz') {
+        alert('Simulations and quizzes are auto-graded and cannot be manually overridden.');
+        return;
+    }
+    
+    try {
+        const actualId = itemId.replace(`${itemType}_`, '');
+        let endpoint = '';
+        let requestBody = {};
+        
+        switch(itemType) {
+            case 'assignment':
+                // First, find the submission_id from gradeData
+                const student = gradeData.students.find(s => s.id == studentId);
+                if (!student || !student.submissions || !student.submissions[itemId]) {
+                    throw new Error('No submission found for this student');
+                }
+                const submissionId = student.submissions[itemId].id;
+                endpoint = `/instructor/api/submissions/${submissionId}/grade`;
+                requestBody = {
+                    grade: score,
+                    feedback: feedback
+                };
+                break;
+            case 'essay':
+                // Essay grading endpoint (needs to be implemented in essay_controller.py)
+                endpoint = `/instructor/api/essays/${actualId}/grade`;
+                requestBody = {
+                    student_id: studentId,
+                    grade: score,
+                    feedback: feedback
+                };
+                break;
+            default:
+                throw new Error('Unsupported item type for manual grading');
+        }
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to save grade');
+        }
+        
+        alert('Grade saved successfully!');
+        closeModal('gradeSubmissionModal');
+        
+        // Reload data to reflect changes
+        const currentItemId = document.getElementById('gradeItemId').value;
+        const currentItemType = document.getElementById('gradeItemType').value;
+        
+        if (moduleBuilder.currentClass) {
+            await loadGradeData();
+        }
+        
+        await loadItemSubmissions(currentItemId, currentItemType);
+        
+    } catch (error) {
+        console.error('Error saving grade:', error);
+        alert(`Failed to save grade: ${error.message}`);
+    }
 }
 
 function exportGrades() {
@@ -11232,20 +12858,30 @@ function showDeadlines() {
 
 async function loadDeadlineData() {
     if (!moduleBuilder.currentClass) {
-        console.log('No class selected for deadlines');
+        console.log('⚠️ No class selected for deadlines');
         return;
     }
 
     try {
+        console.log('📥 Loading deadline data for class:', moduleBuilder.currentClass.id);
         const response = await fetch(`/instructor/api/deadlines/${moduleBuilder.currentClass.id}`);
+        console.log('📡 Response status:', response.status);
+        
         if (response.ok) {
             deadlineData = await response.json();
+            console.log('✅ Deadline data loaded:', deadlineData);
+            console.log('📊 Assignments count:', deadlineData?.assignments?.length || 0);
+            console.log('📊 Extensions count:', deadlineData?.extensions?.length || 0);
+            console.log('📊 Policies count:', deadlineData?.policies?.length || 0);
             updateDeadlineDisplay();
         } else {
-            console.error('Failed to load deadline data');
+            const errorText = await response.text();
+            console.error('❌ Failed to load deadline data:', response.status, errorText);
+            moduleBuilder.showToast('Failed to load deadline data: ' + response.status, 'error');
         }
     } catch (error) {
-        console.error('Error loading deadlines:', error);
+        console.error('❌ Error loading deadlines:', error);
+        moduleBuilder.showToast('Error loading deadlines: ' + error.message, 'error');
     }
 }
 
@@ -11770,9 +13406,222 @@ function bulkEditDeadlines() {
     alert('Bulk deadline editing will be implemented');
 }
 
-function managePolicies() {
-    window.open('/instructor/deadline-policies', '_blank');
+async function showPoliciesModal() {
+    console.log('🔧 Opening Manage Policies modal...');
+    const modal = document.getElementById('managePoliciesModal');
+    if (!modal) {
+        console.error('❌ managePoliciesModal element not found!');
+        alert('Error: Manage Policies modal not found. Please refresh the page.');
+        return;
+    }
+    
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    console.log('✅ Modal opened, now loading policies...');
+    
+    try {
+        await loadPolicies();
+    } catch (error) {
+        console.error('❌ Error loading policies:', error);
+        moduleBuilder.showToast('Failed to load policies: ' + error.message, 'error');
+    }
 }
+
+async function loadPolicies() {
+    const policiesList = document.getElementById('existingPoliciesList');
+    if (!policiesList) return;
+
+    try {
+        policiesList.innerHTML = `
+            <div class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading policies...</p>
+            </div>
+        `;
+
+        const response = await adminFetch('/instructor/api/deadline-policies');
+        const policies = response.policies || [];
+
+        if (policies.length === 0) {
+            policiesList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h4>No Policies Yet</h4>
+                    <p>Create your first deadline policy above</p>
+                </div>
+            `;
+            return;
+        }
+
+        policiesList.innerHTML = policies.map(policy => `
+            <div class="policy-card modern-card">
+                <div class="policy-header">
+                    <h5 class="policy-name">
+                        ${policy.name}
+                        ${policy.is_default ? '<span class="status-badge status-active">Default</span>' : ''}
+                    </h5>
+                    <div class="policy-actions">
+                        <button class="action-btn edit" onclick="editPolicyInModal(${policy.id})" 
+                                title="Edit Policy">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        ${!policy.is_default ? `
+                            <button class="action-btn delete" onclick="deletePolicy(${policy.id})" 
+                                    title="Delete Policy">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="policy-details">
+                    <p class="policy-description">${policy.description || 'No description'}</p>
+                    <div class="policy-meta">
+                        <span><i class="fas fa-cog"></i> ${policy.type || 'Standard'}</span>
+                        ${policy.penalty_rate ? `<span><i class="fas fa-percentage"></i> ${policy.penalty_rate}%</span>` : ''}
+                        ${policy.grace_period_hours ? `<span><i class="fas fa-clock"></i> ${policy.grace_period_hours}h grace</span>` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error loading policies:', error);
+        policiesList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h4>Failed to Load Policies</h4>
+                <p>${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+async function createPolicy() {
+    const policyName = document.getElementById('policyName')?.value?.trim();
+    const policyType = document.getElementById('policyType')?.value;
+    const policyDescription = document.getElementById('policyDescription')?.value?.trim();
+    const isDefault = document.getElementById('policyIsDefault')?.checked || false;
+
+    if (!policyName || !policyType) {
+        moduleBuilder.showToast('Please fill in all required fields', 'warning');
+        return false;
+    }
+
+    const payload = {
+        name: policyName,
+        type: policyType,
+        description: policyDescription,
+        is_default: isDefault
+    };
+
+    // Add type-specific settings
+    if (policyType === 'percentage') {
+        const penaltyPercentage = parseFloat(document.getElementById('penaltyPercentage')?.value);
+        const penaltyInterval = document.getElementById('penaltyInterval')?.value;
+        if (!isNaN(penaltyPercentage)) {
+            payload.penalty_rate = penaltyPercentage;
+            payload.penalty_interval = penaltyInterval;
+        }
+    } else if (policyType === 'grace') {
+        const gracePeriodHours = parseInt(document.getElementById('gracePeriodHours')?.value);
+        if (!isNaN(gracePeriodHours)) {
+            payload.grace_period_hours = gracePeriodHours;
+        }
+    }
+
+    try {
+        const result = await adminFetch('/instructor/api/deadline-policies', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to create policy');
+        }
+
+        moduleBuilder.showToast('Policy created successfully', 'success');
+        
+        // Reset form
+        document.getElementById('newPolicyForm')?.reset();
+        
+        // Reload policies list
+        await loadPolicies();
+        return true;
+
+    } catch (error) {
+        console.error('Error creating policy:', error);
+        moduleBuilder.showToast(error.message || 'Failed to create policy', 'error');
+        return false;
+    }
+}
+
+async function savePolicyAndClose() {
+    const saved = await createPolicy();
+    if (saved) {
+        closeModal('managePoliciesModal');
+    }
+}
+
+function editPolicyInModal(policyId) {
+    moduleBuilder.showToast('Policy editing will be implemented', 'info');
+}
+
+async function deletePolicy(policyId) {
+    if (!confirm('Are you sure you want to delete this policy?')) {
+        return;
+    }
+
+    try {
+        const result = await adminFetch(`/instructor/api/deadline-policies/${policyId}`, {
+            method: 'DELETE'
+        });
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to delete policy');
+        }
+
+        moduleBuilder.showToast('Policy deleted successfully', 'success');
+        await loadPolicies();
+
+    } catch (error) {
+        console.error('Error deleting policy:', error);
+        moduleBuilder.showToast(error.message || 'Failed to delete policy', 'error');
+    }
+}
+
+function managePolicies() {
+    showPoliciesModal();
+}
+
+// Setup policy type dropdown handler
+document.addEventListener('DOMContentLoaded', function() {
+    const policyTypeSelect = document.getElementById('policyType');
+    if (policyTypeSelect) {
+        policyTypeSelect.addEventListener('change', function() {
+            const percentageSettings = document.getElementById('percentageSettings');
+            const gracePeriodSettings = document.getElementById('gracePeriodSettings');
+            
+            // Hide all settings first
+            if (percentageSettings) percentageSettings.style.display = 'none';
+            if (gracePeriodSettings) gracePeriodSettings.style.display = 'none';
+            
+            // Show relevant settings based on type
+            if (this.value === 'percentage') {
+                if (percentageSettings) percentageSettings.style.display = 'flex';
+            } else if (this.value === 'grace') {
+                if (gracePeriodSettings) gracePeriodSettings.style.display = 'flex';
+            }
+        });
+    }
+
+    const newPolicyForm = document.getElementById('newPolicyForm');
+    if (newPolicyForm) {
+        newPolicyForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            await createPolicy();
+        });
+    }
+});
 
 function editDeadline(assignmentId) {
     // Open deadline settings modal instead of new window
@@ -12003,39 +13852,59 @@ function applyBulkExtension() {
 }
 
 function showGrantExtensionModal(assignmentId = null) {
+    console.log('📝 Opening Grant Extension modal...');
     closeDeadlineSettingsModal();
     const fallbackAssignmentId = assignmentId || document.getElementById('deadlineSettingsAssignmentId')?.value;
     const normalizedAssignmentId = fallbackAssignmentId ? parseInt(fallbackAssignmentId, 10) : null;
     const targetAssignmentId = Number.isNaN(normalizedAssignmentId) ? null : normalizedAssignmentId;
+    console.log('🎯 Target assignment ID:', targetAssignmentId);
     grantExtensionFor(targetAssignmentId);
 }
 
 async function grantExtensionFor(assignmentId) {
+    console.log('🔄 grantExtensionFor called with assignmentId:', assignmentId);
+    
     if (!moduleBuilder?.currentClass) {
+        console.warn('⚠️ No class selected');
         moduleBuilder.showToast('Please select a class first', 'warning');
         return;
     }
+    
+    console.log('✓ Current class:', moduleBuilder.currentClass);
 
-    ensureGrantExtensionFormSetup();
-    resetGrantExtensionFormState();
+    try {
+        ensureGrantExtensionFormSetup();
+        resetGrantExtensionFormState();
 
-    if (!deadlineData) {
-        await loadDeadlineData();
-    }
+        if (!deadlineData) {
+            console.log('📥 Loading deadline data...');
+            await loadDeadlineData();
+        }
 
-    if (!Array.isArray(deadlineData?.assignments) || !deadlineData.assignments.length) {
-        moduleBuilder.showToast('No assignments available for extensions', 'warning');
-        return;
-    }
+        if (!Array.isArray(deadlineData?.assignments) || !deadlineData.assignments.length) {
+            console.warn('⚠️ No assignments available');
+            moduleBuilder.showToast('No assignments available for extensions', 'warning');
+            return;
+        }
 
-    populateGrantExtensionStudents();
-    populateGrantExtensionAssignments(assignmentId ? String(assignmentId) : null);
-    updateExtensionNewDueDate();
+        console.log('✓ Found', deadlineData.assignments.length, 'assignments');
+        populateGrantExtensionStudents();
+        populateGrantExtensionAssignments(assignmentId ? String(assignmentId) : null);
+        updateExtensionNewDueDate();
 
-    const modal = document.getElementById('grantExtensionModal');
-    if (modal) {
+        const modal = document.getElementById('grantExtensionModal');
+        if (!modal) {
+            console.error('❌ grantExtensionModal element not found!');
+            alert('Error: Grant Extension modal not found. Please refresh the page.');
+            return;
+        }
+        
         modal.style.display = 'flex';
         modal.classList.add('show');
+        console.log('✅ Grant Extension modal opened successfully');
+    } catch (error) {
+        console.error('❌ Error in grantExtensionFor:', error);
+        moduleBuilder.showToast('Failed to open Grant Extension modal: ' + error.message, 'error');
     }
 }
 
@@ -13838,53 +15707,61 @@ function applyBulkGrades() {
             <button type="button" class="modal-close" onclick="closeModal('essayViewModal')">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="essay-details">
-                <div class="detail-group">
-                    <h6>Student</h6>
-                    <p id="viewEssayStudent"></p>
-                </div>
-                
-                <div class="detail-group">
-                    <h6>Question</h6>
-                    <p id="viewEssayQuestion"></p>
-                </div>
-                
-                <div class="detail-group">
-                    <h6>Response</h6>
-                    <div id="viewEssayResponse" style="background: var(--surface-hover); color: var(--text-primary); padding: 15px; border-radius: 8px; border-left: 4px solid var(--cyber-glow); white-space: pre-wrap; max-height: 400px; overflow-y: auto; border: 1px solid var(--glass-border);"></div>
-                </div>
-                
-                <div class="detail-row">
+            <div class="essay-view-layout">
+                <!-- Top Row: Student + Question + Category -->
+                <div class="essay-info-grid">
                     <div class="detail-group">
-                        <h6>Submission Date</h6>
-                        <p id="viewEssayDate"></p>
+                        <h6>Student</h6>
+                        <p id="viewEssayStudent"></p>
                     </div>
+                    
+                    <div class="detail-group">
+                        <h6>Question</h6>
+                        <p id="viewEssayQuestion"></p>
+                    </div>
+                    
                     <div class="detail-group">
                         <h6>Category</h6>
                         <p id="viewEssayCategory"></p>
                     </div>
                 </div>
                 
-                <div class="detail-row">
+                <!-- Response Section (Full Width) -->
+                <div class="detail-group essay-response-section">
+                    <h6>Response</h6>
+                    <div id="viewEssayResponse" class="essay-response-content"></div>
+                </div>
+                
+                <!-- Bottom Row: Submission Date + Status + Grade -->
+                <div class="essay-meta-grid">
+                    <div class="detail-group">
+                        <h6>Submission Date</h6>
+                        <p id="viewEssayDate"></p>
+                    </div>
+                    
                     <div class="detail-group">
                         <h6>Status</h6>
                         <p id="viewEssayStatus"></p>
                     </div>
+                    
                     <div class="detail-group">
                         <h6>Current Grade</h6>
                         <p id="viewEssayGrade"></p>
                     </div>
                 </div>
                 
-                <div class="detail-group" id="viewEssayFeedbackGroup" style="display: none;">
-                    <h6>Feedback</h6>
-                    <div id="viewEssayFeedback" style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; white-space: pre-wrap;"></div>
+                <!-- Feedback Section (Full Width, Hidden by Default) -->
+                <div class="detail-group essay-feedback-section" id="viewEssayFeedbackGroup" style="display: none;">
+                    <h6>Instructor Feedback</h6>
+                    <div id="viewEssayFeedback" class="essay-feedback-content"></div>
                 </div>
             </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer essay-modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeModal('essayViewModal')">Close</button>
-            <button type="button" class="btn btn-primary" onclick="openGradeModal(currentEssayId)">Grade Essay</button>
+            <button type="button" class="btn btn-primary" onclick="openGradeModal(currentEssayId)">
+                <i class="fas fa-edit"></i> Grade Essay
+            </button>
         </div>
     </div>
 </div>
@@ -16064,6 +17941,8 @@ function showLiveQuizModal(questionGroupId, questionGroupName) {
                             <i class="fas fa-rocket"></i>
                             Start Live Quiz
                         </button>
+                        
+            
                     </div>
                     
                     <div class="live-quiz-active" id="live-quiz-active-panel" style="display: none;">
@@ -16121,12 +18000,26 @@ function showLiveQuizModal(questionGroupId, questionGroupName) {
 }
 
 function closeLiveQuizModal() {
-    if (activeLiveQuizSession) {
-        if (confirm('Are you sure you want to close this panel? The quiz will continue running.')) {
-            document.getElementById('liveQuizModalOverlay')?.remove();
+    try {
+        console.log('[INSTRUCTOR MODAL] ✖ closeLiveQuizModal() invoked');
+        console.log('[INSTRUCTOR MODAL] Has activeLiveQuizSession:', !!activeLiveQuizSession);
+        const overlay = document.getElementById('liveQuizModalOverlay');
+        console.log('[INSTRUCTOR MODAL] Modal overlay present:', !!overlay);
+
+        if (activeLiveQuizSession) {
+            console.log('[INSTRUCTOR MODAL] An active session exists; asking for confirmation to close without ending');
+            if (confirm('Are you sure you want to close this panel? The quiz will continue running.')) {
+                overlay?.remove();
+                console.log('[INSTRUCTOR MODAL] ✅ Modal overlay removed (panel closed while quiz continues)');
+            } else {
+                console.log('[INSTRUCTOR MODAL] ❎ User cancelled closing the modal while quiz continues');
+            }
+        } else {
+            overlay?.remove();
+            console.log('[INSTRUCTOR MODAL] ✅ Modal overlay removed (no active session)');
         }
-    } else {
-        document.getElementById('liveQuizModalOverlay')?.remove();
+    } catch (err) {
+        console.error('[INSTRUCTOR MODAL] ❌ Error closing modal:', err);
     }
 }
 
@@ -16190,59 +18083,97 @@ async function createLiveQuizSession(questionGroupId, moduleId, questionGroupNam
 }
 
 function connectToLiveQuizSocket(sessionId) {
-    // Connect to socket if not already connected
-    if (!window.socket || !window.socket.connected) {
+    if (!sessionId) {
+        console.warn('[MVP LiveQuiz] connectToLiveQuizSocket called without a sessionId');
+        return;
+    }
+
+    if (!window.socket) {
         console.log('[MVP LiveQuiz] Connecting instructor to socket...');
         window.socket = io();
+    } else if (window.socket.disconnected && typeof window.socket.connect === 'function') {
+        console.log('[MVP LiveQuiz] Socket disconnected - attempting reconnect for instructor view');
+        window.socket.connect();
     }
-    
-    console.log('[MVP LiveQuiz] Setting up instructor socket listeners for session:', sessionId);
-    
-    // Listen for participant updates
-    window.socket.on('participant_joined', (data) => {
-        if (data.session_id === sessionId) {
-            console.log('%c[INSTRUCTOR SOCKET] ════════════════════════════════════════', 'color: #ff00ff; font-weight: bold');
-            console.log('[INSTRUCTOR SOCKET] 👤 participant_joined event received!');
-            console.log('[INSTRUCTOR SOCKET] Display name:', data.display_name);
-            console.log('[INSTRUCTOR SOCKET] Participant count:', data.participant_count);
-            console.log('[INSTRUCTOR SOCKET] Session ID:', data.session_id);
-            console.log('[INSTRUCTOR SOCKET] Has leaderboard:', !!data.leaderboard);
-            if (data.leaderboard) {
-                console.log('[INSTRUCTOR SOCKET] Leaderboard size:', data.leaderboard.length);
+
+    const previousSessionId = window.__liveQuizInstructorSessionId;
+    if (previousSessionId && previousSessionId !== sessionId) {
+        console.log('[MVP LiveQuiz] Leaving previous instructor live quiz room:', previousSessionId);
+        window.socket.emit('leave_live_quiz', { session_id: previousSessionId });
+    }
+
+    window.__liveQuizInstructorSessionId = sessionId;
+
+    if (!window.__liveQuizInstructorHandlersRegistered) {
+        window.__liveQuizInstructorHandlersRegistered = true;
+
+        window.socket.on('participant_joined', (data) => {
+            if (data.session_id === window.__liveQuizInstructorSessionId) {
+                console.log('%c[INSTRUCTOR SOCKET] ════════════════════════════════════════', 'color: #ff00ff; font-weight: bold');
+                console.log('[INSTRUCTOR SOCKET] 👤 participant_joined event received!');
+                console.log('[INSTRUCTOR SOCKET] Display name:', data.display_name);
+                console.log('[INSTRUCTOR SOCKET] Participant count:', data.participant_count);
+                console.log('[INSTRUCTOR SOCKET] Session ID:', data.session_id);
+                console.log('[INSTRUCTOR SOCKET] Has leaderboard:', !!data.leaderboard);
+                if (data.leaderboard) {
+                    console.log('[INSTRUCTOR SOCKET] Leaderboard size:', data.leaderboard.length);
+                }
+                console.log('[INSTRUCTOR SOCKET] Full event data:', data);
+
+                document.getElementById('participant-count').textContent = data.participant_count;
+                console.log('[INSTRUCTOR SOCKET] ✅ Updated participant count to:', data.participant_count);
+
+                moduleBuilder?.showToast?.(`MVP: ${data.display_name} joined the quiz (${data.participant_count} total)`, 'info');
+
+                console.log('[INSTRUCTOR SOCKET] 📊 Fetching updated leaderboard...');
+                updateInstructorLeaderboard();
+
+                console.log('%c[INSTRUCTOR SOCKET] ════════════════════════════════════════', 'color: #ff00ff; font-weight: bold');
             }
-            console.log('[INSTRUCTOR SOCKET] Full event data:', data);
-            
-            document.getElementById('participant-count').textContent = data.participant_count;
-            console.log('[INSTRUCTOR SOCKET] ✅ Updated participant count to:', data.participant_count);
-            
-            // Show toast notification
-            moduleBuilder?.showToast?.(`MVP: ${data.display_name} joined the quiz (${data.participant_count} total)`, 'info');
-            
-            // Update leaderboard immediately
-            console.log('[INSTRUCTOR SOCKET] 📊 Fetching updated leaderboard...');
-            updateInstructorLeaderboard();
-            
-            console.log('%c[INSTRUCTOR SOCKET] ════════════════════════════════════════', 'color: #ff00ff; font-weight: bold');
-        }
-    });
-    
-    // Listen for answer submissions
-    window.socket.on('answer_submitted', (data) => {
-        if (data.session_id === sessionId) {
-            console.log('[MVP LiveQuiz] Answer submitted by participant');
-            updateInstructorLeaderboard();
-        }
-    });
-    
-    // Listen for leaderboard updates
-    window.socket.on('leaderboard_update', (data) => {
-        if (data.session_id === sessionId) {
-            console.log('[MVP LiveQuiz] Leaderboard update received');
-            displayInstructorLeaderboard(data.leaderboard);
-        }
-    });
-    
-    console.log('[MVP LiveQuiz] Instructor socket listeners configured successfully');
+        });
+
+        window.socket.on('answer_submitted', (data) => {
+            if (data.session_id === window.__liveQuizInstructorSessionId) {
+                console.log('[MVP LiveQuiz] Answer submitted by participant');
+                updateInstructorLeaderboard();
+            }
+        });
+
+        window.socket.on('leaderboard_update', (data) => {
+            if (data.session_id === window.__liveQuizInstructorSessionId) {
+                console.log('[MVP LiveQuiz] Leaderboard update received');
+                displayInstructorLeaderboard(data.leaderboard);
+            }
+        });
+
+        window.socket.on('instructor_joined_live_quiz', (data) => {
+            if (data.session_id === window.__liveQuizInstructorSessionId) {
+                console.log('[INSTRUCTOR SOCKET] ✅ Joined live quiz room - status:', data.status);
+
+                if (typeof data.participant_count === 'number') {
+                    document.getElementById('participant-count').textContent = data.participant_count;
+                    console.log('[INSTRUCTOR SOCKET] Participant count synchronized:', data.participant_count);
+                }
+
+                if (Array.isArray(data.leaderboard)) {
+                    console.log('[INSTRUCTOR SOCKET] Applying initial leaderboard snapshot');
+                    displayInstructorLeaderboard(data.leaderboard);
+                } else {
+                    console.log('[INSTRUCTOR SOCKET] Initial leaderboard missing - requesting refresh');
+                    updateInstructorLeaderboard();
+                }
+
+                if (typeof data.current_question_index === 'number' && data.current_question_index >= 0) {
+                    const questionDisplay = data.status === 'active' ? data.current_question_index + 1 : data.current_question_index;
+                    document.getElementById('current-question-num').textContent = questionDisplay;
+                    console.log('[INSTRUCTOR SOCKET] Current question synchronized:', questionDisplay);
+                }
+            }
+        });
+    }
+
+    console.log('[MVP LiveQuiz] Instructor socket listeners configured - joining session:', sessionId);
+    window.socket.emit('instructor_join_live_quiz', { session_id: sessionId });
 }
 
 async function startLiveQuiz() {
@@ -16337,6 +18268,28 @@ async function nextQuestion() {
     }
 }
 
+function resolveLiveQuizClassId() {
+    // Try moduleBuilder helpers first, then fall back to URL parameter
+    if (moduleBuilder?.getCurrentClassId) {
+        const builderClassId = moduleBuilder.getCurrentClassId();
+        if (builderClassId) {
+            return builderClassId;
+        }
+    }
+
+    if (moduleBuilder?.currentClass?.id) {
+        return moduleBuilder.currentClass.id;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramClassId = urlParams.get('class_id');
+    if (paramClassId) {
+        return paramClassId;
+    }
+
+    return null;
+}
+
 async function endLiveQuiz() {
     if (!activeLiveQuizSession) return;
     
@@ -16345,19 +18298,105 @@ async function endLiveQuiz() {
     }
     
     try {
+    console.log('\n' + '🟥'.repeat(50));
+    console.log('[INSTRUCTOR END QUIZ] 🔔 End button clicked');
+    console.log('[INSTRUCTOR END QUIZ] Session ID:', activeLiveQuizSession?.id);
+    console.log('[INSTRUCTOR END QUIZ] Fetching endpoint to end session...');
+    console.time('[INSTRUCTOR END QUIZ] API call duration');
     const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/end`, {
             method: 'POST'
         });
         
         const data = await response.json();
-        
+        console.timeEnd('[INSTRUCTOR END QUIZ] API call duration');
+        console.log('[INSTRUCTOR END QUIZ] API response status:', response.status);
+        console.log('[INSTRUCTOR END QUIZ] API response body:', data);
+
         if (data.success) {
             moduleBuilder?.showToast?.('Live quiz ended', 'success');
             activeLiveQuizSession = null;
-            closeLiveQuizModal();
+            
+            // ✨ AUTO-CLEANUP: Clean up ALL old waiting sessions to prevent modal from reopening
+            console.log('[INSTRUCTOR END QUIZ] 🧹 Auto-cleaning old sessions...');
+            try {
+                const cleanupClassId = resolveLiveQuizClassId();
+                if (!cleanupClassId) {
+                    console.warn('[INSTRUCTOR END QUIZ] ⚠️ Could not determine class ID for auto-cleanup');
+                } else {
+                    const cleanupResponse = await fetch(`/instructor/api/live-quiz/cleanup-old-sessions/${cleanupClassId}`, {
+                        method: 'POST'
+                    });
+                    const cleanupData = await cleanupResponse.json();
+                    if (cleanupData.success && cleanupData.updated_count > 0) {
+                        console.log(`[INSTRUCTOR END QUIZ] ✅ Auto-cleanup completed: ${cleanupData.updated_count} old sessions marked as completed`);
+                        console.log('[INSTRUCTOR END QUIZ] Old sessions cleaned:', cleanupData.cleaned_sessions);
+                    } else {
+                        console.log('[INSTRUCTOR END QUIZ] ℹ️ No old sessions to clean up');
+                    }
+                }
+            } catch (cleanupError) {
+                console.warn('[INSTRUCTOR END QUIZ] ⚠️ Auto-cleanup failed (non-critical):', cleanupError);
+            }
+            
+            // Force close modal without confirmation since quiz is already ended
+            const overlay = document.getElementById('liveQuizModalOverlay');
+            if (overlay) {
+                overlay.remove();
+                console.log('[INSTRUCTOR END QUIZ] ✅ Modal overlay removed after ending quiz');
+            } else {
+                console.warn('[INSTRUCTOR END QUIZ] ⚠️ Modal overlay not found after ending quiz');
+            }
+            console.log('🟥'.repeat(50) + '\n');
+        } else {
+            console.error('[INSTRUCTOR END QUIZ] ❌ API returned failure:', data.error || data);
+            console.log('🟥'.repeat(50) + '\n');
         }
     } catch (error) {
-        console.error('Error ending quiz:', error);
+        console.error('[INSTRUCTOR END QUIZ] ❌ Error ending quiz:', error);
+        console.log('🟥'.repeat(50) + '\n');
+    }
+}
+
+async function cleanupOldLiveQuizSessions() {
+    if (!confirm('⚠️ This will mark ALL old waiting/active Live Quiz sessions as completed.\n\nThis is useful if you have leftover test sessions that keep reopening.\n\nContinue?')) {
+        return;
+    }
+    
+    try {
+        console.log('\n' + '🧹'.repeat(50));
+        const cleanupClassId = resolveLiveQuizClassId();
+        if (!cleanupClassId) {
+            console.warn('[CLEANUP] ⚠️ Could not determine class ID for cleanup');
+            moduleBuilder?.showToast?.('Cleanup failed: missing class ID', 'error');
+            console.log('🧹'.repeat(50) + '\n');
+            return;
+        }
+
+        console.log('[CLEANUP] Starting cleanup of old sessions for class:', cleanupClassId);
+        
+        const response = await fetch(`/instructor/api/live-quiz/cleanup-old-sessions/${cleanupClassId}`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        console.log('[CLEANUP] API response:', data);
+        
+        if (data.success) {
+            const count = data.updated_count || 0;
+            moduleBuilder?.showToast?.(data.message || `Cleaned up ${count} sessions`, 'success');
+            console.log('[CLEANUP] ✅ Successfully cleaned', count, 'sessions');
+            if (data.cleaned_sessions) {
+                console.log('[CLEANUP] Cleaned sessions:', data.cleaned_sessions);
+            }
+        } else {
+            moduleBuilder?.showToast?.('Cleanup failed: ' + (data.error || 'Unknown error'), 'error');
+            console.error('[CLEANUP] ❌ Cleanup failed:', data.error);
+        }
+        console.log('🧹'.repeat(50) + '\n');
+    } catch (error) {
+        console.error('[CLEANUP] ❌ Error during cleanup:', error);
+        moduleBuilder?.showToast?.('Cleanup error: ' + error.message, 'error');
+        console.log('🧹'.repeat(50) + '\n');
     }
 }
 
@@ -16373,8 +18412,18 @@ async function updateInstructorLeaderboard() {
         console.log('[INSTRUCTOR LEADERBOARD] Response:', data);
         
         if (data.success) {
-            console.log('[INSTRUCTOR LEADERBOARD] ✅ Received', data.leaderboard?.length || 0, 'participants');
+            const totalParticipants = Number(data.total_participants ?? data.leaderboard?.length ?? 0);
+            console.log('[INSTRUCTOR LEADERBOARD] ✅ Received', totalParticipants, 'participants');
             console.log('[INSTRUCTOR LEADERBOARD] Leaderboard data:', data.leaderboard);
+
+            if (!Number.isNaN(totalParticipants)) {
+                const participantCountEl = document.getElementById('participant-count');
+                if (participantCountEl) {
+                    participantCountEl.textContent = totalParticipants;
+                    console.log('[INSTRUCTOR LEADERBOARD] Updated participant count indicator to', totalParticipants);
+                }
+            }
+
             displayInstructorLeaderboard(data.leaderboard);
         } else {
             console.warn('[INSTRUCTOR LEADERBOARD] ❌ Fetch failed:', data.error);
@@ -16605,8 +18654,20 @@ async function checkAndRestoreActiveLiveQuiz() {
         const classId = moduleBuilder.currentClass.id;
         console.log('[LIVE QUIZ RESTORE] Current class ID:', classId);
         
-        // Fetch active or waiting sessions for this instructor and class
-        const response = await fetch(`/instructor/api/live-quiz/sessions?class_id=${classId}`);
+    // DIAGNOSTIC: Check what's actually in the database
+    try {
+        const debugResponse = await fetch(`/instructor/api/live-quiz/debug/sessions/${classId}`);
+        if (debugResponse.ok) {
+            const debugData = await debugResponse.json();
+            console.log('[LIVE QUIZ RESTORE] 🔍 DATABASE STATE:', debugData);
+        }
+    } catch (err) {
+        console.log('[LIVE QUIZ RESTORE] Debug fetch failed (non-critical):', err);
+    }
+    
+    // Fetch active or waiting sessions for this instructor and class
+    console.log('[LIVE QUIZ RESTORE] 🛰️ Fetching instructor sessions for class', classId);
+    const response = await fetch(`/instructor/api/live-quiz/sessions?class_id=${classId}`);
         
         if (!response.ok) {
             console.log('[LIVE QUIZ RESTORE] Failed to fetch sessions:', response.status);
@@ -16615,14 +18676,45 @@ async function checkAndRestoreActiveLiveQuiz() {
         }
         
         const data = await response.json();
-        console.log('[LIVE QUIZ RESTORE] Response:', data);
+        console.log('[LIVE QUIZ RESTORE] Raw response:', data);
+        if (data?.sessions) {
+            const statuses = data.sessions.map(s => s.status);
+            const statusCounts = statuses.reduce((acc, s) => (acc[s] = (acc[s]||0)+1, acc), {});
+            console.log('[LIVE QUIZ RESTORE] Session count:', data.sessions.length, 'Status counts:', statusCounts);
+        }
         
         if (data.success && data.sessions && data.sessions.length > 0) {
-            // Filter for active or waiting sessions only
-            const activeSessions = data.sessions.filter(s => s.status === 'active' || s.status === 'waiting');
+            // CRITICAL: Filter for active or waiting sessions only - EXCLUDE completed sessions
+            const activeSessions = data.sessions.filter(s => {
+                const isValidStatus = s.status === 'active' || s.status === 'waiting';
+                console.log(`[LIVE QUIZ RESTORE] Session ${s.id} (${s.title}): status="${s.status}" - ${isValidStatus ? 'WILL RESTORE' : 'SKIP'}`);
+                return isValidStatus;
+            });
+            const completedSessions = data.sessions.filter(s => s.status === 'completed');
+            
+            console.log('\n' + '⚠️'.repeat(50));
+            console.log('[LIVE QUIZ RESTORE] 📊 Filter Results:');
+            console.log(`  - Total sessions received: ${data.sessions.length}`);
+            console.log(`  - Active/Waiting sessions: ${activeSessions.length}`);
+            console.log(`  - Completed sessions: ${completedSessions.length}`);
+            
+            if (completedSessions.length > 0) {
+                console.log('[LIVE QUIZ RESTORE] ⚠️ Completed sessions (WILL NOT RESTORE):');
+                completedSessions.forEach(s => {
+                    console.log(`    ❌ Session ${s.id}: "${s.title}" (code: ${s.session_code}, status: ${s.status})`);
+                });
+            }
+            
+            if (activeSessions.length > 0) {
+                console.log('[LIVE QUIZ RESTORE] ✅ Valid sessions to restore:');
+                activeSessions.forEach(s => {
+                    console.log(`    ✓ Session ${s.id}: "${s.title}" (code: ${s.session_code}, status: ${s.status})`);
+                });
+            }
+            console.log('⚠️'.repeat(50) + '\n');
             
             if (activeSessions.length === 0) {
-                console.log('[LIVE QUIZ RESTORE] No active or waiting sessions found');
+                console.log('[LIVE QUIZ RESTORE] ✅ No active or waiting sessions found - modal will NOT open');
                 console.log('🔍'.repeat(50) + '\n');
                 return;
             }
@@ -16663,6 +18755,7 @@ async function checkAndRestoreActiveLiveQuiz() {
             
             // Show the modal
             showLiveQuizModal(activeSession.question_group_id, questionGroupName);
+            console.log('[LIVE QUIZ RESTORE] 🧩 showLiveQuizModal invoked with QG:', activeSession.question_group_id, 'Name:', questionGroupName);
             
             // Wait a bit for the modal to be created in the DOM
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -16700,7 +18793,26 @@ async function checkAndRestoreActiveLiveQuiz() {
                 liveQuizSocket.disconnect();
             }
             
-            // TODO: Reconnect WebSocket if needed
+            // Join the shared socket namespace for real-time updates
+            try {
+                connectToLiveQuizSocket(activeSession.id);
+            } catch (err) {
+                console.error('[LIVE QUIZ RESTORE] ❌ Failed to connect instructor socket:', err);
+            }
+
+            // Update participant counter with snapshot while fresh data loads
+            const participantCountEl = document.getElementById('participant-count');
+            if (participantCountEl && typeof activeSession.participant_count === 'number') {
+                participantCountEl.textContent = activeSession.participant_count;
+                console.log('[LIVE QUIZ RESTORE] Participant counter restored to', activeSession.participant_count);
+            }
+
+            // Fetch the latest leaderboard to ensure state is current
+            try {
+                await updateInstructorLeaderboard();
+            } catch (err) {
+                console.error('[LIVE QUIZ RESTORE] ❌ Failed to refresh leaderboard after restore:', err);
+            }
             
             console.log('[LIVE QUIZ RESTORE] ✅ Modal restored successfully!');
             console.log('🔍'.repeat(50) + '\n');

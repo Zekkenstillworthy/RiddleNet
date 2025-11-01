@@ -162,16 +162,15 @@ def create_app(config=None):
         except Exception as e:
             print(f"⚠️ Error registering dynamic simulation blueprint: {e}")
         
-        # Ensure the Live Quiz MVP API is always available for student clients
         try:
             from api.live_quiz_api import live_quiz_bp as live_quiz_api_bp
             if live_quiz_api_bp.name not in app.blueprints:
                 app.register_blueprint(live_quiz_api_bp)
-                print("Live Quiz MVP API blueprint registered")
+                print("Live Quiz API blueprint registered")
             else:
-                print("Live Quiz MVP API blueprint already registered")
+                print("Live Quiz API blueprint already registered")
         except Exception as e:
-            print(f"Error registering Live Quiz MVP API blueprint: {e}")
+            print(f"Error registering Live Qui API blueprint: {e}")
 
         # Register the API blueprint with explicit url_prefix
         # Commented out to avoid conflicts with QuizController routes
@@ -214,6 +213,20 @@ def create_app(config=None):
             print(f"⚠️ Error registering instructor essay controller blueprint: {e}")
             
         try:
+            from instructor.api.grades_api import grades_api
+            app.register_blueprint(grades_api)
+            print("✅ Grades API blueprint registered (MVP)")
+        except Exception as e:
+            print(f"⚠️ Error registering Grades API blueprint: {e}")
+            
+        try:
+            from instructor.api.deadlines_api import deadlines_api
+            app.register_blueprint(deadlines_api)
+            print("✅ Deadlines API blueprint registered (MVP)")
+        except Exception as e:
+            print(f"⚠️ Error registering Deadlines API blueprint: {e}")
+            
+        try:
             from instructor.routes.collaboration_api import admin_collaboration_api_bp
             app.register_blueprint(admin_collaboration_api_bp)
             print("✅ Instructor collaboration API blueprint registered")
@@ -243,6 +256,26 @@ def create_app(config=None):
         print("✅ RNet file viewer blueprint registered")
     except Exception as e:
         print(f"⚠️ Error registering RNet file viewer blueprint: {e}")
+    
+    # Register Grades API blueprint (MVP implementation)
+    try:
+        from instructor.api.grades_api import grades_api
+        app.register_blueprint(grades_api)
+        print("✅ Grades API blueprint registered (MVP)")
+    except Exception as e:
+        print(f"⚠️ Error registering Grades API blueprint: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # Register Deadlines API blueprint (MVP implementation)
+    try:
+        from instructor.api.deadlines_api import deadlines_api
+        app.register_blueprint(deadlines_api)
+        print("✅ Deadlines API blueprint registered (MVP)")
+    except Exception as e:
+        print(f"⚠️ Error registering Deadlines API blueprint: {e}")
+        import traceback
+        traceback.print_exc()
     
     # Admin user controller blueprint is registered in run.py with other admin blueprints
     # (Removed duplicate registration to prevent "name already registered" error)

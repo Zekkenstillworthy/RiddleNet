@@ -141,18 +141,27 @@ def join():
             print(f'[STUDENT JOIN] Session status: {db_session.status}')
             print(f'[STUDENT JOIN] Created by instructor: {db_session.created_by}')
             
-            if db_session.status != 'active':
-                print(f'[STUDENT JOIN] ❌ BLOCKED: Session status is "{db_session.status}" (not "active")')
-                print(f'[STUDENT JOIN] User must wait for instructor to start the quiz')
+            # Allow joining 'waiting' or 'active' sessions (lobby flow enabled)
+            # Block only 'completed' sessions
+            if db_session.status == 'completed':
+                print(f'[STUDENT JOIN] ❌ BLOCKED: Session has ended')
                 print(f'{"="*80}\n')
                 return jsonify({
                     'success': False,
-                    'error': 'MVP: The Live Quiz has not started yet. Please wait for your instructor to begin.',
-                    'status': db_session.status,
-                    'waiting': True
+                    'error': 'This Live Quiz has already ended.',
+                    'status': db_session.status
                 }), 403
             
-            print(f'[STUDENT JOIN] ✅ Status check passed - session is active')
+            if db_session.status not in ['waiting', 'active']:
+                print(f'[STUDENT JOIN] ❌ BLOCKED: Invalid session status "{db_session.status}"')
+                print(f'{"="*80}\n')
+                return jsonify({
+                    'success': False,
+                    'error': 'Cannot join this quiz session.',
+                    'status': db_session.status
+                }), 403
+            
+            print(f'[STUDENT JOIN] ✅ Status check passed - session is {db_session.status}')
         else:
             print(f'[STUDENT JOIN] ⚠️ WARNING: Session {session_id} not found in database')
     except Exception as db_err:
@@ -205,13 +214,25 @@ def join():
     print(f'[STUDENT JOIN] Leaderboard size: {len(leaderboard_snapshot)}')
     print(f'{"="*80}\n')
 
+    # Get session status from database
+    session_status = 'active'  # Default fallback
+    try:
+        from user.models.live_quiz import LiveQuizSession
+        db_session = LiveQuizSession.query.get(int(session_id))
+        if db_session:
+            session_status = db_session.status
+            print(f'[STUDENT JOIN] Including session status in response: {session_status}')
+    except Exception as e:
+        print(f'[STUDENT JOIN] Could not fetch session status: {e}')
+    
     return jsonify({
         'success': True,
         'session': {
             'id': session_id,
             'class_id': class_id,
             'module_id': module_id,
-            'lesson_id': lesson_id
+            'lesson_id': lesson_id,
+            'status': session_status
         },
         'participant': participants[uid],
         'leaderboard': leaderboard_snapshot
@@ -265,8 +286,12 @@ def submit_answer():
     explanation = meta.get('explanation')
 
     # Check if answer is correct
-    is_correct = (correct_answer is not None and 
-                  str(selected_answer).strip() == str(correct_answer).strip())
+    # Handle cases where selected_answer is None (e.g., timer expired without answer)
+    if selected_answer is None or selected_answer == '':
+        is_correct = False
+    else:
+        is_correct = (correct_answer is not None and 
+                      str(selected_answer).strip() == str(correct_answer).strip())
     
     # Compute Slido-like points
     points = _compute_points(is_correct, response_time)
@@ -381,6 +406,46 @@ def get_state(session_id):
     })
 
 
+@live_quiz_bp.route('/session-status/<session_id>', methods=['GET'])
+@login_required
+def get_session_status(session_id):
+    """
+    Get session status from database
+    
+    Response:
+    {
+        "success": true,
+        "session_id": "6",
+        "status": "active",  // waiting, active, or completed
+        "title": "Quiz Title"
+    }
+    """
+    try:
+        from user.models.live_quiz import LiveQuizSession
+        
+        db_session = LiveQuizSession.query.get(int(session_id))
+        if db_session:
+            return jsonify({
+                'success': True,
+                'session_id': session_id,
+                'status': db_session.status,
+                'title': db_session.title
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Session not found',
+                'status': 'unknown'
+            }), 404
+    except Exception as e:
+        print(f'[SESSION STATUS] Error: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'status': 'unknown'
+        }), 500
+
+
 @live_quiz_bp.route('/my-active-session', methods=['GET'])
 @login_required
 def get_my_active_session():
@@ -422,9 +487,10 @@ def get_my_active_session():
     print(f'[CHECK ACTIVE SESSION] Module ID filter: {module_id}')
     
     try:
-        # Find active sessions from database
+        # Find active or recently completed sessions from database
+        # Include 'completed' status so students can detect when quiz has ended on refresh
         query = LiveQuizSession.query.filter(
-            LiveQuizSession.status.in_(['active', 'waiting'])
+            LiveQuizSession.status.in_(['active', 'waiting', 'completed'])
         )
         
         if class_id:
@@ -434,7 +500,7 @@ def get_my_active_session():
         
         active_db_sessions = query.order_by(LiveQuizSession.created_at.desc()).all()
         
-        print(f'[CHECK ACTIVE SESSION] Found {len(active_db_sessions)} active/waiting sessions in DB')
+        print(f'[CHECK ACTIVE SESSION] Found {len(active_db_sessions)} active/waiting/completed sessions in DB')
         
         # Check if user has joined any of these sessions
         for db_session in active_db_sessions:

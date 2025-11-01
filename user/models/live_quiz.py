@@ -45,8 +45,9 @@ class LiveQuizSession(db.Model):
     def __repr__(self):
         return f'<LiveQuizSession {self.id}: {self.title}>'
     
-    def to_dict(self):
-        return {
+    def to_dict(self, include_question_count=True):
+        """Serialize the session for API responses and websocket payloads."""
+        data = {
             'id': self.id,
             'session_code': self.session_code,
             'title': self.title,
@@ -56,9 +57,45 @@ class LiveQuizSession(db.Model):
             'current_question_index': self.current_question_index,
             'time_per_question': self.time_per_question,
             'show_leaderboard': self.show_leaderboard,
+            'allow_join_after_start': self.allow_join_after_start,
+            'randomize_questions': self.randomize_questions,
+            'randomize_answers': self.randomize_answers,
             'participant_count': len(self.participants),
-            'question_group_id': self.question_group_id
+            'question_group_id': self.question_group_id,
+            'class_id': self.class_id,
+            'module_id': self.module_id,
+            'lesson_id': self.lesson_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+
+        if include_question_count:
+            data['total_questions'] = self._get_total_questions()
+
+        return data
+
+    def _get_total_questions(self):
+        """Return total question count for the linked question group (best-effort)."""
+        try:
+            question_group = getattr(self, 'question_group', None)
+        except AttributeError:
+            question_group = None
+
+        if question_group and hasattr(question_group, 'questions'):
+            try:
+                return len(question_group.questions or [])
+            except TypeError:
+                return 0
+
+        try:
+            from instructor.models.question_group import QuestionGroup  # Local import avoids circular refs
+            qg = QuestionGroup.query.get(self.question_group_id)
+            if qg and hasattr(qg, 'questions'):
+                return len(qg.questions or [])
+        except Exception:
+            return 0
+
+        return 0
 
 
 class LiveQuizParticipant(db.Model):
@@ -149,25 +186,35 @@ class LiveQuizResponse(db.Model):
     def __repr__(self):
         return f'<LiveQuizResponse {self.id}: Q{self.question_id} - {"Correct" if self.is_correct else "Incorrect"}>'
     
-    def calculate_points(self, max_time=30, max_points=1000):
+    def calculate_points(self, max_time=30, max_points=1000, penalty_factor=10):
         """
         Calculate points based on correctness and speed (Slido-style)
-        - Correct answer: base points + time bonus
-        - Faster answers get more points
+        Formula: Base Points - (Response Time × Penalty Factor)
+        
+        - Correct answer: base_points - (response_time * penalty_factor)
+        - Faster answers get more points (less penalty)
         - Incorrect answer: 0 points
+        
+        Args:
+            max_time: Maximum time allowed per question (seconds)
+            max_points: Maximum points for instant correct answer (default 1000)
+            penalty_factor: Points deducted per second (default 10)
+        
+        Returns:
+            int: Points awarded (0 for incorrect, 0-max_points for correct)
         """
         if not self.is_correct:
             return 0
         
-        # Base points for correct answer
-        base_points = max_points * 0.5
+        # Slido-style scoring: Base points minus time penalty
+        # Example: 1000 - (5 seconds × 10) = 950 points
+        points = max_points - (self.response_time * penalty_factor)
         
-        # Time bonus (faster = more points)
-        # Remaining time as percentage of max time
-        time_remaining = max(0, max_time - self.response_time)
-        time_bonus = (time_remaining / max_time) * (max_points * 0.5)
+        # Ensure points don't go negative or below a minimum threshold
+        # Minimum 10% of max_points even for very slow correct answers
+        min_points = int(max_points * 0.1)
         
-        return int(base_points + time_bonus)
+        return max(min_points, int(points))
     
     def to_dict(self):
         return {

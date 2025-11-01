@@ -433,77 +433,7 @@
                         </div>
                     </div>                </div>
                 
-                <!-- Enhanced Analytics Section -->
-                <div class="section-header">
-                    <i class="fas fa-chart-line section-icon"></i>
-                    <h2>Network Analytics Dashboard</h2>
-                </div>
-                
-                <div class="modern-card" style="margin-bottom: 32px;">
-                    <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-                        <div style="flex: 1; min-width: 200px;">
-                            <label for="date-range" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8); font-weight: 500;">
-                                <i class="fas fa-calendar-alt" style="margin-right: 8px; color: var(--cyber-glow);"></i>Time Period:
-                            </label>
-                            <select id="date-range" onchange="updateCharts()" 
-                                    style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff;">
-                                <option value="7">Last 7 Days</option>
-                                <option value="30">Last 30 Days</option>
-                                <option value="90">Last 3 Months</option>
-                                <option value="all">All Time</option>
-                            </select>
-                        </div>
-                        <div style="flex: 1; min-width: 200px;">
-                            <label for="category-filter" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8); font-weight: 500;">
-                                <i class="fas fa-filter" style="margin-right: 8px; color: var(--neon-green);"></i>Category:
-                            </label>
-                            <select id="category-filter" onchange="updateCharts()"
-                                    style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff;">
-                                <option value="all">All Categories</option>
-                                <option value="riddle">Riddle</option>
-                                <option value="topology">Topology</option>
-                                <option value="troubleshoot">Troubleshooting</option>
-                                <option value="crimping">Cable Crimping</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 48px;">
-                    <div class="modern-card">
-                        <h3 style="color: var(--cyber-glow); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-chart-bar"></i> Score Distribution
-                        </h3>
-                        <div style="height: 300px; position: relative;">
-                            <canvas id="scoreDistChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="modern-card">
-                        <h3 style="color: var(--neon-green); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-users"></i> User Activity
-                        </h3>
-                        <div style="height: 300px; position: relative;">
-                            <canvas id="userActivityChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="modern-card">
-                        <h3 style="color: var(--network-purple); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-radar-chart"></i> Category Performance
-                        </h3>
-                        <div style="height: 300px; position: relative;">
-                            <canvas id="categoryScoresChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="modern-card">
-                        <h3 style="color: #ff6b6b; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-chart-pie"></i> Question Difficulty
-                        </h3>
-                        <div style="height: 300px, 
-                        position: relative;">
-                            <canvas id="questionDifficultyChart"></canvas>
-                        </div>
-                    </div>
-                </div>
+               
 
                 <!-- Enhanced Analytics Dashboard Section -->
                 <div class="modern-card" style="margin-bottom: 32px;">
@@ -602,69 +532,8 @@
                         </div>
                     </div>
 
-                    <!-- Real-time Activity Feed -->
-                    <div class="modern-card">
-                        <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h3 style="color: var(--cyber-glow); margin: 0; display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-rss"></i> Real-time Activity Feed
-                            </h3>
-                            <div class="activity-controls" style="display: flex; align-items: center; gap: 16px;">
-                                <div class="auto-refresh-toggle" style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="checkbox" id="auto-refresh" checked onchange="toggleAutoRefresh()">
-                                    <label for="auto-refresh" style="color: rgba(255, 255, 255, 0.8); cursor: pointer;">Auto-refresh</label>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="activity-feed" id="activity-feed" style="max-height: 400px; overflow-y: auto;">
-                            <div class="loading-spinner" style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.6);">
-                                <i class="fas fa-spinner fa-spin"></i> Loading activity...
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                 
-                <!-- Enhanced Activity Log -->
-                <div class="section-header">
-                    <i class="fas fa-history section-icon"></i>
-                    <h2>System Activity Monitor</h2>
-                </div>
+                    
                 
-                <div class="modern-card">
-                    {% if activity_logs %}
-                        <div style="display: grid; gap: 12px;">
-                            {% for log in activity_logs %}
-                                <div style="display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--dark-bg); border-radius: 12px; border-left: 4px solid var(--cyber-glow);">
-                                    <div style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: var(--glass-bg); border-radius: 50%; border: 1px solid var(--glass-border);">
-                                        {% if log.action_type == 'login' %}
-                                            <i class='bx bx-log-in' style="color: var(--neon-green); font-size: 1.2rem;"></i>
-                                        {% elif log.action_type == 'score' %}
-                                            <i class='bx bxs-trophy' style="color: #ffd700; font-size: 1.2rem;"></i>
-                                        {% elif log.action_type == 'essay' %}
-                                            <i class='bx bxs-file' style="color: var(--network-purple); font-size: 1.2rem;"></i>
-                                        {% elif log.action_type == 'edit' %}
-                                            <i class='bx bxs-edit' style="color: var(--cyber-glow); font-size: 1.2rem;"></i>
-                                        {% else %}
-                                            <i class='bx bx-info-circle' style="color: rgba(255, 255, 255, 0.6); font-size: 1.2rem;"></i>
-                                        {% endif %}
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div style="color: #fff; font-weight: 500; margin-bottom: 4px;">{{ log.message }}</div>
-                                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.85rem;">
-                                            <i class="fas fa-clock" style="margin-right: 6px;"></i>{{ log.timestamp }}
-                                        </div>
-                                    </div>
-                                    <div class="network-node" style="position: absolute; right: 20px;"></div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div style="text-align: center; padding: 48px; color: rgba(255, 255, 255, 0.6);">
-                            <i class="fas fa-clock" style="font-size: 3rem; margin-bottom: 16px; color: var(--cyber-glow);"></i>
-                            <p style="font-size: 1.1rem;">No recent activity to display.</p>
-                        </div>
-                    {% endif %}
-                </div>
                 
     <script>
         // Global connection status update function

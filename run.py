@@ -161,6 +161,18 @@ login_manager.init_app(app)
 login_manager.login_view = 'user.login'  
 login_manager.login_message_category = 'info'
 
+@login_manager.unauthorized_handler
+def handle_unauthorized():
+    """Route unauthenticated users to the correct login page per namespace."""
+    next_url = (request.full_path if request.query_string else request.path).rstrip('?')
+
+    if request.path.startswith('/instructor') or request.path.startswith('/admin'):
+        flash('Please log in with instructor credentials to continue.', 'warning')
+        return redirect(url_for('auth.login', next=next_url))
+
+    flash('Please log in to continue.', 'warning')
+    return redirect(url_for(login_manager.login_view, next=next_url))
+
 @login_manager.user_loader
 def load_user(user_id):
     """ENHANCED user_loader - Proper session isolation between admin and user"""
@@ -364,6 +376,7 @@ try:
         ('instructor.controllers.user_controller', 'user_bp', '/instructor', None),
         ('instructor.controllers.score_controller', 'score_bp', '/instructor', None),
         ('instructor.controllers.essay_controller', 'essay_bp', '/instructor', None),
+        ('instructor.controllers.assignment_submission_controller', 'assignment_submission_bp', '/instructor', None),
     ('instructor.controllers.question_controller', 'question_bp', '/instructor', None),
         ('instructor.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
         ('instructor.controllers.class_controller', 'class_controller', '/instructor', None),
@@ -379,6 +392,7 @@ try:
         ('instructor.controllers.rubric_controller', 'rubric_bp', None, None),
         ('instructor.controllers.admin_settings_controller', 'admin_settings_bp', None, None),
         ('instructor.api.live_quiz_api', 'live_quiz_instructor_bp', None, 'live_quiz_instructor'),
+        ('instructor.api.deadlines_api', 'deadlines_api', None, None),
         ('instructor.routes.api_routes', 'api_bp', None, 'admin_api_bp'),
         ('instructor.routes.topology_routes', 'topology_bp', None, None),
         ('instructor.routes.topology_api_routes', 'topology_api_bp', None, None),

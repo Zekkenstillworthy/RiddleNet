@@ -46,13 +46,33 @@ class DeadlinePolicy(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('instructor_users.id'), nullable=False)
     
+    def _frontend_type(self):
+        """Return simplified type label for UI consumption."""
+        if self.policy_type == 'fixed':
+            return 'fixed'
+        if self.policy_type == 'simple':
+            if self.hard_cutoff_enabled and ((self.hard_cutoff_days or 0) == 0 or (self.simple_penalty_per_day or 0) >= 100):
+                return 'zero'
+            return 'grace' if (self.grace_period_hours or 0) > 0 else 'percentage'
+        if self.policy_type in {'tiered', 'exponential'}:
+            return self.policy_type
+        return self.policy_type or 'percentage'
+
     def to_dict(self):
         """Convert policy to dictionary"""
+        penalty_rate = None
+        if self.simple_penalty_per_day is not None:
+            penalty_rate = round(self.simple_penalty_per_day, 2)
+
         return {
             'id': self.id,
             'name': self.name,
             'description': self.description,
             'policy_type': self.policy_type,
+            'type': self._frontend_type(),
+            'penalty_rate': penalty_rate,
+            'penalty_interval': getattr(self, 'penalty_interval', 'day'),
+            'is_default': getattr(self, 'is_default', False),
             'simple_penalty_per_day': self.simple_penalty_per_day,
             'max_penalty_percentage': self.max_penalty_percentage,
             'grace_period_hours': self.grace_period_hours,

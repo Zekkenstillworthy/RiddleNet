@@ -34,8 +34,21 @@ def create_quiz_session():
         data = request.json
         question_group_id = data.get('question_group_id')
         class_id = data.get('class_id')
+
+        # Normalize module / lesson identifiers
         module_id = data.get('module_id')
         lesson_id = data.get('lesson_id')
+
+        # Ensure values are integers when present
+        try:
+            module_id = int(module_id) if module_id not in (None, '', 'null') else None
+        except (TypeError, ValueError):
+            module_id = None
+
+        try:
+            lesson_id = int(lesson_id) if lesson_id not in (None, '', 'null') else None
+        except (TypeError, ValueError):
+            lesson_id = None
         title = data.get('title', 'Live Quiz')
         time_per_question = data.get('time_per_question', 30)
         
@@ -44,6 +57,18 @@ def create_quiz_session():
         if not question_group:
             return jsonify({'success': False, 'error': 'Question group not found'}), 404
         
+        # If module/lesson not provided, fallback to question group metadata
+        if module_id is None and getattr(question_group, 'module_id', None):
+            module_id = question_group.module_id
+            print(f'[SESSION CREATE] ⚠️ No module_id supplied, defaulting to question group module {module_id}')
+
+        if lesson_id is None and getattr(question_group, 'lesson_id', None):
+            lesson_id = question_group.lesson_id
+            print(f'[SESSION CREATE] ⚠️ No lesson_id supplied, defaulting to question group lesson {lesson_id}')
+
+        if module_id is None:
+            return jsonify({'success': False, 'error': 'Module ID is required to start a live quiz. Select a module before launching.'}), 400
+
         # Generate unique session code
         session_code = generate_session_code()
         
@@ -111,6 +136,7 @@ def create_quiz_session():
         print(f"[SESSION CREATE] Broadcast data: {broadcast_data}")
         print(f"{'='*80}\n")
         
+        from socket_manager import socketio
         socketio.emit('live_quiz_session_status_changed', broadcast_data, room=module_room)
         
         return jsonify({
@@ -135,17 +161,25 @@ def get_all_sessions():
         from user.models.live_quiz import LiveQuizSession
         
         class_id = request.args.get('class_id', type=int)
-        status = request.args.get('status')  # active, waiting, completed
+        status = request.args.get('status')  # active, waiting, completed, or 'all'
         
         query = LiveQuizSession.query.filter_by(created_by=current_user.id)
         
         if class_id:
             query = query.filter_by(class_id=class_id)
         
-        if status:
+        # Filter by status - default to active/waiting only (exclude completed)
+        if status and status != 'all':
             query = query.filter_by(status=status)
+        elif not status:
+            # Default: only return active or waiting sessions (not completed)
+            query = query.filter(LiveQuizSession.status.in_(['active', 'waiting']))
         
         sessions = query.order_by(LiveQuizSession.created_at.desc()).all()
+        
+        print(f"[GET SESSIONS] Class {class_id}, Status filter: {status or 'default(active/waiting)'}, Found: {len(sessions)} sessions")
+        for s in sessions:
+            print(f"  - Session {s.id}: {s.title} (status={s.status}, code={s.session_code})")
         
         return jsonify({
             'success': True,
@@ -560,3 +594,98 @@ def delete_session(session_id):
         db.session.rollback()
         print(f"Error deleting quiz session: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@live_quiz_instructor_bp.route('/debug/sessions/<int:class_id>', methods=['GET'])
+@instructor_required
+def debug_sessions(class_id):
+    """Debug endpoint to see ALL sessions in database for a class"""
+    try:
+        from user.models.live_quiz import LiveQuizSession
+        
+        all_sessions = LiveQuizSession.query.filter_by(
+            class_id=class_id,
+            created_by=current_user.id
+        ).order_by(LiveQuizSession.created_at.desc()).all()
+        
+        print(f"\n{'='*80}")
+        print(f"[DEBUG SESSIONS] Class {class_id} - All sessions in database:")
+        for s in all_sessions:
+            print(f"  Session {s.id}: {s.title}")
+            print(f"    - Status: {s.status}")
+            print(f"    - Code: {s.session_code}")
+            print(f"    - Started: {s.started_at}")
+            print(f"    - Ended: {s.ended_at}")
+            print(f"    - Module: {s.module_id}, Lesson: {s.lesson_id}")
+        print(f"{'='*80}\n")
+        
+        return jsonify({
+            'success': True,
+            'total_sessions': len(all_sessions),
+            'sessions': [{
+                'id': s.id,
+                'title': s.title,
+                'status': s.status,
+                'session_code': s.session_code,
+                'started_at': s.started_at.isoformat() if s.started_at else None,
+                'ended_at': s.ended_at.isoformat() if s.ended_at else None,
+                'module_id': s.module_id,
+                'lesson_id': s.lesson_id
+            } for s in all_sessions]
+        })
+        
+    except Exception as e:
+        print(f"Error in debug_sessions: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@live_quiz_instructor_bp.route('/cleanup-old-sessions/<int:class_id>', methods=['POST'])
+@instructor_required
+def cleanup_old_sessions(class_id):
+    """Mark all old waiting/active sessions as completed for a class"""
+    try:
+        from user.models.live_quiz import LiveQuizSession
+        
+        # Find all sessions that are not completed
+        old_sessions = LiveQuizSession.query.filter(
+            LiveQuizSession.class_id == class_id,
+            LiveQuizSession.created_by == current_user.id,
+            LiveQuizSession.status.in_(['waiting', 'active'])
+        ).all()
+        
+        if not old_sessions:
+            return jsonify({
+                'success': True,
+                'message': 'No old sessions to cleanup',
+                'updated_count': 0
+            })
+        
+        print(f'\n{"="*80}')
+        print(f'[CLEANUP] Found {len(old_sessions)} old sessions to mark as completed')
+        
+        updated_count = 0
+        for session in old_sessions:
+            print(f'[CLEANUP] Session {session.id}: "{session.title}" (code: {session.session_code})')
+            print(f'[CLEANUP]   - Status: {session.status} → completed')
+            session.status = 'completed'
+            if not session.ended_at:
+                session.ended_at = datetime.utcnow()
+            updated_count += 1
+        
+        db.session.commit()
+        
+        print(f'[CLEANUP] ✅ Successfully marked {updated_count} sessions as completed')
+        print(f'{"="*80}\n')
+        
+        return jsonify({
+            'success': True,
+            'message': f'Marked {updated_count} old sessions as completed',
+            'updated_count': updated_count,
+            'cleaned_sessions': [{'id': s.id, 'title': s.title, 'code': s.session_code} for s in old_sessions]
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in cleanup_old_sessions: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+

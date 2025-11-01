@@ -1718,20 +1718,27 @@
             const status = button.dataset.status;
             const moduleContext = window.__moduleContext || {};
             
+            console.log('[LiveQuiz][base.html] handleLiveQuizClick called:', {
+                sessionId, status, moduleContext, hasModuleJoin: typeof window.joinLiveQuizSession === 'function'
+            });
+            
             if (!sessionId) {
                 console.log('[LiveQuiz] No active quiz session found');
                 alert('No active quiz session available.');
                 return;
             }
             
-            if (status === 'waiting') {
-                console.log('[LiveQuiz][MVP] Quiz session is waiting - instructor has not started it yet');
-                alert('MVP: The Live Quiz has not started yet. Please wait for your instructor to begin.');
+            // ✅ REMOVED: Block 'waiting' status - now allow both 'waiting' and 'active'
+            // Students should be able to join the lobby even when status is 'waiting'
+            if (status === 'completed') {
+                console.log('[LiveQuiz] Quiz session has ended');
+                alert('This Live Quiz has already ended.');
                 return;
             }
 
+            // If we're on module_detail.html, delegate to the module-specific handler
             if (typeof window.joinLiveQuizSession === 'function' && moduleContext.classId && moduleContext.moduleId && moduleContext.lessonId) {
-                console.log('[LiveQuiz] Delegating join to module-specific handler');
+                console.log('[LiveQuiz][base.html] Delegating to module-specific joinLiveQuizSession');
                 window.joinLiveQuizSession(sessionId);
                 return;
             }
@@ -1743,16 +1750,20 @@
             const moduleId = button.dataset.moduleId || moduleContext.moduleId;
             const lessonId = button.dataset.lessonId || moduleContext.lessonId;
             
+            console.log('[LiveQuiz][base.html] Context resolution:', { classId, moduleId, lessonId });
+            
             if (classId && moduleId && lessonId) {
+                console.log('[LiveQuiz][base.html] Redirecting to lesson page with join_quiz param');
                 window.location.href = `/class/${classId}/module/${moduleId}/lesson/${lessonId}?join_quiz=${sessionId}`;
                 return;
             }
 
             if (classId) {
+                console.log('[LiveQuiz][base.html] Redirecting to class page with join_quiz param');
                 window.location.href = `/class/${classId}?join_quiz=${sessionId}`;
             } else {
                 // Fallback: alert user
-                alert('MVP: Please navigate to your class module to join the live quiz.');
+                alert('Please navigate to your class module to join the live quiz.');
             }
         };
 

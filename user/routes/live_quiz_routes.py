@@ -220,7 +220,12 @@ def submit_answer():
         if not question:
             return jsonify({'success': False, 'error': 'Question not found'}), 404
         
-        is_correct = (selected_answer.strip().lower() == question.answer.strip().lower())
+        # Handle cases where selected_answer is None (e.g., timer expired without answer)
+        if selected_answer is None or selected_answer == '':
+            is_correct = False
+            selected_answer = ''  # Convert None to empty string for database NOT NULL constraint
+        else:
+            is_correct = (selected_answer.strip().lower() == question.answer.strip().lower())
         
         # Create response
         response = LiveQuizResponse(
@@ -234,11 +239,36 @@ def submit_answer():
             correct_answer=question.answer
         )
         
-        # Calculate points
+        # Calculate base points
         points = response.calculate_points(
             max_time=session.time_per_question,
             max_points=1000
         )
+        
+        # ===== SPEED BONUS: Apply multipliers for fastest correct answers =====
+        if is_correct:
+            # Get all correct responses for this question, ordered by response time
+            fastest_responses = LiveQuizResponse.query.filter_by(
+                session_id=session_id,
+                question_id=question_id,
+                is_correct=True
+            ).order_by(LiveQuizResponse.response_time.asc()).all()
+            
+            # Determine this answer's speed rank
+            speed_rank = len(fastest_responses) + 1  # +1 because current answer not yet in list
+            
+            if speed_rank == 1:
+                # Fastest answer: +20% bonus
+                speed_multiplier = 1.20
+                print(f'🏆 [SPEED BONUS] FASTEST answer! {participant.display_name} gets +20% ({points} → {int(points * speed_multiplier)})')
+                points = int(points * speed_multiplier)
+            elif speed_rank == 2:
+                # Second fastest: +10% bonus
+                speed_multiplier = 1.10
+                print(f'🥈 [SPEED BONUS] 2nd fastest answer! {participant.display_name} gets +10% ({points} → {int(points * speed_multiplier)})')
+                points = int(points * speed_multiplier)
+            # No bonus for 3rd place and beyond (keeps it competitive but not overwhelming)
+        
         response.points_awarded = points
         
         db.session.add(response)
@@ -256,6 +286,22 @@ def submit_answer():
         
         # Get updated leaderboard
         leaderboard = get_session_leaderboard(session_id)
+        
+        # ===== REAL-TIME LEADERBOARD UPDATE: Broadcast to all participants =====
+        from socket_manager import socketio
+        room_name = f'live_quiz_{session_id}'
+        
+        print(f'\n[LEADERBOARD UPDATE] 📊 Broadcasting updated leaderboard to room: {room_name}')
+        print(f'[LEADERBOARD UPDATE] Trigger: {participant.display_name} answered Q{question_id}')
+        print(f'[LEADERBOARD UPDATE] Answer: {"✅ Correct" if is_correct else "❌ Incorrect"} | Points: {points}')
+        print(f'[LEADERBOARD UPDATE] Leaderboard size: {len(leaderboard)} participants\n')
+        
+        socketio.emit('leaderboard_updated', {
+            'session_id': session_id,
+            'leaderboard': leaderboard,
+            'trigger_user': participant.display_name,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room_name)
         
         return jsonify({
             'success': True,
@@ -292,10 +338,17 @@ def get_leaderboard(session_id):
 
 
 def get_session_leaderboard(session_id):
-    """Helper function to calculate leaderboard rankings"""
+    """
+    Helper function to calculate leaderboard rankings with Slido-style tiebreakers
+    
+    Ranking Logic:
+    1. Primary: Total score (descending) - higher score ranks higher
+    2. Secondary: Average response time (ascending) - faster average ranks higher
+    3. Tertiary: Joined timestamp (ascending) - earlier join ranks higher
+    """
     from user.models.live_quiz import LiveQuizParticipant
     
-    # Get all participants, ordered by rank score (correct answers * 1000 - total time)
+    # Get all active participants
     participants = LiveQuizParticipant.query.filter_by(
         session_id=session_id,
         is_active=True
@@ -309,23 +362,21 @@ def get_session_leaderboard(session_id):
     except Exception:
         current_user_id = None
 
-    # Calculate rank scores and sort
-    participant_scores = []
-    for p in participants:
-        rank_score = p.calculate_rank_score()
-        participant_scores.append({
-            'participant': p,
-            'rank_score': rank_score
-        })
-    
-    # Sort by rank score (higher is better)
-    participant_scores.sort(key=lambda x: x['rank_score'], reverse=True)
+    # Sort using multi-level criteria (Slido-style)
+    # Python's sort is stable, so we can chain sorts in reverse order
+    participants_sorted = sorted(
+        participants,
+        key=lambda p: (
+            -p.total_score,  # Higher score = better (negative for descending)
+            p.average_response_time if p.average_response_time else 999999,  # Lower time = better
+            p.joined_at  # Earlier join = better (for exact ties)
+        )
+    )
     
     # Assign ranks and prepare leaderboard
     leaderboard = []
-    for rank, item in enumerate(participant_scores, start=1):
-        p = item['participant']
-        p.rank = rank
+    for rank, p in enumerate(participants_sorted, start=1):
+        p.rank = rank  # Update participant's rank in database
         leaderboard.append({
             'rank': rank,
             'display_name': p.display_name,
@@ -335,7 +386,8 @@ def get_session_leaderboard(session_id):
             'questions_answered': p.total_answered,
             'user_id': p.user_id,
             'average_response_time': round(p.average_response_time, 2) if p.average_response_time is not None else 0,
-            'is_current_user': bool(current_user_id is not None and p.user_id == current_user_id)
+            'is_current_user': bool(current_user_id is not None and p.user_id == current_user_id),
+            'joined_at': p.joined_at.isoformat() if p.joined_at else None  # Include for debugging/transparency
         })
     
     db.session.commit()
