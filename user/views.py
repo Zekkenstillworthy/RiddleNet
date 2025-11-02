@@ -150,10 +150,11 @@ def dashboard():
     deduped_badges = []
     seen_badge_ids = set()
     for badge in user_badges:
-        if badge.badge_id in seen_badge_ids:
+        normalized_badge_id = (badge.badge_id or '').strip().lower()
+        if not normalized_badge_id or normalized_badge_id in seen_badge_ids:
             continue
         deduped_badges.append(badge)
-        seen_badge_ids.add(badge.badge_id)
+        seen_badge_ids.add(normalized_badge_id)
 
     user_badges_list = [badge.to_dict() for badge in deduped_badges]
 
@@ -162,7 +163,7 @@ def dashboard():
     
     # FIX: Count unique challenge types with badges (not total badges)
     # This ensures consistency with challenge completion count
-    unique_badge_challenges = len(set(badge.challenge_type for badge in deduped_badges)) if deduped_badges else 0
+    unique_badge_challenges = len({(badge.challenge_type or '').strip().lower() for badge in deduped_badges}) if deduped_badges else 0
     
     # Get challenge data for display (4 challenges total)
     challenge_data = []

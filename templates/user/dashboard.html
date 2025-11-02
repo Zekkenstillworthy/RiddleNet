@@ -2275,13 +2275,16 @@
           if (!badge || !badge.badge_id) {
             return;
           }
-          if (seenBadgeIds.has(badge.badge_id)) {
+          const normalizedId = String(badge.badge_id).trim().toLowerCase();
+          if (!normalizedId || seenBadgeIds.has(normalizedId)) {
             return;
           }
           uniqueBadges.push(badge);
-          seenBadgeIds.add(badge.badge_id);
+          seenBadgeIds.add(normalizedId);
         });
       }
+
+      console.log('✅ Unique badges after normalization:', uniqueBadges);
       
       const badgesToDisplay = uniqueBadges;
       
