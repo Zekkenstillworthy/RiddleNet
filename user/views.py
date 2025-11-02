@@ -158,11 +158,9 @@ def dashboard():
 
     user_badges_list = [badge.to_dict() for badge in deduped_badges]
 
-    # Record raw badge count for optional UI messaging
+    # Record badge metrics for display
     total_badges_recorded = len(user_badges) if user_badges else 0
-    
-    # FIX: Count unique challenge types with badges (not total badges)
-    # This ensures consistency with challenge completion count
+    unique_badge_count = len(deduped_badges)
     unique_badge_challenges = len({(badge.challenge_type or '').strip().lower() for badge in deduped_badges}) if deduped_badges else 0
     
     # Get challenge data for display (4 challenges total)
@@ -267,8 +265,9 @@ def dashboard():
         avg_score=round(challenge_stats['average_score'], 1),
         total_attempts=challenge_stats['total_attempts'],
         user_badges=user_badges_list,
-    badge_count=unique_badge_challenges,  # FIX: Show unique challenge types, not total badges
-    total_badges=total_badges_recorded,  # Preserve raw recorded total for optional messaging
+    badge_count=unique_badge_count,
+    total_badges=total_badges_recorded,
+    challenges_with_badges=unique_badge_challenges,
         challenge_data=challenge_data,
         **category_leaderboards
     )
