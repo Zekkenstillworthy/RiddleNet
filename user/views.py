@@ -134,11 +134,11 @@ def dashboard():
     quiz_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='quiz').first()
     
     # Extract best scores (for backward compatibility and template)
-    crimping_score = crimping_challenge.best_score if crimping_challenge else 0
-    osi_score = osi_challenge.best_score if osi_challenge else 0
-    topology_score = troubleshooting_challenge.best_score if troubleshooting_challenge else 0  # Keep legacy name
-    linkup_score = troubleshooting_challenge.best_score if troubleshooting_challenge else 0  # Same as topology (Link Up!)
-    quiz_score = quiz_challenge.best_score if quiz_challenge else 0
+    crimping_score_value = ChallengeScore.effective_best_score(crimping_challenge)
+    osi_score_value = ChallengeScore.effective_best_score(osi_challenge)
+    topology_score_value = ChallengeScore.effective_best_score(troubleshooting_challenge)  # Keep legacy name
+    linkup_score_value = topology_score_value  # Same as topology (Link Up!)
+    quiz_score_value = ChallengeScore.effective_best_score(quiz_challenge)
     
     # Calculate dashboard stats (MVP)
     challenge_stats = ChallengeScore.get_user_stats(user.id)
@@ -166,13 +166,49 @@ def dashboard():
         seen_badge_ids.add(normalized_badge_id)
         print(f"[DASHBOARD DEBUG] ✅ KEEPING unique badge: {badge.badge_id} ({badge.badge_name})")
 
-    print(f"\n[DASHBOARD DEBUG] After deduplication: {len(deduped_badges)} unique badges")
+    print(f"\n[DASHBOARD DEBUG] After badge_id deduplication: {len(deduped_badges)} unique badges")
+
+    # Pick the highest value badge per challenge type (legendary > rare > common)
+    rarity_rank = {'legendary': 3, 'rare': 2, 'common': 1}
+    challenge_badge_map = {}
+    for badge in deduped_badges:
+        challenge_key = (badge.challenge_type or '').strip().lower()
+        if not challenge_key:
+            print(f"[DASHBOARD DEBUG] ⚠️ Badge without challenge_type: {badge.badge_id}")
+            continue
+        current_choice = challenge_badge_map.get(challenge_key)
+        current_rank = rarity_rank.get((current_choice.badge_rarity or '').lower(), 0) if current_choice else -1
+        new_rank = rarity_rank.get((badge.badge_rarity or '').lower(), 0)
+
+        should_replace = False
+        if not current_choice:
+            should_replace = True
+        elif new_rank > current_rank:
+            should_replace = True
+        elif new_rank == current_rank:
+            existing_time = current_choice.earned_at or datetime.min
+            new_time = badge.earned_at or datetime.min
+            should_replace = new_time > existing_time
+
+        if should_replace:
+            challenge_badge_map[challenge_key] = badge
+            action = "SELECTED" if current_choice is None else "REPLACED"
+            print(f"[DASHBOARD DEBUG] 🏅 {action} badge for {challenge_key}: {badge.badge_id} ({badge.badge_rarity})")
+        else:
+            print(f"[DASHBOARD DEBUG] ⏭  Keeping better badge for {challenge_key}, skipping {badge.badge_id}")
+
+    challenge_badges = sorted(
+        challenge_badge_map.values(),
+        key=lambda b: b.earned_at or datetime.min,
+        reverse=True
+    )
+    print(f"[DASHBOARD DEBUG] Final badges per challenge type: {len(challenge_badges)}")
 
     # 🔧 PRODUCTION FIX: Badges in database are already validated when awarded
     # The badge_service.py only awards badges for 100% scores
     # No need to re-validate against is_completed (which triggers at 75%)
     # Simply display the badges that were actually awarded
-    user_badges_list = [badge.to_dict() for badge in deduped_badges]
+    user_badges_list = [badge.to_dict() for badge in challenge_badges]
     
     print(f"[DASHBOARD DEBUG] Final badges sent to template: {len(user_badges_list)}")
     for badge_dict in user_badges_list:
@@ -183,13 +219,14 @@ def dashboard():
     
     # FIX: Count unique challenge types with badges (not total badges)
     # This ensures consistency with challenge completion count
-    unique_badge_challenges = len({(badge.challenge_type or '').strip().lower() for badge in deduped_badges}) if deduped_badges else 0
+    unique_badge_challenges = len(challenge_badge_map)
     
     print(f"\n[DASHBOARD DEBUG] Badge Count Metrics:")
     print(f"  Total badges in DB: {total_badges_recorded}")
-    print(f"  Unique badges after dedup: {len(deduped_badges)}")
+    print(f"  Unique badges after badge_id dedup: {len(deduped_badges)}")
+    print(f"  Unique badges after challenge filter: {len(challenge_badges)}")
     print(f"  Unique challenge types with badges: {unique_badge_challenges}")
-    challenge_types_with_badges = {(badge.challenge_type or '').strip().lower() for badge in deduped_badges}
+    challenge_types_with_badges = set(challenge_badge_map.keys())
     print(f"  Challenge types: {challenge_types_with_badges}")
     
     # Get challenge data for display (4 challenges total)
@@ -197,8 +234,16 @@ def dashboard():
     print(f"\n[DASHBOARD DEBUG] Challenge Completion Status:")
     for challenge in [crimping_challenge, osi_challenge, troubleshooting_challenge, quiz_challenge]:
         if challenge:
-            challenge_data.append(challenge.to_dict())
-            print(f"  {challenge.challenge_type}: {challenge.best_score}% | Completed: {challenge.is_completed}")
+            effective_score = ChallengeScore.effective_best_score(challenge)
+            effective_completed = ChallengeScore.is_effectively_completed(challenge)
+            challenge_dict = challenge.to_dict()
+            challenge_dict['effective_best_score'] = effective_score
+            challenge_dict['effective_completed'] = effective_completed
+            challenge_data.append(challenge_dict)
+            print(
+                f"  {challenge.challenge_type}: stored={challenge.best_score}% | "
+                f"effective={effective_score}% | Completed Flags -> raw:{challenge.is_completed} | effective:{effective_completed}"
+            )
         else:
             print(f"  (No data for this challenge type)")
 
@@ -287,11 +332,11 @@ def dashboard():
         score=user_score, 
         leaderboard=leaderboard_data,
         category_leaderboards=category_leaderboards,
-        topology_score=topology_score,
-        crimping_score=crimping_score,
-        osi_score=osi_score,
-        quiz_score=quiz_score,
-        linkup_score=linkup_score,  # Same as topology_score (Link Up! = troubleshooting challenge)
+    topology_score=topology_score_value,
+    crimping_score=crimping_score_value,
+    osi_score=osi_score_value,
+    quiz_score=quiz_score_value,
+    linkup_score=linkup_score_value,  # Same as topology_score (Link Up! = troubleshooting challenge)
         # MVP: New challenge-based stats (4 total challenges)
         completed_challenges=challenge_stats['total_challenges_completed'],
         total_challenges=challenge_stats['total_challenges'],
@@ -603,9 +648,10 @@ def challenges():
         user_id=user.id, 
         challenge_type='crimping'
     ).first()
+    crimping_progress_value = ChallengeScore.effective_best_score(crimping_score)
     challenge_progress['crimping'] = {
-        'completed': crimping_score.is_completed if crimping_score else False,
-        'progress': min((crimping_score.best_score or 0) / 100, 1.0) if crimping_score else 0.0,
+        'completed': ChallengeScore.is_effectively_completed(crimping_score),
+        'progress': min(crimping_progress_value / 100, 1.0) if crimping_score else 0.0,
         'badge_image': 'Cable_Badge.png'
     }
     
@@ -615,15 +661,11 @@ def challenges():
         challenge_type='osi'
     ).first()
     
-    # Calculate OSI progress - use best_score as the definitive source of truth
-    # The best_score is already calculated as the combined score when both levels are complete
-    osi_progress = 0.0
-    if osi_score:
-        # Use best_score directly - it reflects the actual completion percentage
-        osi_progress = min((osi_score.best_score or 0) / 100, 1.0)
-    
+    # Calculate OSI progress using effective score to reflect two-level progress
+    osi_progress_value = ChallengeScore.effective_best_score(osi_score)
+    osi_progress = min(osi_progress_value / 100, 1.0) if osi_score else 0.0
     challenge_progress['osi'] = {
-        'completed': osi_score.is_completed if osi_score else False,
+        'completed': ChallengeScore.is_effectively_completed(osi_score),
         'progress': osi_progress,
         'badge_image': 'OSI_Badge.png'
     }
@@ -633,9 +675,10 @@ def challenges():
         user_id=user.id,
         challenge_type='troubleshooting'
     ).first()
+    troubleshoot_progress_value = ChallengeScore.effective_best_score(troubleshoot_score)
     challenge_progress['troubleshooting'] = {
-        'completed': troubleshoot_score.is_completed if troubleshoot_score else False,
-        'progress': min((troubleshoot_score.best_score or 0) / 100, 1.0) if troubleshoot_score else 0.0,
+        'completed': ChallengeScore.is_effectively_completed(troubleshoot_score),
+        'progress': min(troubleshoot_progress_value / 100, 1.0) if troubleshoot_score else 0.0,
         'badge_image': 'Troubleshoot_Badge.png'
     }
     
@@ -645,15 +688,10 @@ def challenges():
         challenge_type='quiz'
     ).first()
     
-    # Calculate Quiz progress - use best_score as the definitive source of truth
-    # The metadata['progress'] is only for in-progress quizzes, not final completion
-    quiz_progress = 0.0
-    if quiz_score:
-        # Use best_score directly - it reflects the actual completion percentage
-        quiz_progress = min((quiz_score.best_score or 0) / 100, 1.0)
-    
+    quiz_progress_value = ChallengeScore.effective_best_score(quiz_score)
+    quiz_progress = min(quiz_progress_value / 100, 1.0) if quiz_score else 0.0
     challenge_progress['quiz'] = {
-        'completed': quiz_score.is_completed if quiz_score else False,
+        'completed': ChallengeScore.is_effectively_completed(quiz_score),
         'progress': quiz_progress,
         'badge_image': 'Quiz_Badge.png'
     }
@@ -823,6 +861,29 @@ def save_osi_score():
         if challenge_data:
             merged_challenge_data.update(challenge_data)
         
+        # Track previous completion timestamps before the record_attempt mutation
+        previous_completed = existing_challenge.is_completed if existing_challenge else False
+        previous_first_completed = existing_challenge.first_completed_at if existing_challenge else None
+        previous_last_completed = existing_challenge.last_completed_at if existing_challenge else None
+
+        # Evaluate progress state based on the merged challenge data
+        level1_score_val = ChallengeScore._normalize_score(merged_challenge_data.get('level1_score'))
+        level2_score_val = ChallengeScore._normalize_score(merged_challenge_data.get('level2_score'))
+        combined_score_val = ChallengeScore._normalize_score(
+            merged_challenge_data.get('combined_score', score)
+        )
+        both_levels_complete_flag = bool(
+            merged_challenge_data.get('both_levels_complete', False)
+            or (level1_score_val == 100.0 and level2_score_val == 100.0)
+        )
+        final_completion_flag = bool(
+            both_levels_complete_flag and level1_score_val == 100.0 and level2_score_val == 100.0
+        )
+
+        # Use averaged progress (both levels weighted equally) until the final completion
+        partial_progress = (level1_score_val + level2_score_val) / 2.0
+        effective_score = combined_score_val if final_completion_flag else partial_progress
+
         # Prepare metadata for ChallengeScore
         metadata = {'layer_accuracy': layer_accuracy}
         if merged_challenge_data:
@@ -832,10 +893,32 @@ def save_osi_score():
         challenge_score = ChallengeScore.save_score(
             user_id=user_id,
             challenge_type='osi',
-            score=score,
+            score=effective_score,
             metadata=metadata,
             completion_time=completion_time
         )
+
+        # Ensure the ChallengeScore reflects the real completion status
+        if final_completion_flag:
+            challenge_score.is_completed = True
+            challenge_score.best_score = max(challenge_score.best_score or 0, combined_score_val)
+            challenge_score.latest_score = combined_score_val
+            if not previous_completed:
+                challenge_score.first_completed_at = datetime.utcnow()
+            challenge_score.last_completed_at = datetime.utcnow()
+        else:
+            if previous_completed:
+                # Preserve historical completion if the user already cleared the challenge
+                challenge_score.is_completed = True
+                challenge_score.first_completed_at = previous_first_completed
+                challenge_score.last_completed_at = previous_last_completed
+            else:
+                challenge_score.is_completed = False
+                challenge_score.first_completed_at = None
+                challenge_score.last_completed_at = None
+                challenge_score.latest_score = partial_progress
+                if (challenge_score.best_score or 0) < partial_progress:
+                    challenge_score.best_score = partial_progress
         
         # MVP FIX: Only check badges if both levels complete AND not skipping
         newly_earned_badges = []

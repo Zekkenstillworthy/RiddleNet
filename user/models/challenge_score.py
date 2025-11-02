@@ -51,6 +51,78 @@ class ChallengeScore(db.Model):
     def __repr__(self):
         return f'<ChallengeScore {self.user_id}-{self.challenge_type} best={self.best_score}%>'
     
+    # ---------------------------------------------------------------------
+    # Helper methods for interpreting challenge progress consistently
+    # ---------------------------------------------------------------------
+    @staticmethod
+    def _normalize_score(value):
+        """Clamp arbitrary values to the 0-100 range as a float."""
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return 0.0
+        return max(0.0, min(numeric, 100.0))
+
+    @staticmethod
+    def _evaluate_osi_progress(challenge):
+        """Compute progress and completion flags for the OSI/TCP-IP challenge."""
+        metadata = challenge.challenge_metadata or {}
+        if not isinstance(metadata, dict):
+            metadata = {}
+
+        challenge_data = metadata.get('challenge_data', {})
+        if not isinstance(challenge_data, dict):
+            challenge_data = {}
+
+        level1_score = ChallengeScore._normalize_score(challenge_data.get('level1_score'))
+        level2_score = ChallengeScore._normalize_score(challenge_data.get('level2_score'))
+        combined_score = ChallengeScore._normalize_score(
+            challenge_data.get('combined_score', (level1_score + level2_score) / 2.0)
+        )
+        both_levels_complete = bool(challenge_data.get('both_levels_complete', False))
+
+        # Treat the challenge as fully complete only when the user legitimately
+        # cleared both levels with perfect scores and the final flag was set.
+        fully_completed = bool(
+            both_levels_complete and level1_score == 100.0 and level2_score == 100.0
+        )
+
+        # Progress is the average of both levels so partial progress surfaces correctly.
+        progress_score = (level1_score + level2_score) / 2.0
+
+        return {
+            'level1_score': level1_score,
+            'level2_score': level2_score,
+            'combined_score': combined_score,
+            'progress_score': progress_score,
+            'fully_completed': fully_completed,
+            'both_levels_complete_flag': both_levels_complete
+        }
+
+    @staticmethod
+    def effective_best_score(challenge):
+        """Return the score that should drive UI progress for a challenge."""
+        if not challenge:
+            return 0.0
+
+        if challenge.challenge_type == 'osi':
+            osi_state = ChallengeScore._evaluate_osi_progress(challenge)
+            return osi_state['progress_score'] if not osi_state['fully_completed'] else osi_state['combined_score']
+
+        return challenge.best_score or 0.0
+
+    @staticmethod
+    def is_effectively_completed(challenge):
+        """Determine completion status with challenge-specific rules."""
+        if not challenge:
+            return False
+
+        if challenge.challenge_type == 'osi':
+            osi_state = ChallengeScore._evaluate_osi_progress(challenge)
+            return osi_state['fully_completed']
+
+        return bool(challenge.is_completed)
+
     def record_attempt(self, score, metadata=None, completion_time=None):
         """
         Record a new challenge attempt
@@ -189,17 +261,19 @@ class ChallengeScore(db.Model):
                 'total_attempts': 0,
                 'completion_rate': 0.0
             }
-        
-        # [OK] MVP FIX: Count only completed challenges (is_completed == True)
-        completed_challenges = [c for c in challenges if c.is_completed]
+
+        completed_challenges = []
+        total_completed_score = 0.0
+
+        for challenge in challenges:
+            if ChallengeScore.is_effectively_completed(challenge):
+                completed_challenges.append(challenge)
+                total_completed_score += ChallengeScore.effective_best_score(challenge)
+
         completed_count = len(completed_challenges)
-        
-        # [OK] MVP FIX: Calculate average score from COMPLETED challenges only
-        # If no challenges are completed, show 0.0
+
         if completed_count > 0:
-            total_score = sum(c.best_score for c in completed_challenges)
-            average_score = total_score / completed_count
-            # Cap display average at 100% for cleaner UI
+            average_score = total_completed_score / completed_count
             display_average = min(average_score, 100.0)
         else:
             display_average = 0.0
