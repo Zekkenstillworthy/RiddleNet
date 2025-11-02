@@ -145,6 +145,14 @@ def dashboard():
     
     # Get user badges (MVP)
     user_badges = UserBadge.get_user_badges(user.id)
+    
+    # 🔍 DEBUG: Log all badges from database
+    print(f"\n{'='*80}")
+    print(f"[DASHBOARD DEBUG] User ID: {user.id} ({user.username})")
+    print(f"[DASHBOARD DEBUG] Total badges in database: {len(user_badges)}")
+    for idx, badge in enumerate(user_badges, 1):
+        print(f"  Badge {idx}: {badge.badge_id} | {badge.badge_name} | {badge.challenge_type} | Score: {badge.earned_score}%")
+    print(f"{'='*80}\n")
 
     # Deduplicate badges by badge_id while keeping most recent award first
     deduped_badges = []
@@ -152,15 +160,23 @@ def dashboard():
     for badge in user_badges:
         normalized_badge_id = (badge.badge_id or '').strip().lower()
         if not normalized_badge_id or normalized_badge_id in seen_badge_ids:
+            print(f"[DASHBOARD DEBUG] ❌ SKIPPING duplicate badge: {badge.badge_id} ({badge.badge_name})")
             continue
         deduped_badges.append(badge)
         seen_badge_ids.add(normalized_badge_id)
+        print(f"[DASHBOARD DEBUG] ✅ KEEPING unique badge: {badge.badge_id} ({badge.badge_name})")
+
+    print(f"\n[DASHBOARD DEBUG] After deduplication: {len(deduped_badges)} unique badges")
 
     # 🔧 PRODUCTION FIX: Badges in database are already validated when awarded
     # The badge_service.py only awards badges for 100% scores
     # No need to re-validate against is_completed (which triggers at 75%)
     # Simply display the badges that were actually awarded
     user_badges_list = [badge.to_dict() for badge in deduped_badges]
+    
+    print(f"[DASHBOARD DEBUG] Final badges sent to template: {len(user_badges_list)}")
+    for badge_dict in user_badges_list:
+        print(f"  → {badge_dict['badge_id']}: {badge_dict['badge_name']} ({badge_dict['challenge_type']})")
 
     # Record raw badge count for optional UI messaging
     total_badges_recorded = len(user_badges) if user_badges else 0
@@ -169,11 +185,22 @@ def dashboard():
     # This ensures consistency with challenge completion count
     unique_badge_challenges = len({(badge.challenge_type or '').strip().lower() for badge in deduped_badges}) if deduped_badges else 0
     
+    print(f"\n[DASHBOARD DEBUG] Badge Count Metrics:")
+    print(f"  Total badges in DB: {total_badges_recorded}")
+    print(f"  Unique badges after dedup: {len(deduped_badges)}")
+    print(f"  Unique challenge types with badges: {unique_badge_challenges}")
+    challenge_types_with_badges = {(badge.challenge_type or '').strip().lower() for badge in deduped_badges}
+    print(f"  Challenge types: {challenge_types_with_badges}")
+    
     # Get challenge data for display (4 challenges total)
     challenge_data = []
+    print(f"\n[DASHBOARD DEBUG] Challenge Completion Status:")
     for challenge in [crimping_challenge, osi_challenge, troubleshooting_challenge, quiz_challenge]:
         if challenge:
             challenge_data.append(challenge.to_dict())
+            print(f"  {challenge.challenge_type}: {challenge.best_score}% | Completed: {challenge.is_completed}")
+        else:
+            print(f"  (No data for this challenge type)")
 
     try:
         # MVP: Enhanced leaderboard data from ChallengeScore table for accurate challenge tracking

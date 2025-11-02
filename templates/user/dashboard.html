@@ -2264,27 +2264,42 @@
   const badgeCount = Number('{{ badge_count|default(0) }}');
   const totalBadgesRecorded = Number('{{ total_badges|default(0) }}');
       
-      console.log('%c🏆 Loading User Badges from Database', 'font-size:14px;color:#FFD700;font-weight:bold');
-      console.log(`Found ${totalBadgesRecorded} recorded badges (${badgeCount} unique challenge types):`, userBadges);
+      console.log('%c🏆 BADGE INITIALIZATION - FRONTEND', 'font-size:16px;color:#FFD700;font-weight:bold;background:#1a1a2e;padding:8px;border-radius:4px');
+      console.log('%c📊 Badge Counts:', 'font-weight:bold;color:#00d9ff');
+      console.log(`  - Total badges in database: ${totalBadgesRecorded}`);
+      console.log(`  - Unique challenge types: ${badgeCount}`);
+      console.log(`  - Badges received from backend: ${userBadges ? userBadges.length : 0}`);
+      console.log('%c📦 Raw Badge Data from Backend:', 'font-weight:bold;color:#00d9ff');
+      console.table(userBadges);
 
       // Deduplicate badges on the client as a safety net (badge_id uniqueness)
+      console.log('%c🔍 CLIENT-SIDE DEDUPLICATION', 'font-weight:bold;color:#ff6b6b');
       const uniqueBadges = [];
       const seenBadgeIds = new Set();
       if (Array.isArray(userBadges)) {
-        userBadges.forEach(badge => {
+        userBadges.forEach((badge, index) => {
           if (!badge || !badge.badge_id) {
+            console.log(`  ⚠️ Badge ${index + 1}: Invalid (no badge_id)`, badge);
             return;
           }
           const normalizedId = String(badge.badge_id).trim().toLowerCase();
-          if (!normalizedId || seenBadgeIds.has(normalizedId)) {
+          if (!normalizedId) {
+            console.log(`  ⚠️ Badge ${index + 1}: Empty badge_id after normalization`, badge);
             return;
           }
+          if (seenBadgeIds.has(normalizedId)) {
+            console.log(`  ❌ Badge ${index + 1}: DUPLICATE - ${badge.badge_id} (${badge.badge_name})`, badge);
+            return;
+          }
+          console.log(`  ✅ Badge ${index + 1}: UNIQUE - ${badge.badge_id} (${badge.badge_name})`, badge);
           uniqueBadges.push(badge);
           seenBadgeIds.add(normalizedId);
         });
       }
 
-      console.log('✅ Unique badges after normalization:', uniqueBadges);
+      console.log('%c✅ Final Unique Badges After Client Deduplication:', 'font-weight:bold;color:#10b981');
+      console.log(`  Total: ${uniqueBadges.length} badges`);
+      console.table(uniqueBadges);
       
       const badgesToDisplay = uniqueBadges;
       
@@ -2308,11 +2323,16 @@
       };
       
       // Display badges
+      console.log('%c🎨 RENDERING BADGES TO DOM', 'font-weight:bold;color:#9333ea;font-size:14px');
+      console.log(`  Badges to display: ${badgesToDisplay ? badgesToDisplay.length : 0}`);
+      
       if (badgesToDisplay && badgesToDisplay.length > 0) {
         noBadgesMessage.style.display = 'none';
         badgesContainer.innerHTML = '';
         
+        console.log('%c📌 Creating Badge Cards:', 'color:#00d9ff');
         badgesToDisplay.forEach((badge, index) => {
+          console.log(`  ${index + 1}. ${badge.badge_name} (${badge.badge_id}) - ${badge.challenge_type}`);
           // Use blue color theme for all badges
           const blueColor = '#00d9ff';
           const badgeImage = badgeImages[badge.badge_id] || "{{ url_for('static', filename='img/Badge_Placeholder.png') }}";
@@ -2372,11 +2392,19 @@
         const badgeCountElement = document.getElementById('badgeCount');
         if (badgeCountElement) {
           badgeCountElement.textContent = badgeCount;
+          console.log(`✅ Updated badge count display to: ${badgeCount}`);
         }
+        
+        console.log('%c🎉 Badge Rendering Complete!', 'font-size:14px;color:#10b981;font-weight:bold');
+        console.log(`  Total badges rendered: ${badgesToDisplay.length}`);
+        console.log(`  Badge count shown in stats: ${badgeCount}`);
       } else {
+        console.log('%c⚠️ No badges to display', 'color:#fbbf24');
         noBadgesMessage.style.display = 'block';
         badgesContainer.innerHTML = '';
       }
+      
+      console.log('%c' + '='.repeat(80), 'color:#666');
     }
     
     // Check if welcome card should be shown on page load
