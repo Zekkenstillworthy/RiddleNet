@@ -139,6 +139,10 @@ def register_blueprints():
         from user.api.enhanced_simulation_api import enhanced_simulation_api
         application.register_blueprint(enhanced_simulation_api, url_prefix='/dynamic')
         
+        # TEMPORARY: Badge cleanup route
+        from admin_cleanup_routes import admin_cleanup_bp
+        application.register_blueprint(admin_cleanup_bp)
+        
         print("✅ User blueprints registered")
     except Exception as e:
         print(f"⚠️ Error registering user blueprints: {e}")

@@ -89,16 +89,16 @@ total_badges=total_badges_recorded,       # Raw badges recorded (for optional no
 ```
 3/4 Challenges Complete ← Unique challenge types completed
 100.0% Average Score
-4 Badges Earned ← Unique badge cards currently displayed
-  (3 challenge types completed) ← Subtext clarifying category coverage
+3 Badges Earned ← Unique challenge types with badges
+  (4 total badges) ← Shows if you have multiple badges from same challenge
 ```
 
 ### Benefits
 
-✅ **Consistency** - Badge headline aligns with the cards the user sees  
+✅ **Consistency** - Badge count now matches challenge completion count  
 ✅ **Clarity** - Users understand both metrics:
-  - Main number = unique badges currently displayed (duplicates removed)
-  - Subtitle = challenge categories where badges have been earned  
+   - Main number = challenge types with badges
+   - Subtitle = total individual badges collected  
 ✅ **Accurate** - Reflects actual progress through the 4 main challenges  
 ✅ **Transparent** - Shows bonus achievement (multiple badges from one challenge)  
 
@@ -128,17 +128,17 @@ Each challenge can still award multiple badges, but **every badge now requires a
 
 | Scenario | Challenges | Badges | Display |
 |----------|-----------|--------|---------|
-| Complete 3 challenges, 1 badge each | 3/4 | 3 | "3 Badges Earned (3 challenge types completed)" |
-| Complete 3 challenges, OSI has 2 badges | 3/4 | 4 | "4 Badges Earned (3 challenge types completed)" |
-| Complete all 4, 1 badge each | 4/4 | 4 | "4 Badges Earned (4 challenge types completed)" |
-| Complete all 4, multiple badges on 2 | 4/4 | 6 | "6 Badges Earned (4 challenge types completed)" |
+| Complete 3 challenges, 1 badge each | 3/4 | 3 | "3 Badges Earned" |
+| Complete 3 challenges, OSI has 2 badges | 3/4 | 3 | "3 Badges Earned (4 total badges)" |
+| Complete all 4, 1 badge each | 4/4 | 4 | "4 Badges Earned" |
+| Complete all 4, multiple badges on 2 | 4/4 | 4 | "4 Badges Earned (6 total badges)" |
 
 ### How to Test
 
 1. **Check your dashboard** at `/dashboard`
 2. **Verify the counts match:**
-  - Badges Earned (main number) = number of badge cards shown
-  - Subtext indicates how many challenge categories contributed badges
+   - Challenges Complete = Badges Earned (main number)
+   - If you earned multiple badges from one challenge, you'll see "(X total badges)"
 3. **Complete missing challenges** to increase both numbers
 
 ## Database Queries for Debugging
@@ -190,9 +190,9 @@ sudo systemctl restart riddlenet
 ## Summary
 
 ✅ **Problem**: Badge count didn't match challenge completion count  
-✅ **Cause**: Counting all badges instead of distinguishing challenge coverage  
-✅ **Solution**: Show unique badge cards as the headline count, with subtext for challenge coverage  
-✅ **Result**: Consistent, clear dashboard metrics that match the achievements grid while clarifying progress  
+✅ **Cause**: Counting all badges instead of unique challenge types  
+✅ **Solution**: Display unique challenge types as main metric, show total badges as bonus info  
+✅ **Result**: Consistent, clear dashboard metrics that match user's actual progress  
 
 ---
 
