@@ -156,27 +156,18 @@ def dashboard():
         deduped_badges.append(badge)
         seen_badge_ids.add(normalized_badge_id)
 
-    # 🔧 MVP FIX: Only show badges for COMPLETED challenges
-    validated_badges = []
-    for badge in deduped_badges:
-        # Get the challenge completion status
-        challenge_score = ChallengeScore.query.filter_by(
-            user_id=user.id,
-            challenge_type=badge.challenge_type
-        ).first()
-        
-        # Only include badge if challenge is actually completed
-        if challenge_score and challenge_score.is_completed:
-            validated_badges.append(badge)
-    
-    user_badges_list = [badge.to_dict() for badge in validated_badges]
+    # 🔧 PRODUCTION FIX: Badges in database are already validated when awarded
+    # The badge_service.py only awards badges for 100% scores
+    # No need to re-validate against is_completed (which triggers at 75%)
+    # Simply display the badges that were actually awarded
+    user_badges_list = [badge.to_dict() for badge in deduped_badges]
 
     # Record raw badge count for optional UI messaging
     total_badges_recorded = len(user_badges) if user_badges else 0
     
     # FIX: Count unique challenge types with badges (not total badges)
     # This ensures consistency with challenge completion count
-    unique_badge_challenges = len({(badge.challenge_type or '').strip().lower() for badge in validated_badges}) if validated_badges else 0
+    unique_badge_challenges = len({(badge.challenge_type or '').strip().lower() for badge in deduped_badges}) if deduped_badges else 0
     
     # Get challenge data for display (4 challenges total)
     challenge_data = []
