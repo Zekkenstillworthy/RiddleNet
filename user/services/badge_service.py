@@ -56,11 +56,11 @@ class BadgeService:
     
     @staticmethod
     def _check_crimping_badges(user_id, score, metadata):
-        """Check and award crimping-related badges"""
+        """Check and award crimping-related badges - ONE badge per challenge"""
         badges = []
         
         if score == 100:
-            # Cable Master - Perfect score (any mode)
+            # Cable Master - Perfect score (legendary badge only)
             badge, is_new = UserBadge.award_badge(
                 user_id=user_id,
                 badge_id='cable_master',
@@ -73,27 +73,12 @@ class BadgeService:
             )
             if is_new:
                 badges.append(badge.to_dict())
-
-            # Crimping Expert - Perfect score specifically on rollover wiring
-            if metadata and metadata.get('wiring_type') == 'rollover':
-                badge, is_new = UserBadge.award_badge(
-                    user_id=user_id,
-                    badge_id='crimping_expert',
-                    badge_name='Crimping Expert',
-                    badge_description='Master of Rollover Cables with a perfect run!',
-                    challenge_type='crimping',
-                    earned_score=score,
-                    badge_rarity='rare',
-                    metadata=metadata
-                )
-                if is_new:
-                    badges.append(badge.to_dict())
         
         return badges
     
     @staticmethod
     def _check_osi_badges(user_id, score, metadata):
-        """Check and award OSI-related badges - UPDATED for two-level challenge"""
+        """Check and award OSI-related badges - ONE badge per challenge"""
         badges = []
         
         # Check if both levels are complete
@@ -110,6 +95,7 @@ class BadgeService:
                 'completion_date': metadata.get('completion_time') if metadata else None
             }
 
+            # Award only the legendary badge (OSI & TCP/IP Master)
             badge, is_new = UserBadge.award_badge(
                 user_id=user_id,
                 badge_id='osi_tcp_master',
@@ -122,76 +108,24 @@ class BadgeService:
             )
             if is_new:
                 badges.append(badge.to_dict())
-
-            badge, is_new = UserBadge.award_badge(
-                user_id=user_id,
-                badge_id='layer_master',
-                badge_name='Layer Master',
-                badge_description='Strong Understanding of Network Models with perfect completion!',
-                challenge_type='osi',
-                earned_score=score,
-                badge_rarity='rare',
-                metadata=badge_payload
-            )
-            if is_new:
-                badges.append(badge.to_dict())
         
         return badges
     
     @staticmethod
     def _check_troubleshooting_badges(user_id, score, metadata):
-        """Check and award troubleshooting-related badges - Requires ALL 7 Foundation Phases Complete"""
+        """Check and award troubleshooting-related badges - ONE badge per challenge"""
         badges = []
         
-        # Define all 19 foundation modules across 7 phases
-        foundation_modules = [
-            # Phase 1: Device Discovery
-            'meet-pc', 'meet-switch', 'meet-router',
-            # Phase 2: Topologies & Structure
-            'bus-topology', 'ring-topology', 'star-topology',
-            # Phase 3: Device Functionality
-            'switch-function', 'router-function', 'hub-function',
-            # Phase 4: Connectivity Patterns
-            'pc-to-pc', 'pc-to-switch', 'switch-to-router',
-            # Phase 5: Real-World Networks
-            'small-office', 'home-network',
-            # Phase 6: Enterprise Topologies
-            'network-expansion', 'multi-floor',
-            # Phase 7: Network Addressing
-            'device-addresses', 'connectivity-testing', 'troubleshooting-basics'
-        ]
-        
-        # Count how many unique foundation modules the user has completed
-        completed_modules = ChallengeScore.query.filter_by(
-            user_id=user_id,
-            challenge_type='troubleshooting'
-        ).with_entities(ChallengeScore.challenge_metadata).all()
-        
-        # Extract unique module categories from metadata
-        unique_completed = set()
-        for (meta,) in completed_modules:
-            if meta and isinstance(meta, dict):
-                category = meta.get('category')
-                if category in foundation_modules:
-                    unique_completed.add(category)
-        
-        all_phases_complete = len(unique_completed) >= 19
-        
-        print(f"[Badge Check] User {user_id} has completed {len(unique_completed)}/19 foundation modules")
-        print(f"[Badge Check] All phases complete: {all_phases_complete}")
-        
-        if all_phases_complete and score == 100:
-            badge_metadata = {
-                **(metadata or {}),
-                'completed_modules': len(unique_completed),
-                'all_phases_complete': True
-            }
+        # Simplified: Award badge for 100% score
+        if score == 100:
+            badge_metadata = metadata or {}
 
+            # Award only the legendary badge (Troubleshooting Pro)
             badge, is_new = UserBadge.award_badge(
                 user_id=user_id,
                 badge_id='troubleshooting_pro',
                 badge_name='Troubleshooting Pro',
-                badge_description='Completed All 7 Foundation Phases with a perfect score!',
+                badge_description='Perfect score in Link Up challenge!',
                 challenge_type='troubleshooting',
                 earned_score=score,
                 badge_rarity='legendary',
@@ -200,29 +134,16 @@ class BadgeService:
             if is_new:
                 badges.append(badge.to_dict())
                 print(f"[Badge Award] [OK] Troubleshooting Pro badge awarded to user {user_id}!")
-
-            badge, is_new = UserBadge.award_badge(
-                user_id=user_id,
-                badge_id='network_detective',
-                badge_name='Network Detective',
-                badge_description='Completed All Foundation Learning Phases with a perfect score!',
-                challenge_type='troubleshooting',
-                earned_score=score,
-                badge_rarity='rare',
-                metadata=badge_metadata
-            )
-            if is_new:
-                badges.append(badge.to_dict())
-                print(f"[Badge Award] [OK] Network Detective badge awarded to user {user_id}!")
         
         return badges
     
     @staticmethod
     def _check_quiz_badges(user_id, score, metadata):
-        """Check and award quiz-related badges"""
+        """Check and award quiz-related badges - ONE badge per challenge"""
         badges = []
         
         if score == 100:
+            # Award only the legendary badge (Quiz Champion)
             badge, is_new = UserBadge.award_badge(
                 user_id=user_id,
                 badge_id='quiz_champion',
@@ -231,19 +152,6 @@ class BadgeService:
                 challenge_type='quiz',
                 earned_score=score,
                 badge_rarity='legendary',
-                metadata=metadata
-            )
-            if is_new:
-                badges.append(badge.to_dict())
-
-            badge, is_new = UserBadge.award_badge(
-                user_id=user_id,
-                badge_id='quiz_master',
-                badge_name='Quiz Master',
-                badge_description='Excellent Quiz Knowledge demonstrated with a perfect score!',
-                challenge_type='quiz',
-                earned_score=score,
-                badge_rarity='rare',
                 metadata=metadata
             )
             if is_new:
