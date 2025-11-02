@@ -79,30 +79,83 @@ class BadgeService:
     
     @staticmethod
     def _check_crimping_badges(user_id, score, metadata):
-        """Check and award crimping-related badges - ONE badge per challenge"""
+        """
+        Check and award crimping-related badges - ONE badge per challenge
+        
+        🔧 FIX: Badge awarded ONLY when ALL 3 difficulties completed at 75%+
+        
+        Difficulty Levels:
+        - Easy (Straight-Through): straightthrough
+        - Medium (Crossover): crossover
+        - Hard (Rollover): rollover
+        
+        Badge requirements: All 3 difficulties at 75%+ (EasyComplete=True, MediumComplete=True, HardComplete=True)
+        """
         badges = []
         
         print(f"[BADGE SERVICE] Crimping Badge Check: score={score}%")
-        if score == 100:
-            print(f"[BADGE SERVICE] ✅ Score is 100% - awarding Cable Master badge")
-            # Cable Master - Perfect score (legendary badge only)
+        
+        # Get difficulty completion data from metadata
+        if not metadata:
+            print(f"[BADGE SERVICE] ❌ No metadata provided")
+            return badges
+        
+        easy_completed = metadata.get('easyCompleted', False)
+        medium_completed = metadata.get('mediumCompleted', False)
+        hard_completed = metadata.get('hardCompleted', False)
+        
+        easy_score = metadata.get('easyScore', 0)
+        medium_score = metadata.get('mediumScore', 0)
+        hard_score = metadata.get('hardScore', 0)
+        
+        print(f"[BADGE SERVICE] Crimping Difficulty Status:")
+        print(f"  Easy: {'✓' if easy_completed else '✗'} ({easy_score}%)")
+        print(f"  Medium: {'✓' if medium_completed else '✗'} ({medium_score}%)")
+        print(f"  Hard: {'✓' if hard_completed else '✗'} ({hard_score}%)")
+        
+        # STRICT VALIDATION: All 3 difficulties must be completed at 75%+
+        all_difficulties_complete = (
+            easy_completed and easy_score >= 75 and
+            medium_completed and medium_score >= 75 and
+            hard_completed and hard_score >= 75
+        )
+        
+        if all_difficulties_complete:
+            print(f"[BADGE SERVICE] ✅ All 3 difficulties complete - awarding Cable Master badge")
+            
+            badge_payload = {
+                'easy_score': easy_score,
+                'medium_score': medium_score,
+                'hard_score': hard_score,
+                'average_score': round((easy_score + medium_score + hard_score) / 3, 1)
+            }
+            
             badge, is_new = UserBadge.award_badge(
                 user_id=user_id,
                 badge_id='cable_master',
                 badge_name='Cable Master',
-                badge_description='Perfect Score in Cable Crimping!',
+                badge_description='Mastered all 3 Crimping Difficulties!',
                 challenge_type='crimping',
                 earned_score=score,
                 badge_rarity='legendary',
-                metadata=metadata
+                metadata=badge_payload
             )
+            
             if is_new:
-                print(f"[BADGE SERVICE] 🎉 NEW BADGE AWARDED: Cable Master to user {user_id}")
+                print(f"[BADGE SERVICE] 🎉 NEW BADGE AWARDED: Cable Master (ID: {badge.id})")
                 badges.append(badge.to_dict())
             else:
-                print(f"[BADGE SERVICE] ℹ️ Badge already exists (Cable Master)")
+                print(f"[BADGE SERVICE] ℹ️ Badge already exists: Cable Master")
         else:
-            print(f"[BADGE SERVICE] ❌ Score {score}% < 100% - No badge awarded")
+            remaining = []
+            if not easy_completed or easy_score < 75:
+                remaining.append(f"Easy ({easy_score}%)")
+            if not medium_completed or medium_score < 75:
+                remaining.append(f"Medium ({medium_score}%)")
+            if not hard_completed or hard_score < 75:
+                remaining.append(f"Hard ({hard_score}%)")
+            
+            print(f"[BADGE SERVICE] ❌ Not all difficulties complete. Still need: {', '.join(remaining)}")
         
         return badges
     
@@ -232,31 +285,65 @@ class BadgeService:
     
     @staticmethod
     def _check_quiz_badges(user_id, score, metadata):
-        """Check and award quiz-related badges - ONE badge per challenge"""
+        """
+        Check and award quiz-related badges - ONE badge per challenge
+        
+        🔧 FIX: Badge awarded ONLY when ALL 3 question sets completed at 100%
+        
+        Question Sets:
+        - Set 1: Questions 1-5
+        - Set 2: Questions 6-10
+        - Set 3: Questions 11-15
+        
+        Badge requirements: All 3 sets completed (completedSets = [0, 1, 2])
+        """
         badges = []
         
         print(f"[BADGE SERVICE] Quiz Badge Check: score={score}%")
         
-        if score == 100:
-            print(f"[BADGE SERVICE] ✅ Score is 100% - awarding Quiz Champion badge")
-            # Award only the legendary badge (Quiz Champion)
+        # Get completed sets data from metadata
+        if not metadata:
+            print(f"[BADGE SERVICE] ❌ No metadata provided")
+            return badges
+        
+        completed_sets = metadata.get('completedSets', [])
+        total_sets = 3
+        
+        print(f"[BADGE SERVICE] Quiz Completion Status:")
+        print(f"  Completed Sets: {len(completed_sets)}/3")
+        print(f"  Sets: {completed_sets}")
+        
+        # STRICT VALIDATION: All 3 sets must be completed
+        if len(completed_sets) >= total_sets and score >= 100:
+            print(f"[BADGE SERVICE] ✅ All 3 sets complete with 100% - awarding Quiz Champion badge")
+            
+            badge_payload = {
+                'completed_sets': completed_sets,
+                'total_questions': 15,
+                'final_score': score
+            }
+            
             badge, is_new = UserBadge.award_badge(
                 user_id=user_id,
                 badge_id='quiz_champion',
                 badge_name='Quiz Champion',
-                badge_description='Perfect Quiz Performance!',
+                badge_description='Perfect Score on All 3 Quiz Sets!',
                 challenge_type='quiz',
                 earned_score=score,
                 badge_rarity='legendary',
-                metadata=metadata
+                metadata=badge_payload
             )
+            
             if is_new:
                 print(f"[BADGE SERVICE] 🎉 NEW BADGE AWARDED: Quiz Champion (ID: {badge.id})")
                 badges.append(badge.to_dict())
             else:
                 print(f"[BADGE SERVICE] ℹ️ Badge already exists: Quiz Champion")
         else:
-            print(f"[BADGE SERVICE] ❌ Score {score}% < 100% - No badge awarded")
+            remaining = total_sets - len(completed_sets)
+            print(f"[BADGE SERVICE] ❌ Not all sets complete. Still need: {remaining} more set(s)")
+            if score < 100:
+                print(f"[BADGE SERVICE] ❌ Score {score}% < 100%")
         
         return badges
     

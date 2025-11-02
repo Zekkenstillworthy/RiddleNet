@@ -53,9 +53,16 @@ def submit_quiz():
         total_questions = data.get('total_questions', 0)
         time_taken = data.get('time_taken', 0)
         lifelines_used = data.get('lifelines_used', {})
+        completed_sets = data.get('completedSets', [])  # NEW: Track which question sets completed
         
         # Calculate percentage score
         score_percentage = (score / total_questions * 100) if total_questions > 0 else 0
+        
+        print(f"[Quiz Backend] Received submission:")
+        print(f"  - User ID: {current_user.id}")
+        print(f"  - Score: {score}/{total_questions} ({score_percentage:.1f}%)")
+        print(f"  - Completed Sets: {len(completed_sets)}/3")
+        print(f"  - Sets: {completed_sets}")
         
         # Save to legacy Score table
         from user.models.score import Score
@@ -66,18 +73,22 @@ def submit_quiz():
         )
         db.session.add(new_score)
         
+        # Build metadata with completed sets tracking
+        metadata = {
+            'total_questions': total_questions,
+            'correct_answers': score,
+            'time_taken': time_taken,
+            'lifelines_used': lifelines_used,
+            'completedSets': completed_sets  # NEW: Store completed sets
+        }
+        
         # Save to new ChallengeScore table
         from user.models.challenge_score import ChallengeScore
         challenge_score = ChallengeScore.save_score(
             user_id=current_user.id,
             challenge_type='quiz',
             score=score_percentage,
-            metadata={
-                'total_questions': total_questions,
-                'correct_answers': score,
-                'time_taken': time_taken,
-                'lifelines_used': lifelines_used
-            },
+            metadata=metadata,
             completion_time=time_taken
         )
         
@@ -87,7 +98,7 @@ def submit_quiz():
             user_id=current_user.id,
             challenge_type='quiz',
             score=score_percentage,
-            metadata={'total_questions': total_questions, 'lifelines_used': lifelines_used}
+            metadata=metadata  # NEW: Pass complete metadata including completedSets
         )
         
         db.session.commit()

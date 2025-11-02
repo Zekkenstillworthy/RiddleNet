@@ -685,29 +685,52 @@ def challenges():
     # Calculate progress for each challenge type
     challenge_progress = {}
     
-    # [OK] MVP: Crimping Challenge Progress (score-based)
+    # 🔧 FIX: Crimping Challenge Progress - Based on 3 difficulty completions (Easy, Medium, Hard)
     crimping_score = ChallengeScore.query.filter_by(
         user_id=user.id, 
         challenge_type='crimping'
     ).first()
-    crimping_progress_value = ChallengeScore.effective_best_score(crimping_score)
+    
+    if crimping_score and crimping_score.challenge_metadata:
+        easy_completed = crimping_score.challenge_metadata.get('easyCompleted', False)
+        medium_completed = crimping_score.challenge_metadata.get('mediumCompleted', False)
+        hard_completed = crimping_score.challenge_metadata.get('hardCompleted', False)
+        
+        completed_count = sum([easy_completed, medium_completed, hard_completed])
+        crimping_progress_value = (completed_count / 3) * 100.0
+    else:
+        crimping_progress_value = 0.0
+    
     challenge_progress['crimping'] = {
-        'completed': ChallengeScore.is_effectively_completed(crimping_score),
-        'progress': min(crimping_progress_value / 100, 1.0) if crimping_score else 0.0,
+        'completed': crimping_progress_value >= 100.0,
+        'progress': min(crimping_progress_value / 100, 1.0),
         'badge_image': 'Cable_Badge.png'
     }
     
-    # [OK] MVP: OSI Model Challenge Progress (use best_score directly)
+    # 🔧 FIX: OSI Model Challenge Progress - Show 100% when both levels are 100%, not 50%
     osi_score = ChallengeScore.query.filter_by(
         user_id=user.id,
         challenge_type='osi'
     ).first()
     
-    # Calculate OSI progress using effective score to reflect two-level progress
-    osi_progress_value = ChallengeScore.effective_best_score(osi_score)
-    osi_progress = min(osi_progress_value / 100, 1.0) if osi_score else 0.0
+    if osi_score and osi_score.challenge_metadata:
+        challenge_data = osi_score.challenge_metadata.get('challenge_data', {})
+        level1_score = challenge_data.get('level1_score', 0)
+        level2_score = challenge_data.get('level2_score', 0)
+        both_levels_complete = challenge_data.get('both_levels_complete', False)
+        
+        # If both levels complete at 100%, show 100% progress
+        if both_levels_complete and level1_score == 100 and level2_score == 100:
+            osi_progress_value = 100.0
+        else:
+            # Otherwise use average of two levels
+            osi_progress_value = (level1_score + level2_score) / 2
+    else:
+        osi_progress_value = 0.0
+    
+    osi_progress = min(osi_progress_value / 100, 1.0)
     challenge_progress['osi'] = {
-        'completed': ChallengeScore.is_effectively_completed(osi_score),
+        'completed': osi_progress_value >= 100.0,
         'progress': osi_progress,
         'badge_image': 'OSI_Badge.png'
     }
@@ -733,16 +756,21 @@ def challenges():
         'badge_image': 'Troubleshoot_Badge.png'
     }
     
-    # [OK] MVP: Quiz Challenge Progress (use best_score directly)
+    # 🔧 FIX: Quiz Challenge Progress - Based on 3 question set completions
     quiz_score = ChallengeScore.query.filter_by(
         user_id=user.id,
         challenge_type='quiz'
     ).first()
     
-    quiz_progress_value = ChallengeScore.effective_best_score(quiz_score)
-    quiz_progress = min(quiz_progress_value / 100, 1.0) if quiz_score else 0.0
+    if quiz_score and quiz_score.challenge_metadata:
+        completed_sets = quiz_score.challenge_metadata.get('completedSets', [])
+        quiz_progress_value = (len(completed_sets) / 3) * 100.0
+    else:
+        quiz_progress_value = 0.0
+    
+    quiz_progress = min(quiz_progress_value / 100, 1.0)
     challenge_progress['quiz'] = {
-        'completed': ChallengeScore.is_effectively_completed(quiz_score),
+        'completed': quiz_progress_value >= 100.0,
         'progress': quiz_progress,
         'badge_image': 'Quiz_Badge.png'
     }
@@ -800,11 +828,23 @@ def save_crimping_score():
         wiring_type = data.get('wiring_type', 'unknown')
         completion_time = data.get('completion_time', 0)
         
+        # Extract difficulty completion data from frontend
+        easy_completed = data.get('easyCompleted', False)
+        medium_completed = data.get('mediumCompleted', False)
+        hard_completed = data.get('hardCompleted', False)
+        easy_score = data.get('easyScore', 0)
+        medium_score = data.get('mediumScore', 0)
+        hard_score = data.get('hardScore', 0)
+        
         print(f"[MVP Backend] Received score submission:")
         print(f"  - User ID: {user_id}")
         print(f"  - Score: {score}")
         print(f"  - Wiring Type: {wiring_type}")
         print(f"  - Completion Time: {completion_time}s")
+        print(f"  - Difficulty Progress:")
+        print(f"    - Easy: {'✓' if easy_completed else '✗'} ({easy_score}%)")
+        print(f"    - Medium: {'✓' if medium_completed else '✗'} ({medium_score}%)")
+        print(f"    - Hard: {'✓' if hard_completed else '✗'} ({hard_score}%)")
         
         # Save to legacy Score table for backward compatibility
         new_score = UserScore(
@@ -814,13 +854,24 @@ def save_crimping_score():
         )
         db.session.add(new_score)
         
+        # Build metadata with difficulty tracking
+        metadata = {
+            'wiring_type': wiring_type,
+            'easyCompleted': easy_completed,
+            'mediumCompleted': medium_completed,
+            'hardCompleted': hard_completed,
+            'easyScore': easy_score,
+            'mediumScore': medium_score,
+            'hardScore': hard_score
+        }
+        
         # Save to new ChallengeScore table with detailed tracking
         from user.models.challenge_score import ChallengeScore
         challenge_score = ChallengeScore.save_score(
             user_id=user_id,
             challenge_type='crimping',
             score=score,
-            metadata={'wiring_type': wiring_type},
+            metadata=metadata,
             completion_time=completion_time
         )
         
@@ -830,7 +881,7 @@ def save_crimping_score():
             user_id=user_id,
             challenge_type='crimping',
             score=score,
-            metadata={'wiring_type': wiring_type}
+            metadata=metadata
         )
         
         db.session.commit()
