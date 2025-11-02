@@ -113,7 +113,7 @@ BADGE_DEFINITIONS = {
         'description': 'Master of Rollover Cables!',
         'rarity': 'rare',
         'image': 'img/Cable_Badge.png',
-        'requirements': 'Score 75%+ on Rollover (Hard) mode'
+        'requirements': 'Score 100% on Rollover (Hard) mode'
     },
     'osi_tcp_master': {
         'name': 'OSI & TCP/IP Master',
@@ -127,7 +127,7 @@ BADGE_DEFINITIONS = {
         'description': 'Expert Understanding of Network Layers!',
         'rarity': 'rare',
         'image': 'img/OSI_Badge.png',
-        'requirements': 'Score 75%+ in OSI Simulation'
+        'requirements': 'Score 100% in OSI Simulation'
     },
     'troubleshooting_pro': {
         'name': 'Troubleshooting Pro',
@@ -141,7 +141,7 @@ BADGE_DEFINITIONS = {
         'description': 'Strong Troubleshooting Skills!',
         'rarity': 'rare',
         'image': 'img/Troubleshoot_Badge.png',
-        'requirements': 'Score 75%+ in Link Up'
+        'requirements': 'Score 100% in Link Up'
     },
     'quiz_champion': {
         'name': 'Quiz Champion',
@@ -155,6 +155,6 @@ BADGE_DEFINITIONS = {
         'description': 'Excellent Quiz Knowledge!',
         'rarity': 'rare',
         'image': 'img/Quiz_Badge.png',
-        'requirements': 'Score 75%+ in Quiz Challenge'
+        'requirements': 'Score 100% in Quiz Challenge'
     }
 }

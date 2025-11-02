@@ -47,12 +47,24 @@ badge_count=len(user_badges_list)  # Counted ALL badges (could be >4)
 
 **After:**
 ```python
+# Deduplicate badges by badge_id (keeps most recent award first)
+deduped_badges = []
+seen_badge_ids = set()
+for badge in user_badges:
+  if badge.badge_id in seen_badge_ids:
+    continue
+  deduped_badges.append(badge)
+  seen_badge_ids.add(badge.badge_id)
+
+user_badges_list = [badge.to_dict() for badge in deduped_badges]
+total_badges_recorded = len(user_badges)
+
 # Count unique challenge types with badges (matches challenge completion logic)
-unique_badge_challenges = len(set(badge.challenge_type for badge in user_badges)) if user_badges else 0
+unique_badge_challenges = len(set(badge.challenge_type for badge in deduped_badges)) if deduped_badges else 0
 
 # Pass both metrics
 badge_count=unique_badge_challenges,      # Challenges with badges (0-4)
-total_badges=len(user_badges_list),       # Total individual badges earned
+total_badges=total_badges_recorded,       # Raw badges recorded (for optional note)
 ```
 
 ### Frontend Changes (`templates/user/dashboard.html`)
@@ -90,25 +102,25 @@ total_badges=len(user_badges_list),       # Total individual badges earned
 ✅ **Accurate** - Reflects actual progress through the 4 main challenges  
 ✅ **Transparent** - Shows bonus achievement (multiple badges from one challenge)  
 
-## Badge Award Logic (Unchanged)
+## Badge Award Logic Update
 
-Each challenge can award multiple badges based on performance:
+Each challenge can still award multiple badges, but **every badge now requires a perfect (100%) completion** to keep the dashboard aligned with user expectations:
 
 ### Crimping Challenge
 - `cable_master` (legendary) - 100% score
-- `crimping_expert` (rare) - 75%+ on rollover mode
+- `crimping_expert` (rare) - 100% on rollover mode (awarded alongside legendary)
 
 ### OSI Challenge  
 - `osi_tcp_master` (legendary) - 100% on both levels
-- `layer_master` (rare) - 75%+ on both levels
+- `layer_master` (rare) - 100% on both levels (awarded alongside legendary)
 
 ### Troubleshooting (Link Up!)
-- `troubleshooting_pro` (legendary) - Complete all 7 phases, 100% final
-- `network_detective` (rare) - Complete all 7 phases
+- `troubleshooting_pro` (legendary) - All 7 phases complete with a perfect troubleshooting score
+- `network_detective` (rare) - All 7 phases complete with a perfect troubleshooting score (awarded alongside legendary)
 
 ### Quiz Challenge
 - `quiz_champion` (legendary) - 100% correct
-- `quiz_master` (rare) - 75%+ correct
+- `quiz_master` (rare) - 100% correct (awarded alongside legendary)
 
 ## Testing Verification
 
