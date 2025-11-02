@@ -204,11 +204,53 @@ def dashboard():
     )
     print(f"[DASHBOARD DEBUG] Final badges per challenge type: {len(challenge_badges)}")
 
-    # 🔧 PRODUCTION FIX: Badges in database are already validated when awarded
-    # The badge_service.py only awards badges for 100% scores
-    # No need to re-validate against is_completed (which triggers at 75%)
-    # Simply display the badges that were actually awarded
-    user_badges_list = [badge.to_dict() for badge in challenge_badges]
+    # 🔧 PRODUCTION FIX: Validate badges against actual challenge completion
+    # Only show badges where the challenge is ACTUALLY completed at 100%
+    # This prevents showing badges that were incorrectly awarded at 75% threshold
+    
+    # Create a map of challenge scores for validation
+    challenge_score_map = {
+        'crimping': crimping_challenge,
+        'osi': osi_challenge,
+        'troubleshooting': troubleshooting_challenge,
+        'quiz': quiz_challenge
+    }
+    
+    validated_badges = []
+    for badge in challenge_badges:
+        challenge_type = badge.challenge_type
+        challenge = challenge_score_map.get(challenge_type)
+        
+        if challenge:
+            # 🔧 MVP FIX: For Link Up!, check sub-item completion (all 12 items must be complete)
+            if challenge_type == 'troubleshooting':
+                if challenge.challenge_metadata:
+                    completed_count = len(challenge.challenge_metadata.get('completed_challenges', []))
+                    TOTAL_LINK_UP_ITEMS = 12  # Foundation (3) + Easy (3) + Medium (3) + Hard (3)
+                    is_truly_completed = completed_count >= TOTAL_LINK_UP_ITEMS
+                    print(f"[DASHBOARD DEBUG] Link Up! validation: {completed_count}/{TOTAL_LINK_UP_ITEMS} sub-items")
+                else:
+                    is_truly_completed = False
+                    print(f"[DASHBOARD DEBUG] Link Up! has no metadata")
+            else:
+                # For other challenges, use existing validation
+                is_truly_completed = ChallengeScore.is_effectively_completed(challenge)
+                effective_score = ChallengeScore.effective_best_score(challenge)
+                is_truly_completed = is_truly_completed and effective_score >= 100
+            
+            if is_truly_completed:
+                validated_badges.append(badge)
+                print(f"[DASHBOARD DEBUG] ✅ VALID BADGE: {badge.badge_id} for {challenge_type}")
+            else:
+                if challenge_type == 'troubleshooting':
+                    print(f"[DASHBOARD DEBUG] ❌ INVALID BADGE FILTERED: {badge.badge_id} for {challenge_type} (not all sub-items complete)")
+                else:
+                    effective_score = ChallengeScore.effective_best_score(challenge)
+                    print(f"[DASHBOARD DEBUG] ❌ INVALID BADGE FILTERED: {badge.badge_id} for {challenge_type} (score: {effective_score}%)")
+        else:
+            print(f"[DASHBOARD DEBUG] ⚠️ No challenge data for badge: {badge.badge_id} ({challenge_type})")
+    
+    user_badges_list = [badge.to_dict() for badge in validated_badges]
     
     print(f"[DASHBOARD DEBUG] Final badges sent to template: {len(user_badges_list)}")
     for badge_dict in user_badges_list:
@@ -217,9 +259,9 @@ def dashboard():
     # Record raw badge count for optional UI messaging
     total_badges_recorded = len(user_badges) if user_badges else 0
     
-    # FIX: Count unique challenge types with badges (not total badges)
+    # FIX: Count VALIDATED badges (only those with 100% completion)
     # This ensures consistency with challenge completion count
-    unique_badge_challenges = len(challenge_badge_map)
+    unique_badge_challenges = len(validated_badges)
     
     print(f"\n[DASHBOARD DEBUG] Badge Count Metrics:")
     print(f"  Total badges in DB: {total_badges_recorded}")
@@ -670,15 +712,24 @@ def challenges():
         'badge_image': 'OSI_Badge.png'
     }
     
-    # [OK] MVP: Troubleshooting Challenge Progress (score-based, 100% when solved)
+    # 🔧 MVP FIX: Link Up! Challenge Progress - Calculate from ALL sub-items across difficulty levels
     troubleshoot_score = ChallengeScore.query.filter_by(
         user_id=user.id,
         challenge_type='troubleshooting'
     ).first()
-    troubleshoot_progress_value = ChallengeScore.effective_best_score(troubleshoot_score)
+    
+    # Get sub-item completion data from metadata
+    if troubleshoot_score and troubleshoot_score.challenge_metadata:
+        completed_challenges = troubleshoot_score.challenge_metadata.get('completed_challenges', [])
+        # Total required: Foundation (3) + Easy (3) + Medium (3) + Hard (3) = 12 items
+        TOTAL_LINK_UP_ITEMS = 12
+        troubleshoot_progress_value = (len(completed_challenges) / TOTAL_LINK_UP_ITEMS) * 100.0
+    else:
+        troubleshoot_progress_value = 0.0
+    
     challenge_progress['troubleshooting'] = {
-        'completed': ChallengeScore.is_effectively_completed(troubleshoot_score),
-        'progress': min(troubleshoot_progress_value / 100, 1.0) if troubleshoot_score else 0.0,
+        'completed': troubleshoot_progress_value >= 100.0,
+        'progress': min(troubleshoot_progress_value / 100, 1.0),
         'badge_image': 'Troubleshoot_Badge.png'
     }
     

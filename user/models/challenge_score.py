@@ -287,3 +287,67 @@ class ChallengeScore(db.Model):
             'total_attempts': total_attempts,
             'completion_rate': (completed_count / 4) * 100  # [OK] MVP: Percentage of 4 challenges completed
         }
+    
+    @staticmethod
+    def get_troubleshooting_progress(user_id):
+        """
+        🔧 MVP FIX: Get Link Up! challenge progress with sub-item tracking across ALL difficulty levels
+        
+        Returns progress across ALL difficulty levels:
+        - Foundation (3 challenges): basic network scenarios
+        - Easy (3 challenges): vlan-basics, default-gateway, dhcp-client
+        - Medium (3 challenges): extended-ring-redundancy, hybrid-star-ring, partial-mesh-ospf
+        - Hard (3 challenges): mpls-vpn-complex, datacenter-fabric, sd-wan-overlay
+        
+        Returns:
+            {
+                'completed_challenges': [...],  # List of completed scenario IDs
+                'challenge_counts': {
+                    'foundation': 3,
+                    'easy': 2,
+                    'medium': 1,
+                    'hard': 0,
+                    'total': 6
+                },
+                'progress_percentage': 50.0,  # (6/12) * 100
+                'is_complete': False
+            }
+        """
+        # Query all troubleshooting-related challenges (across all difficulty levels)
+        challenges = ChallengeScore.query.filter_by(
+            user_id=user_id
+        ).filter(
+            ChallengeScore.challenge_type.in_(['linkup_easy', 'troubleshooting_medium', 'troubleshooting_hard', 'troubleshooting'])
+        ).order_by(ChallengeScore.updated_at.desc()).all()
+        
+        # If no challenges exist, return zero progress
+        if not challenges:
+            return {
+                'completed_challenges': [],
+                'challenge_counts': {'foundation': 0, 'easy': 0, 'medium': 0, 'hard': 0, 'total': 0},
+                'progress_percentage': 0.0,
+                'is_complete': False
+            }
+        
+        # Find the most recent challenge with metadata
+        latest_metadata = {}
+        for challenge in challenges:
+            if challenge.challenge_metadata:
+                latest_metadata = challenge.challenge_metadata
+                break
+        
+        # Extract completed challenges from metadata
+        completed_challenges = latest_metadata.get('completed_challenges', [])
+        challenge_counts = latest_metadata.get('challenge_counts', {'foundation': 0, 'easy': 0, 'medium': 0, 'hard': 0, 'total': 0})
+        
+        # 🔧 MVP FIX: Update total to 12 (Foundation + Easy + Medium + Hard)
+        TOTAL_REQUIRED = 12  # Foundation (3) + Easy (3) + Medium (3) + Hard (3)
+        total_completed = len(completed_challenges)  # Direct count from completed list
+        progress_percentage = (total_completed / TOTAL_REQUIRED) * 100.0
+        
+        return {
+            'completed_challenges': completed_challenges,
+            'challenge_counts': challenge_counts,
+            'progress_percentage': round(progress_percentage, 1),
+            'is_complete': total_completed >= TOTAL_REQUIRED
+        }

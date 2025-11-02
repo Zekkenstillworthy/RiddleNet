@@ -342,18 +342,81 @@ class TroubleshootingController:
             else:
                 challenge_type = 'linkup_easy'
             
-            # Save to ChallengeScore table (MVP system) using normalized score
+            # 🔧 FIX: Track sub-item completion for badge requirements
+            # Get all previous troubleshooting scores for this user (across all difficulty levels)
             from user.models.challenge_score import ChallengeScore
+            all_troubleshooting_scores = ChallengeScore.query.filter_by(
+                user_id=user_id
+            ).filter(
+                ChallengeScore.challenge_type.in_(['linkup_easy', 'troubleshooting_medium', 'troubleshooting_hard', 'troubleshooting'])
+            ).all()
+            
+            # Extract completed scenarios (those with 100% score normalized)
+            # Note: We only count challenges completed at 100% (perfect score)
+            completed_scenarios = set()
+            for score_record in all_troubleshooting_scores:
+                if score_record.score >= 100.0:  # Must be 100% to count as complete
+                    scenario = score_record.metadata.get('scenario_id') if score_record.metadata else None
+                    if scenario:
+                        completed_scenarios.add(scenario)
+            
+            # Add current scenario if 100% (match_percentage is already 0-100)
+            if match_percentage >= 100.0:
+                completed_scenarios.add(scenario_id)
+                print(f"[PROGRESS] ✅ Challenge {scenario_id} completed at 100%")
+            else:
+                print(f"[PROGRESS] ⚠️ Challenge {scenario_id} completed at {match_percentage}% (needs 100% to count)")
+            
+            # Define all challenge IDs by difficulty
+            EASY_CHALLENGES = ['vlan-basics', 'default-gateway', 'default-gateway-setup', 'dhcp-client', 'dhcp-client-config']
+            MEDIUM_CHALLENGES = ['extended-ring-redundancy', 'hybrid-star-ring', 'partial-mesh-ospf']
+            HARD_CHALLENGES = ['mpls-vpn-complex', 'datacenter-fabric', 'sd-wan-overlay']
+            
+            # Count by difficulty (normalize alternative names)
+            normalized_completed = set()
+            for scenario in completed_scenarios:
+                # Normalize alternative names
+                if scenario in ['default-gateway', 'default-gateway-setup']:
+                    normalized_completed.add('default-gateway')
+                elif scenario in ['dhcp-client', 'dhcp-client-config']:
+                    normalized_completed.add('dhcp-client')
+                else:
+                    normalized_completed.add(scenario)
+            
+            # Recalculate with normalized names
+            EASY_CHALLENGES_NORMALIZED = ['vlan-basics', 'default-gateway', 'dhcp-client']
+            easy_count = sum(1 for s in normalized_completed if s in EASY_CHALLENGES_NORMALIZED)
+            medium_count = sum(1 for s in normalized_completed if s in MEDIUM_CHALLENGES)
+            hard_count = sum(1 for s in normalized_completed if s in HARD_CHALLENGES)
+            total_count = easy_count + medium_count + hard_count
+            
+            print(f"[PROGRESS] Sub-item completion tracking:")
+            print(f"  Easy: {easy_count}/3 - {[s for s in normalized_completed if s in EASY_CHALLENGES_NORMALIZED]}")
+            print(f"  Medium: {medium_count}/3 - {[s for s in normalized_completed if s in MEDIUM_CHALLENGES]}")
+            print(f"  Hard: {hard_count}/3 - {[s for s in normalized_completed if s in HARD_CHALLENGES]}")
+            print(f"  Total: {total_count}/9")
+            
+            # Store in metadata for badge service and progress tracking
+            metadata = {
+                'scenario_id': scenario_id,
+                'scenario_name': challenge_info['name'],
+                'time_taken': time_taken,
+                'difficulty': challenge_info['difficulty'],
+                'completed_challenges': list(normalized_completed),
+                'challenge_counts': {
+                    'easy': easy_count,
+                    'medium': medium_count,
+                    'hard': hard_count,
+                    'total': total_count
+                }
+            }
+            
+            # Save to ChallengeScore table (MVP system) using normalized score
             challenge_score = ChallengeScore.save_score(
                 user_id=user_id,
                 challenge_type=challenge_type,
                 score=normalized_score,  # Use normalized 0-100 score
-                metadata={
-                    'scenario_id': scenario_id,
-                    'scenario_name': challenge_info['name'],
-                    'time_taken': time_taken,
-                    'difficulty': challenge_info['difficulty']
-                },
+                metadata=metadata,
                 completion_time=time_taken
             )
             

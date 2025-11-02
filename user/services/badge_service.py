@@ -115,16 +115,20 @@ class BadgeService:
         # Check if both levels are complete
         challenge_data = metadata.get('challenge_data', {}) if metadata else {}
         both_levels_complete = challenge_data.get('both_levels_complete', False)
-        level1_score = challenge_data.get('level1_score', 0)
-        level2_score = challenge_data.get('level2_score', 0)
+        level1_score = float(challenge_data.get('level1_score', 0))
+        level2_score = float(challenge_data.get('level2_score', 0))
         
         print(f"[BADGE SERVICE] OSI Challenge Data:")
-        print(f"  Both levels complete: {both_levels_complete}")
+        print(f"  Both levels complete flag: {both_levels_complete}")
         print(f"  Level 1 score: {level1_score}%")
         print(f"  Level 2 score: {level2_score}%")
         
-        if both_levels_complete and level1_score == 100 and level2_score == 100:
-            print(f"[BADGE SERVICE] ✅ Both levels at 100% - awarding OSI & TCP/IP Master badge")
+        # STRICT VALIDATION: All three conditions must be TRUE
+        # 1. both_levels_complete flag must be True
+        # 2. level1_score must be EXACTLY 100.0
+        # 3. level2_score must be EXACTLY 100.0
+        if both_levels_complete and level1_score == 100.0 and level2_score == 100.0:
+            print(f"[BADGE SERVICE] ✅ All validation passed - awarding OSI & TCP/IP Master badge")
             badge_payload = {
                 'level1_score': level1_score,
                 'level2_score': level2_score,
@@ -155,34 +159,74 @@ class BadgeService:
     
     @staticmethod
     def _check_troubleshooting_badges(user_id, score, metadata):
-        """Check and award troubleshooting-related badges - ONE badge per challenge"""
+        """
+        Check and award troubleshooting-related badges - ONE badge per challenge
+        
+        🔧 MVP FIX: Badge is awarded ONLY when ALL 12 Link Up! sub-challenges are completed at 100%
+        
+        Sub-challenges:
+        - Foundation (3): basic network scenarios
+        - Easy (3): vlan-basics, default-gateway, dhcp-client
+        - Medium (3): extended-ring-redundancy, hybrid-star-ring, partial-mesh-ospf
+        - Hard (3): mpls-vpn-complex, datacenter-fabric, sd-wan-overlay
+        
+        Badge requirements: CompletedItems == TotalItems (12/12)
+        """
         badges = []
         
-        print(f"[BADGE SERVICE] Troubleshooting Badge Check: score={score}%")
+        # Get completed challenges from metadata
+        completed_challenges = metadata.get('completed_challenges', []) if metadata else []
+        challenge_counts = metadata.get('challenge_counts', {}) if metadata else {}
         
-        # Simplified: Award badge for 100% score
-        if score == 100:
-            print(f"[BADGE SERVICE] ✅ Score is 100% - awarding Troubleshooting Pro badge")
-            badge_metadata = metadata or {}
-
+        # 🔧 MVP FIX: Update total to include Foundation (3) + Easy (3) + Medium (3) + Hard (3) = 12
+        TOTAL_REQUIRED = 12  # Foundation (3) + Easy (3) + Medium (3) + Hard (3)
+        total_completed = len(completed_challenges)  # Use direct count from completed_challenges list
+        
+        print(f"[BADGE SERVICE] Troubleshooting (Link Up!) Badge Check")
+        print(f"  Completed challenges: {total_completed}/{TOTAL_REQUIRED}")
+        print(f"  Foundation: {challenge_counts.get('foundation', 0)}/3")
+        print(f"  Easy: {challenge_counts.get('easy', 0)}/3")
+        print(f"  Medium: {challenge_counts.get('medium', 0)}/3")
+        print(f"  Hard: {challenge_counts.get('hard', 0)}/3")
+        print(f"  List: {completed_challenges}")
+        
+        # 🔧 MVP FIX: Award badge ONLY when ALL 12 challenges are completed
+        # This implements the requirement: Badges = Earned only when CompletedItems == TotalItems
+        if total_completed >= TOTAL_REQUIRED:
+            print(f"[BADGE SERVICE] ✅ All {TOTAL_REQUIRED} Link Up! challenges complete - awarding badge!")
+            
+            badge_metadata = {
+                'completed_challenges': completed_challenges,
+                'total_challenges': TOTAL_REQUIRED,
+                'challenge_counts': challenge_counts
+            }
+            
             # Award only the legendary badge (Troubleshooting Pro)
             badge, is_new = UserBadge.award_badge(
                 user_id=user_id,
                 badge_id='troubleshooting_pro',
                 badge_name='Troubleshooting Pro',
-                badge_description='Perfect score in Link Up challenge!',
+                badge_description='Completed all 12 Link Up! challenges at 100%!',
                 challenge_type='troubleshooting',
-                earned_score=score,
+                earned_score=100.0,  # Badge represents 100% completion
                 badge_rarity='legendary',
                 metadata=badge_metadata
             )
+            
             if is_new:
                 print(f"[BADGE SERVICE] 🎉 NEW BADGE AWARDED: Troubleshooting Pro (ID: {badge.id})")
                 badges.append(badge.to_dict())
             else:
                 print(f"[BADGE SERVICE] ℹ️ Badge already exists: Troubleshooting Pro")
         else:
-            print(f"[BADGE SERVICE] ❌ Score {score}% < 100% - No badge awarded")
+            remaining = TOTAL_REQUIRED - total_completed
+            print(f"[BADGE SERVICE] ❌ Only {total_completed}/{TOTAL_REQUIRED} complete - No badge yet")
+            print(f"[BADGE SERVICE] Still need: {remaining} more challenge(s)")
+            print(f"[BADGE SERVICE] Progress breakdown:")
+            print(f"  - Foundation: {challenge_counts.get('foundation', 0)}/3 (need {3 - challenge_counts.get('foundation', 0)} more)")
+            print(f"  - Easy: {challenge_counts.get('easy', 0)}/3 (need {3 - challenge_counts.get('easy', 0)} more)")
+            print(f"  - Medium: {challenge_counts.get('medium', 0)}/3 (need {3 - challenge_counts.get('medium', 0)} more)")
+            print(f"  - Hard: {challenge_counts.get('hard', 0)}/3 (need {3 - challenge_counts.get('hard', 0)} more)")
         
         return badges
     
