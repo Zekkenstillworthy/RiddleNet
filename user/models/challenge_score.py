@@ -294,22 +294,22 @@ class ChallengeScore(db.Model):
         🔧 MVP FIX: Get Link Up! challenge progress with sub-item tracking across ALL difficulty levels
         
         Returns progress across ALL difficulty levels:
-        - Foundation (3 challenges): basic network scenarios
+        - Foundation (17 challenges): Basic network scenarios
         - Easy (3 challenges): vlan-basics, default-gateway, dhcp-client
-        - Medium (3 challenges): extended-ring-redundancy, hybrid-star-ring, partial-mesh-ospf
+        - Intermediate (3 challenges): extended-ring-redundancy, hybrid-star-ring, partial-mesh-ospf
         - Hard (3 challenges): mpls-vpn-complex, datacenter-fabric, sd-wan-overlay
         
         Returns:
             {
                 'completed_challenges': [...],  # List of completed scenario IDs
                 'challenge_counts': {
-                    'foundation': 3,
+                    'foundation': 17,
                     'easy': 2,
-                    'medium': 1,
+                    'intermediate': 1,
                     'hard': 0,
-                    'total': 6
+                    'total': 20
                 },
-                'progress_percentage': 50.0,  # (6/12) * 100
+                'progress_percentage': 76.9,  # (20/26) * 100
                 'is_complete': False
             }
         """
@@ -324,7 +324,7 @@ class ChallengeScore(db.Model):
         if not challenges:
             return {
                 'completed_challenges': [],
-                'challenge_counts': {'foundation': 0, 'easy': 0, 'medium': 0, 'hard': 0, 'total': 0},
+                'challenge_counts': {'foundation': 0, 'easy': 0, 'intermediate': 0, 'hard': 0, 'total': 0},
                 'progress_percentage': 0.0,
                 'is_complete': False
             }
@@ -338,10 +338,10 @@ class ChallengeScore(db.Model):
         
         # Extract completed challenges from metadata
         completed_challenges = latest_metadata.get('completed_challenges', [])
-        challenge_counts = latest_metadata.get('challenge_counts', {'foundation': 0, 'easy': 0, 'medium': 0, 'hard': 0, 'total': 0})
+        challenge_counts = latest_metadata.get('challenge_counts', {'foundation': 0, 'easy': 0, 'intermediate': 0, 'hard': 0, 'total': 0})
         
-        # 🔧 MVP FIX: Update total to 12 (Foundation + Easy + Medium + Hard)
-        TOTAL_REQUIRED = 12  # Foundation (3) + Easy (3) + Medium (3) + Hard (3)
+        # 🔧 MVP FIX: Update total to 26 (Foundation 17 + Easy 3 + Intermediate 3 + Hard 3)
+        TOTAL_REQUIRED = 26  # Foundation (17) + Easy (3) + Intermediate (3) + Hard (3)
         total_completed = len(completed_challenges)  # Direct count from completed list
         progress_percentage = (total_completed / TOTAL_REQUIRED) * 100.0
         

@@ -222,11 +222,11 @@ def dashboard():
         challenge = challenge_score_map.get(challenge_type)
         
         if challenge:
-            # 🔧 MVP FIX: For Link Up!, check sub-item completion (all 12 items must be complete)
+            # 🔧 MVP FIX: For Link Up!, check sub-item completion (all 26 items must be complete)
             if challenge_type == 'troubleshooting':
                 if challenge.challenge_metadata:
                     completed_count = len(challenge.challenge_metadata.get('completed_challenges', []))
-                    TOTAL_LINK_UP_ITEMS = 12  # Foundation (3) + Easy (3) + Medium (3) + Hard (3)
+                    TOTAL_LINK_UP_ITEMS = 26  # Foundation (17) + Easy (3) + Intermediate (3) + Hard (3)
                     is_truly_completed = completed_count >= TOTAL_LINK_UP_ITEMS
                     print(f"[DASHBOARD DEBUG] Link Up! validation: {completed_count}/{TOTAL_LINK_UP_ITEMS} sub-items")
                 else:
@@ -721,8 +721,8 @@ def challenges():
     # Get sub-item completion data from metadata
     if troubleshoot_score and troubleshoot_score.challenge_metadata:
         completed_challenges = troubleshoot_score.challenge_metadata.get('completed_challenges', [])
-        # Total required: Foundation (3) + Easy (3) + Medium (3) + Hard (3) = 12 items
-        TOTAL_LINK_UP_ITEMS = 12
+        # 🔧 MVP FIX: Total required: Foundation (17) + Easy (3) + Intermediate (3) + Hard (3) = 26 items
+        TOTAL_LINK_UP_ITEMS = 26
         troubleshoot_progress_value = (len(completed_challenges) / TOTAL_LINK_UP_ITEMS) * 100.0
     else:
         troubleshoot_progress_value = 0.0
