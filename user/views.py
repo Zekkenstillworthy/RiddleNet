@@ -578,32 +578,18 @@ def challenges():
         'badge_image': 'Cable_Badge.png'
     }
     
-    # [OK] MVP: OSI Model Challenge Progress (metadata-based with fallback)
+    # [OK] MVP: OSI Model Challenge Progress (use best_score directly)
     osi_score = ChallengeScore.query.filter_by(
         user_id=user.id,
         challenge_type='osi'
     ).first()
     
-    # Calculate OSI progress from metadata if available
+    # Calculate OSI progress - use best_score as the definitive source of truth
+    # The best_score is already calculated as the combined score when both levels are complete
     osi_progress = 0.0
     if osi_score:
-        metadata = osi_score.challenge_metadata or {}
-        challenge_data = metadata.get('challenge_data', {})
-        
-        # Check if we have submodule completion data (level1 and level2)
-        if challenge_data:
-            completed_submodules = 0
-            total_submodules = 2  # OSI has 2 levels
-            
-            if challenge_data.get('level1_score', 0) > 0:
-                completed_submodules += 1
-            if challenge_data.get('level2_score', 0) > 0:
-                completed_submodules += 1
-            
-            osi_progress = completed_submodules / total_submodules
-        else:
-            # Fallback to score-based progress
-            osi_progress = min((osi_score.best_score or 0) / 100, 1.0)
+        # Use best_score directly - it reflects the actual completion percentage
+        osi_progress = min((osi_score.best_score or 0) / 100, 1.0)
     
     challenge_progress['osi'] = {
         'completed': osi_score.is_completed if osi_score else False,
@@ -622,26 +608,18 @@ def challenges():
         'badge_image': 'Troubleshoot_Badge.png'
     }
     
-    # [OK] MVP: Quiz Challenge Progress (metadata-based with fallback)
+    # [OK] MVP: Quiz Challenge Progress (use best_score directly)
     quiz_score = ChallengeScore.query.filter_by(
         user_id=user.id,
         challenge_type='quiz'
     ).first()
     
-    # Calculate Quiz progress from metadata if available
+    # Calculate Quiz progress - use best_score as the definitive source of truth
+    # The metadata['progress'] is only for in-progress quizzes, not final completion
     quiz_progress = 0.0
     if quiz_score:
-        metadata = quiz_score.challenge_metadata or {}
-        progress_data = metadata.get('progress', {})
-        
-        # Check if we have question progress data
-        if progress_data and 'currentQuestion' in progress_data and 'totalQuestions' in progress_data:
-            current = progress_data.get('currentQuestion', 0)
-            total = progress_data.get('totalQuestions', 1)
-            quiz_progress = min(current / total, 1.0) if total > 0 else 0.0
-        else:
-            # Fallback to score-based progress
-            quiz_progress = min((quiz_score.best_score or 0) / 100, 1.0)
+        # Use best_score directly - it reflects the actual completion percentage
+        quiz_progress = min((quiz_score.best_score or 0) / 100, 1.0)
     
     challenge_progress['quiz'] = {
         'completed': quiz_score.is_completed if quiz_score else False,
