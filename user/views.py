@@ -147,6 +147,10 @@ def dashboard():
     user_badges = UserBadge.get_user_badges(user.id)
     user_badges_list = [badge.to_dict() for badge in user_badges]
     
+    # FIX: Count unique challenge types with badges (not total badges)
+    # This ensures consistency with challenge completion count
+    unique_badge_challenges = len(set(badge.challenge_type for badge in user_badges)) if user_badges else 0
+    
     # Get challenge data for display (4 challenges total)
     challenge_data = []
     for challenge in [crimping_challenge, osi_challenge, troubleshooting_challenge, quiz_challenge]:
@@ -249,7 +253,8 @@ def dashboard():
         avg_score=round(challenge_stats['average_score'], 1),
         total_attempts=challenge_stats['total_attempts'],
         user_badges=user_badges_list,
-        badge_count=len(user_badges_list),
+        badge_count=unique_badge_challenges,  # FIX: Show unique challenge types, not total badges
+        total_badges=len(user_badges_list),  # Add total badges for achievements section
         challenge_data=challenge_data,
         **category_leaderboards
     )
