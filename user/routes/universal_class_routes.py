@@ -439,45 +439,45 @@ def module_detail(class_id, module_id):
         module_simulation_assignments = []  # Cache assignments for later lesson-level usage
         seen_simulation_ids = set()  # Track unique simulation IDs to prevent duplicates
         try:
-            # Get simulations assigned to this class that might be related to this module
-            # Only consider assignments that are active and published
+            # Get simulations assigned directly to this module
+            # First, get assignments with module_id matching this module
             module_simulation_assignments = SimulationAssignment.query.filter_by(
+                module_id=module_id,
                 class_id=class_id,
                 is_active=True,
                 is_published=True
             ).all()
+            
+            print(f"[DEBUG] Found {len(module_simulation_assignments)} assignments for module {module_id}")
+            
             for assignment in module_simulation_assignments:
                 # Ensure assignment is actually available now and simulation is usable
                 if not assignment.is_available:
+                    print(f"[DEBUG] Skipping assignment {assignment.id} - not available")
                     continue
+                    
                 if assignment.simulation and getattr(assignment.simulation, 'is_active', True) and assignment.simulation.is_published:
                     # Skip if we've already added this simulation
                     if assignment.simulation.id in seen_simulation_ids:
+                        print(f"[DEBUG] Skipping simulation {assignment.simulation.id} - already added")
                         continue
-                        
-                    # Check if simulation is related to this module (by title, category, or type)
-                    module_title_lower = module.title.lower()
-                    sim_title_lower = assignment.simulation.title.lower()
-                    sim_description_lower = (assignment.simulation.description or '').lower()
                     
-                    # Simple matching logic - you can enhance this based on your needs
-                    if (str(module_id) in sim_title_lower or 
-                        any(word in sim_title_lower for word in module_title_lower.split()) or
-                        any(word in sim_description_lower for word in module_title_lower.split())):
-                        
-                        # Add to seen set and append to list
-                        seen_simulation_ids.add(assignment.simulation.id)
-                        module_simulations.append({
-                            'id': assignment.simulation.id,
-                            'title': assignment.simulation.title,
-                            'description': assignment.simulation.description,
-                            'difficulty': assignment.simulation.difficulty,
-                            'estimated_duration': assignment.simulation.estimated_duration
-                        })
+                    # Add to seen set and append to list
+                    seen_simulation_ids.add(assignment.simulation.id)
+                    print(f"[DEBUG] Adding simulation: {assignment.simulation.title} (ID: {assignment.simulation.id})")
+                    module_simulations.append({
+                        'id': assignment.simulation.id,
+                        'title': assignment.simulation.title,
+                        'description': assignment.simulation.description,
+                        'difficulty': assignment.simulation.difficulty,
+                        'estimated_duration': assignment.simulation.estimated_duration
+                    })
                         
             print(f"Found {len(module_simulations)} unique simulations for module {module_id}")
         except Exception as e:
             print(f"Error getting module simulations: {e}")
+            import traceback
+            traceback.print_exc()
             module_simulations = []
         
         # Get assignments for this class/module
