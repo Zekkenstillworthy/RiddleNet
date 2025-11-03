@@ -58,8 +58,10 @@ class CollaborationRealTime {
     init() {
         if (this.DEBUG_MODE) {
             console.log('🤝 [DEBUG] ============================================');
-            console.log('🤝 [DEBUG] Initializing Collaboration Real-Time System');
-            console.log('🤝 [DEBUG] ============================================');
+            if (this.DEBUG_MODE) {
+                console.log('🤝 [DEBUG] Initializing Collaboration Real-Time System');
+                console.log('🤝 [DEBUG] ============================================');
+            }
         }
         
         this.setupSocketConnection();
@@ -77,7 +79,7 @@ class CollaborationRealTime {
         
         if (this.DEBUG_MODE) {
             console.log('✅ [DEBUG] Collaboration system initialized');
-            console.log('🤝 [DEBUG] ============================================');
+            if (this.DEBUG_MODE) { console.log('🤝 [DEBUG] ============================================'); }
         }
     }
     
@@ -437,17 +439,25 @@ class CollaborationRealTime {
      * Load current user information
      */
     loadCurrentUser() {
-        console.log('🔍 [DEBUG] Loading current user...');
-        console.log('🔍 [DEBUG] window.currentUser:', window.currentUser);
-        console.log('🔍 [DEBUG] window.sessionUser:', window.sessionUser);
+        if (this.DEBUG_MODE) {
+            console.log('🔍 [DEBUG] Loading current user...');
+            if (this.DEBUG_MODE) {
+                console.log('🔍 [DEBUG] window.currentUser:', window.currentUser);
+                console.log('🔍 [DEBUG] window.sessionUser:', window.sessionUser);
+            }
+        }
         
         // Try to get user from various sources
         if (window.currentUser) {
             this.currentUser = window.currentUser;
-            console.log('✅ [DEBUG] Current user loaded from window.currentUser:', this.currentUser);
+            if (this.DEBUG_MODE) {
+                console.log('✅ [DEBUG] Current user loaded from window.currentUser:', this.currentUser);
+            }
         } else if (window.sessionUser) {
             this.currentUser = window.sessionUser;
-            console.log('✅ [DEBUG] Current user loaded from window.sessionUser:', this.currentUser);
+            if (this.DEBUG_MODE) {
+                console.log('✅ [DEBUG] Current user loaded from window.sessionUser:', this.currentUser);
+            }
         } else {
             // Try to extract from DOM or session
             const userElement = document.querySelector('[data-user-id]');
@@ -456,22 +466,28 @@ class CollaborationRealTime {
                     id: userElement.dataset.userId,
                     username: userElement.dataset.username || 'Unknown'
                 };
-                console.log('✅ [DEBUG] Current user loaded from DOM element:', this.currentUser);
-                console.log('🔍 [DEBUG] DOM element:', userElement);
-            } else {
+                if (this.DEBUG_MODE) {
+                    console.log('✅ [DEBUG] Current user loaded from DOM element:', this.currentUser);
+                    if (this.DEBUG_MODE) { console.log('🔍 [DEBUG] DOM element:', userElement); }
+                }
+            } else if (this.DEBUG_MODE) {
                 console.error('❌ [DEBUG] No user element found with [data-user-id]');
             }
         }
         
-        console.log('👤 [DEBUG] Final current user loaded:', this.currentUser);
+        if (this.DEBUG_MODE) {
+            console.log('👤 [DEBUG] Final current user loaded:', this.currentUser);
+        }
     }
     
     /**
      * Check if user is already in a session
      */
     checkExistingSession() {
-        console.log('🔍 [DEBUG] Checking existing session...');
-        console.log('🔍 [DEBUG] Current user before session check:', this.currentUser);
+        if (this.DEBUG_MODE) {
+            console.log('🔍 [DEBUG] Checking existing session...');
+            if (this.DEBUG_MODE) { console.log('🔍 [DEBUG] Current user before session check:', this.currentUser); }
+        }
         
         if (this.isConnected) {
             this.socket.emit('get_team_session_status');
@@ -494,9 +510,11 @@ class CollaborationRealTime {
             if (previousUser && this.currentUser) {
                 if (String(previousUser.id) !== String(this.currentUser.id) || 
                     previousUser.username !== this.currentUser.username) {
-                    console.warn('⚠️ [DEBUG] USER CHANGED DETECTED!');
-                    console.warn('⚠️ [DEBUG] Previous user:', previousUser);
-                    console.warn('⚠️ [DEBUG] Current user:', this.currentUser);
+                    if (this.DEBUG_MODE) {
+                        console.warn('⚠️ [DEBUG] USER CHANGED DETECTED!');
+                        console.warn('⚠️ [DEBUG] Previous user:', previousUser);
+                        console.warn('⚠️ [DEBUG] Current user:', this.currentUser);
+                    }
                     
                     // Emit user changed event
                     this.emit('user_changed', {
@@ -808,9 +826,11 @@ class CollaborationRealTime {
             return;
         }
         
-        console.log('🔍 [DEBUG] Preparing to send chat message...');
-        console.log('🔍 [DEBUG] Current user:', this.currentUser);
-        console.log('🔍 [DEBUG] Current session:', this.currentSession);
+        if (this.DEBUG_MODE) {
+            console.log('🔍 [DEBUG] Preparing to send chat message...');
+            console.log('🔍 [DEBUG] Current user:', this.currentUser);
+            console.log('🔍 [DEBUG] Current session:', this.currentSession);
+        }
         
         const messageData = {
             message: message,
@@ -820,9 +840,11 @@ class CollaborationRealTime {
             username: this.currentUser?.username || 'Anonymous'
         };
         
-        console.log('💬 [DEBUG] Sending chat message:', messageData);
-        console.log('🔍 [DEBUG] User ID type:', typeof messageData.user_id);
-        console.log('🔍 [DEBUG] Username:', messageData.username);
+        if (this.DEBUG_MODE) {
+            console.log('💬 [DEBUG] Sending chat message:', messageData);
+            console.log('🔍 [DEBUG] User ID type:', typeof messageData.user_id);
+            console.log('🔍 [DEBUG] Username:', messageData.username);
+        }
         
         // Send to server (don't render locally, wait for server response)
         this.socket.emit('collaboration_chat_message', messageData);
@@ -832,25 +854,27 @@ class CollaborationRealTime {
      * Handle chat message
      */
     handleChatMessage(data) {
-        console.log('💬 [DEBUG] Received chat message:', data);
-        console.log('🔍 [DEBUG] Message user_id:', data.user_id, '(type:', typeof data.user_id, ')');
-        console.log('🔍 [DEBUG] Message username:', data.username);
-        console.log('🔍 [DEBUG] Current user:', this.currentUser);
-        console.log('🔍 [DEBUG] Current user ID:', this.currentUser?.id, '(type:', typeof this.currentUser?.id, ')');
+        if (this.DEBUG_MODE) {
+            console.log('💬 [DEBUG] Received chat message:', data);
+            console.log('🔍 [DEBUG] Message user_id:', data.user_id, '(type:', typeof data.user_id, ')');
+            console.log('🔍 [DEBUG] Message username:', data.username);
+            console.log('🔍 [DEBUG] Current user:', this.currentUser);
+            console.log('🔍 [DEBUG] Current user ID:', this.currentUser?.id, '(type:', typeof this.currentUser?.id, ')');
+        }
 
         // Deduplicate: if message has an id we've already processed, skip
         const msgId = data.id || (data.timestamp + '_' + data.user_id + '_' + (data.message||data.content||''));
         if (this._processedChatIds.has(msgId)) {
-            console.log('💬 [DEBUG] Skipping duplicate message:', msgId);
+            if (this.DEBUG_MODE) { console.log('💬 [DEBUG] Skipping duplicate message:', msgId); }
             return;
         }
         this._recordChatId(msgId);
         
-        console.log('🔍 [DEBUG] Processing new message ID:', msgId);
+        if (this.DEBUG_MODE) { console.log('🔍 [DEBUG] Processing new message ID:', msgId); }
         
         // If sidebar chat (teamSessionManager) handles UI, avoid double-render
         const sidebarChatAvailable = (window.teamSessionManager && typeof window.teamSessionManager.addTeamChatMessage === 'function');
-        console.log('🔍 [DEBUG] Sidebar chat available:', sidebarChatAvailable);
+        if (this.DEBUG_MODE) { console.log('🔍 [DEBUG] Sidebar chat available:', sidebarChatAvailable); }
         
         if (sidebarChatAvailable) {
             // Update local history only (no UI)
@@ -860,11 +884,11 @@ class CollaborationRealTime {
             }
             this.updateChatMessageCounter();
             // Render via sidebar chat
-            console.log('🔍 [DEBUG] Delegating to teamSessionManager.addTeamChatMessage');
+            if (this.DEBUG_MODE) { console.log('🔍 [DEBUG] Delegating to teamSessionManager.addTeamChatMessage'); }
             window.teamSessionManager.addTeamChatMessage(data);
         } else {
             // Fallback to local UI rendering
-            console.log('🔍 [DEBUG] Using fallback local UI rendering');
+            if (this.DEBUG_MODE) { console.log('🔍 [DEBUG] Using fallback local UI rendering'); }
             this.addChatMessage(data);
         }
         
@@ -970,10 +994,12 @@ class CollaborationRealTime {
      * Add message to a specific container with unified styling
      */
     addMessageToContainer(container, data) {
-        console.log('🔍 [DEBUG] addMessageToContainer called');
-        console.log('🔍 [DEBUG] Message data:', data);
-        console.log('🔍 [DEBUG] Message user_id:', data.user_id, '(type:', typeof data.user_id, ')');
-        console.log('🔍 [DEBUG] Current user ID:', this.currentUser?.id, '(type:', typeof this.currentUser?.id, ')');
+        if (this.DEBUG_MODE) {
+            console.log('🔍 [DEBUG] addMessageToContainer called');
+            console.log('🔍 [DEBUG] Message data:', data);
+            console.log('🔍 [DEBUG] Message user_id:', data.user_id, '(type:', typeof data.user_id, ')');
+            console.log('🔍 [DEBUG] Current user ID:', this.currentUser?.id, '(type:', typeof this.currentUser?.id, ')');
+        }
         
         const messageDiv = document.createElement('div');
         
@@ -983,19 +1009,21 @@ class CollaborationRealTime {
         const currentUserId = this.currentUser ? String(this.currentUser.id) : null;
         const messageUserId = data.user_id ? String(data.user_id) : null;
         
-        console.log('🔍 [DEBUG] Comparing IDs - Current:', currentUserId, 'Message:', messageUserId);
-        console.log('🔍 [DEBUG] IDs match:', currentUserId === messageUserId);
-        console.log('🔍 [DEBUG] isOwnMessage flag:', data.isOwnMessage);
+        if (this.DEBUG_MODE) {
+            console.log('🔍 [DEBUG] Comparing IDs - Current:', currentUserId, 'Message:', messageUserId);
+            console.log('🔍 [DEBUG] IDs match:', currentUserId === messageUserId);
+            console.log('🔍 [DEBUG] isOwnMessage flag:', data.isOwnMessage);
+        }
         
         if (data.isOwnMessage || (currentUserId && messageUserId && currentUserId === messageUserId)) {
             messageClass += ' own-message';
-            console.log('✅ [DEBUG] This is OWN message - adding own-message class');
+            if (this.DEBUG_MODE) { console.log('✅ [DEBUG] This is OWN message - adding own-message class'); }
         } else if (data.message_type === 'system') {
             messageClass += ' system-message';
-            console.log('✅ [DEBUG] This is SYSTEM message');
+            if (this.DEBUG_MODE) { console.log('✅ [DEBUG] This is SYSTEM message'); }
         } else {
             messageClass += ' other-message';
-            console.log('✅ [DEBUG] This is OTHER user message - adding other-message class');
+            if (this.DEBUG_MODE) { console.log('✅ [DEBUG] This is OTHER user message - adding other-message class'); }
         }
         
         messageDiv.className = messageClass;
@@ -1008,8 +1036,10 @@ class CollaborationRealTime {
         // Display "You" for current user's messages, otherwise show username
         const displayName = (currentUserId && messageUserId && currentUserId === messageUserId) ? 'You' : (data.username || 'Unknown');
         
-        console.log('🔍 [DEBUG] Display name will be:', displayName);
-        console.log('🔍 [DEBUG] Message class:', messageClass);
+        if (this.DEBUG_MODE) {
+            console.log('🔍 [DEBUG] Display name will be:', displayName);
+            console.log('🔍 [DEBUG] Message class:', messageClass);
+        }
         
         messageDiv.innerHTML = `
             <div class="unified-message-header">
@@ -1022,7 +1052,7 @@ class CollaborationRealTime {
         container.appendChild(messageDiv);
         container.scrollTop = container.scrollHeight;
         
-        console.log('✅ [DEBUG] Message added to container');
+        if (this.DEBUG_MODE) { console.log('✅ [DEBUG] Message added to container'); }
     }
     
     /**
@@ -1385,7 +1415,7 @@ class CollaborationRealTime {
             this.lastMouseY = e.clientY;
         }, { passive: true });
         
-        console.log('✅ [CURSOR DEBUG] Cursor tracking initialized successfully');
+        if (this.DEBUG_MODE) { console.log('✅ [CURSOR DEBUG] Cursor tracking initialized successfully'); }
     }
 
     /**
@@ -2080,7 +2110,7 @@ class CollaborationRealTime {
      * Cleanup resources
      */
     cleanup() {
-        console.log('🧹 [DEBUG] Cleaning up collaboration system');
+        if (this.DEBUG_MODE) { console.log('🧹 [DEBUG] Cleaning up collaboration system'); }
         
         this.stopHeartbeat();
         this.stopUserVerification();
@@ -2102,7 +2132,7 @@ class CollaborationRealTime {
         this.chatMessageHandlers = [];
         this.deviceLockHandlers = [];
         
-        console.log('✅ [DEBUG] Collaboration cleanup complete');
+        if (this.DEBUG_MODE) { console.log('✅ [DEBUG] Collaboration cleanup complete'); }
     }
 }
 
@@ -2115,22 +2145,26 @@ window.collaborationRealTime = new CollaborationRealTime();
 
 // Debug: Check current user info
 window.debugUserInfo = function() {
-    console.log('🔍 [DEBUG] ============= USER INFO DEBUG =============');
-    console.log('🔍 [DEBUG] window.currentUser:', window.currentUser);
-    console.log('🔍 [DEBUG] window.sessionUser:', window.sessionUser);
-    console.log('🔍 [DEBUG] collaborationRealTime.currentUser:', window.collaborationRealTime.currentUser);
+    if (this.DEBUG_MODE) {
+        console.log('🔍 [DEBUG] ============= USER INFO DEBUG =============');
+        console.log('🔍 [DEBUG] window.currentUser:', window.currentUser);
+        console.log('🔍 [DEBUG] window.sessionUser:', window.sessionUser);
+        console.log('🔍 [DEBUG] collaborationRealTime.currentUser:', window.collaborationRealTime.currentUser);
+    }
     
     const sessionDataElement = document.getElementById('session-data');
     if (sessionDataElement) {
-        console.log('🔍 [DEBUG] session-data element found:');
-        console.log('🔍 [DEBUG]   - userId:', sessionDataElement.dataset.userId);
-        console.log('🔍 [DEBUG]   - username:', sessionDataElement.dataset.username);
+        if (this.DEBUG_MODE) {
+            console.log('🔍 [DEBUG] session-data element found:');
+            console.log('🔍 [DEBUG]   - userId:', sessionDataElement.dataset.userId);
+            console.log('🔍 [DEBUG]   - username:', sessionDataElement.dataset.username);
+        }
     } else {
-        console.error('❌ [DEBUG] session-data element NOT found');
+        if (this.DEBUG_MODE) { console.error('❌ [DEBUG] session-data element NOT found'); }
     }
     
     const userElements = document.querySelectorAll('[data-user-id]');
-    console.log('🔍 [DEBUG] Found', userElements.length, 'elements with [data-user-id]');
+    if (this.DEBUG_MODE) { console.log('🔍 [DEBUG] Found', userElements.length, 'elements with [data-user-id]'); }
     userElements.forEach((el, idx) => {
         console.log(`🔍 [DEBUG] Element ${idx}:`, {
             id: el.id,
@@ -2140,20 +2174,22 @@ window.debugUserInfo = function() {
         });
     });
     
-    console.log('🔍 [DEBUG] ==========================================');
+    if (this.DEBUG_MODE) { console.log('🔍 [DEBUG] =========================================='); }
 };
 
 // Debug: Refresh current user
 window.debugRefreshUser = function() {
-    console.log('🔄 [DEBUG] Manually refreshing current user...');
+    if (this.DEBUG_MODE) { console.log('🔄 [DEBUG] Manually refreshing current user...'); }
     window.collaborationRealTime.loadCurrentUser();
-    console.log('✅ [DEBUG] User refreshed. New value:', window.collaborationRealTime.currentUser);
+    if (this.DEBUG_MODE) { console.log('✅ [DEBUG] User refreshed. New value:', window.collaborationRealTime.currentUser); }
 };
 
 // Debug: Check chat history
 window.debugChatHistory = function() {
-    console.log('🔍 [DEBUG] ============= CHAT HISTORY DEBUG =============');
-    console.log('🔍 [DEBUG] Total messages:', window.collaborationRealTime.chatHistory.length);
+    if (this.DEBUG_MODE) {
+        console.log('🔍 [DEBUG] ============= CHAT HISTORY DEBUG =============');
+        console.log('🔍 [DEBUG] Total messages:', window.collaborationRealTime.chatHistory.length);
+    }
     window.collaborationRealTime.chatHistory.forEach((msg, idx) => {
         console.log(`🔍 [DEBUG] Message ${idx}:`, {
             user_id: msg.user_id,
@@ -2163,30 +2199,32 @@ window.debugChatHistory = function() {
             isOwn: String(msg.user_id) === String(window.collaborationRealTime.currentUser?.id)
         });
     });
-    console.log('🔍 [DEBUG] ==========================================');
+    if (this.DEBUG_MODE) { console.log('🔍 [DEBUG] =========================================='); }
 };
 
 // Debug: Force user ID comparison
 window.debugUserComparison = function(messageUserId) {
     const currentUserId = window.collaborationRealTime.currentUser?.id;
-    console.log('🔍 [DEBUG] ============= USER ID COMPARISON =============');
-    console.log('🔍 [DEBUG] Current User ID:', currentUserId, '(type:', typeof currentUserId, ')');
-    console.log('🔍 [DEBUG] Message User ID:', messageUserId, '(type:', typeof messageUserId, ')');
-    console.log('🔍 [DEBUG] String Current:', String(currentUserId));
-    console.log('🔍 [DEBUG] String Message:', String(messageUserId));
-    console.log('🔍 [DEBUG] Match (===):', currentUserId === messageUserId);
-    console.log('🔍 [DEBUG] Match (String):', String(currentUserId) === String(messageUserId));
-    console.log('🔍 [DEBUG] ==========================================');
+    if (this.DEBUG_MODE) {
+        console.log('🔍 [DEBUG] ============= USER ID COMPARISON =============');
+        console.log('🔍 [DEBUG] Current User ID:', currentUserId, '(type:', typeof currentUserId, ')');
+        console.log('🔍 [DEBUG] Message User ID:', messageUserId, '(type:', typeof messageUserId, ')');
+        console.log('🔍 [DEBUG] String Current:', String(currentUserId));
+        console.log('🔍 [DEBUG] String Message:', String(messageUserId));
+        console.log('🔍 [DEBUG] Match (===):', currentUserId === messageUserId);
+        console.log('🔍 [DEBUG] Match (String):', String(currentUserId) === String(messageUserId));
+        console.log('🔍 [DEBUG] ==========================================');
+    }
 };
 
 // Debug: Test send message
 window.debugSendTestMessage = function(text = 'Test message') {
-    console.log('🔍 [DEBUG] Sending test message:', text);
+    if (this.DEBUG_MODE) { console.log('🔍 [DEBUG] Sending test message:', text); }
     window.collaborationRealTime.sendChatMessage(text);
 };
 
 // Expose to console
-console.log('✅ [DEBUG] Debug console commands available:');
+if (this.DEBUG_MODE) { console.log('✅ [DEBUG] Debug console commands available:'); }
 console.log('  - debugUserInfo(): Check current user information');
 console.log('  - debugRefreshUser(): Refresh current user from DOM');
 console.log('  - debugChatHistory(): View all chat messages');
