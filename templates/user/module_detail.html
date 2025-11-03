@@ -5302,7 +5302,7 @@ let liveQuizState = {
     quizEnded: false,  // GUARD: Track if quiz has ended to prevent timer loops
     currentUserId: CURRENT_USER_ID,
     isLiveQuizActive: false,  // NAVIGATION LOCK: Track if user is actively taking quiz
-    questionLoadedByQuizState: false  // GUARD: Track if quiz_state already loaded a question to prevent duplicate from lobby
+    hasLoadedQuestion: false  // DUPLICATE PREVENTION: Track if question already loaded by quiz_state
 };
 
 console.log('[LiveQuiz][UserContext] Current user id detected:', liveQuizState.currentUserId);
@@ -5467,9 +5467,14 @@ function initializeLiveQuizWithLobby(sessionId, questions) {
                     })
                     .finally(() => {
                         setTimeout(() => {
+                            console.log('%c[LOBBY AUTO-TRANSITION] ════════════════════════════════════════', 'color: #ff00ff; font-weight: bold');
+                            console.log('[LOBBY AUTO-TRANSITION] 🤔 Checking if we should auto-transition...');
+                            console.log('[LOBBY AUTO-TRANSITION] hasLoadedQuestion flag:', liveQuizState.hasLoadedQuestion);
+                            console.log('%c[LOBBY AUTO-TRANSITION] ════════════════════════════════════════', 'color: #ff00ff; font-weight: bold');
+                            
                             // Check if quiz_state event already loaded a question
-                            if (liveQuizState.questionLoadedByQuizState) {
-                                console.log('[LiveQuiz][Lobby] ⏭️ Skipping auto-transition - quiz_state already loaded question');
+                            if (liveQuizState.hasLoadedQuestion) {
+                                console.log('[LOBBY AUTO-TRANSITION] ⏭️ SKIPPING - Question already loaded by quiz_state event');
                                 return;
                             }
                             
@@ -5478,6 +5483,8 @@ function initializeLiveQuizWithLobby(sessionId, questions) {
                                 // Load the appropriate question for this student (skipping already answered)
                                 const instructorQuestionIndex = statusData.current_question_index || 0;
                                 console.log('[LiveQuiz][Lobby] Instructor at question index:', instructorQuestionIndex);
+                                console.log('[LOBBY AUTO-TRANSITION] 🚩 Setting hasLoadedQuestion = true');
+                                liveQuizState.hasLoadedQuestion = true;
                                 loadQuestionForStudent(instructorQuestionIndex);
                             } else {
                                 console.warn('[LiveQuiz][Lobby] No cached questions available during active transition.');
@@ -5652,7 +5659,11 @@ function connectToLiveQuiz() {
         });
 
         activeSocket.on('quiz_state', (data) => {
-            console.log('[MVP LiveQuiz] Quiz state received:', data);
+            console.log('%c[QUIZ_STATE EVENT] ════════════════════════════════════════', 'color: #00ffff; font-weight: bold');
+            console.log('[QUIZ_STATE EVENT] 📡 Received quiz_state event');
+            console.log('[QUIZ_STATE EVENT] Data:', data);
+            console.log('[QUIZ_STATE EVENT] hasLoadedQuestion flag:', liveQuizState.hasLoadedQuestion);
+            console.log('%c[QUIZ_STATE EVENT] ════════════════════════════════════════', 'color: #00ffff; font-weight: bold');
 
             if (data.participant_count !== undefined) {
                 updateParticipantCount(data.participant_count);
@@ -5668,8 +5679,9 @@ function connectToLiveQuiz() {
                 const instructorQuestionIndex = data.current_question_index || 0;
                 console.log('[MVP LiveQuiz] Session is active - instructor at question', instructorQuestionIndex);
                 
-                // Set flag to prevent duplicate loading from lobby auto-transition
-                liveQuizState.questionLoadedByQuizState = true;
+                // Set flag to prevent lobby auto-transition from also loading
+                console.log('[QUIZ_STATE EVENT] 🚩 Setting hasLoadedQuestion = true to prevent duplicate lobby load');
+                liveQuizState.hasLoadedQuestion = true;
                 
                 // Load the appropriate question for this student (skipping already answered)
                 loadQuestionForStudent(instructorQuestionIndex);
@@ -5979,7 +5991,11 @@ function showLeaderboardBreakScreen(leaderboard, nextQuestionIndex) {
 
 // Load question for student (checks answered questions and skips to appropriate question)
 async function loadQuestionForStudent(instructorQuestionIndex) {
-  console.log('[LiveQuiz] Loading question for student up to instructor index:', instructorQuestionIndex);
+  console.log('%c[LOAD_QUESTION_FOR_STUDENT] ════════════════════════════════════════', 'color: #ffff00; font-weight: bold; font-size: 14px');
+  console.log('[LOAD_QUESTION_FOR_STUDENT] 🎯 CALLED with instructorQuestionIndex:', instructorQuestionIndex);
+  console.log('[LOAD_QUESTION_FOR_STUDENT] Session ID:', liveQuizState.sessionId);
+  console.log('[LOAD_QUESTION_FOR_STUDENT] Call stack:', new Error().stack);
+  console.log('%c[LOAD_QUESTION_FOR_STUDENT] ════════════════════════════════════════', 'color: #ffff00; font-weight: bold; font-size: 14px');
   
   try {
     // Fetch the list of questions this student has already answered
@@ -6031,8 +6047,11 @@ async function loadQuestionForStudent(instructorQuestionIndex) {
 
 // Load Question
 function loadQuestion(index) {
-  console.log('[LiveQuiz] Loading question index:', index);
-  console.log('[LiveQuiz] Total questions:', liveQuizState.questions.length);
+  console.log('%c[LOAD_QUESTION] ════════════════════════════════════════', 'color: #00ff00; font-weight: bold');
+  console.log('[LOAD_QUESTION] 📖 Loading question index:', index);
+  console.log('[LOAD_QUESTION] Total questions:', liveQuizState.questions.length);
+  console.log('[LOAD_QUESTION] Call stack:', new Error().stack);
+  console.log('%c[LOAD_QUESTION] ════════════════════════════════════════', 'color: #00ff00; font-weight: bold');
   
   if (!liveQuizState.questions || index >= liveQuizState.questions.length) {
     console.warn('[LiveQuiz] Cannot load question - invalid index or no questions');
