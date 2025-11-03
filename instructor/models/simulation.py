@@ -47,7 +47,7 @@ class Simulation(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Version Control
-    version = db.Column(db.String(10), default='1.0')
+    version = db.Column(db.Integer, default=1)  # Changed from String to Integer to match database schema
     parent_simulation_id = db.Column(db.Integer, db.ForeignKey('simulations.id'), nullable=True)
     
     # Analytics Fields

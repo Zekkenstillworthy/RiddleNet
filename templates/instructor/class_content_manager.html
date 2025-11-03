@@ -8647,6 +8647,22 @@ function showSimulationAssignmentModal() {
                                 <small class="form-hint">Give your simulation a clear, descriptive name</small>
                             </div>
                             
+                            <div class="form-group">
+                                <label class="form-label">Assignment Target *</label>
+                                <select id="newSimAssignmentTarget" class="form-input" required>
+                                    <option value="">Choose assignment type...</option>
+                                    <option value="class">Assign to Entire Class</option>
+                                    <option value="module">Assign to Specific Module</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" id="newSimModuleSelector" style="display: none;">
+                                <label class="form-label">Target Module *</label>
+                                <select id="newSimTargetModule" class="form-input">
+                                    <option value="">Choose a module...</option>
+                                </select>
+                            </div>
+                            
                             <div class="form-actions">
                                 <button type="button" class="btn-secondary" onclick="closeSimulationAssignmentModal()">Cancel</button>
                                 <button type="submit" class="btn-primary">
@@ -8908,14 +8924,25 @@ function createNewSimulation() {
     .then(({status, data}) => {
         console.log('📥 Response data:', data);
         
-        if (status === 200 && data.success && data.simulation) {
+        if ((status === 200 || status === 201) && data.success && data.simulation) {
             moduleBuilder.showToast('Simulation created successfully!', 'success');
             
             // Now assign the simulation
-            const assignmentTarget = document.getElementById('newSimAssignmentTarget').value;
-            const moduleId = document.getElementById('newSimTargetModule').value;
+            const assignmentTargetEl = document.getElementById('newSimAssignmentTarget');
+            const moduleIdEl = document.getElementById('newSimTargetModule');
             
-            assignNewSimulation(data.simulation.id, assignmentTarget, moduleId);
+            if (assignmentTargetEl) {
+                const assignmentTarget = assignmentTargetEl.value;
+                const moduleId = moduleIdEl ? moduleIdEl.value : '';
+                assignNewSimulation(data.simulation.id, assignmentTarget, moduleId);
+            } else {
+                // No assignment target specified, just close modal
+                moduleBuilder.showToast('Simulation created successfully!', 'success');
+                closeSimulationAssignmentModal();
+                if (document.getElementById('classwork-content').classList.contains('active')) {
+                    loadClassworkContent();
+                }
+            }
         } else {
             const errorMsg = data.error || 'Failed to create simulation';
             console.error('❌ Server error:', errorMsg);

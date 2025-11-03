@@ -105,6 +105,8 @@ class EnhancedAssignmentService:
                                  max_attempts: int = 3, module_id: Optional[int] = None, 
                                  assigned_by: int = None) -> SimulationAssignment:
         """Create an explicit assignment to a class or specific module"""
+        print(f"[FIX] AssignmentService.create_explicit_assignment called")
+        print(f"[FIX] Params: sim_id={simulation_id}, class_id={class_id}, title={title}, module_id={module_id}")
         
         # Get simulation for title/description defaults
         simulation = Simulation.query.get(simulation_id)
@@ -113,7 +115,25 @@ class EnhancedAssignmentService:
         
         # Set assignment type based on whether module_id is provided
         assignment_type = 'module' if module_id else 'class'
+        print(f"[FIX] Assignment type: {assignment_type}")
         
+        # Prefer the actual logged-in admin if available
+        if assigned_by is None:
+            assigned_by = 1  # Default fallback
+            try:
+                from flask_login import current_user
+                if getattr(current_user, 'is_authenticated', False):
+                    uid = getattr(current_user, 'id', None) or getattr(current_user, 'get_id', lambda: None)()
+                    if uid is not None:
+                        try:
+                            assigned_by = int(uid)
+                            print(f"[FIX] Using current user ID as assigned_by: {assigned_by}")
+                        except (TypeError, ValueError):
+                            print(f"[FIX] Failed to convert user ID to int, using default: 1")
+            except Exception as auth_e:
+                print(f"[FIX] Error getting current user, using default assigned_by=1: {auth_e}")
+        
+        print(f"[FIX] Creating SimulationAssignment object...")
         assignment = SimulationAssignment(
             title=title or f"Assignment: {simulation.title}",
             description=description or simulation.description,
@@ -123,25 +143,37 @@ class EnhancedAssignmentService:
             assignment_type=assignment_type,
             due_date=due_date or (datetime.utcnow() + timedelta(days=7)),
             max_attempts=max_attempts,
-            assigned_by=assigned_by or 1,  # TODO: Get current instructor user from context
+            assigned_by=assigned_by,
             is_active=True,
             is_published=True
         )
         
+        print(f"[FIX] Adding assignment to database session...")
         db.session.add(assignment)
         
+        print(f"[FIX] Committing assignment with sequence retry...")
         # Use the new sequence sync utility
         try:
             from utils.sequence_sync import commit_with_sequence_retry
             commit_with_sequence_retry('simulation_assignments', 'id')
         except ImportError:
             # Fallback to the old method
+            print(f"[FIX] Using fallback sequence sync method...")
             self._commit_with_sequence_retry()
         
-        # Real-time notification
-        target_type = 'module' if module_id else 'class'
-        emit_assignment_created(assignment.id, class_id, target_type)
+        print(f"[FIX] Assignment committed successfully, ID: {assignment.id}")
         
+        # Real-time notification (wrapped in try-catch to prevent failures)
+        try:
+            print(f"[FIX] Emitting assignment_created notification...")
+            target_type = 'module' if module_id else 'class'
+            emit_assignment_created(assignment.id, class_id, target_type)
+            print(f"[FIX] Notification emitted successfully")
+        except Exception as e:
+            print(f"[WARNING] Failed to emit assignment notification: {e}")
+            # Continue anyway - the assignment was created successfully
+        
+        print(f"[FIX] Assignment creation completed successfully")
         return assignment
     
     def create_category_auto_assignment(self, category: str, class_ids: List[int]) -> List[SimulationAssignment]:
@@ -189,78 +221,14 @@ class EnhancedAssignmentService:
         
         self._commit_with_sequence_retry()
         
-        # Notify affected classes
-        for class_id in class_ids:
-            emit_assignment_created(assignments[0].id if assignments else None, class_id, 'category')
+        # Notify affected classes (wrapped in try-catch)
+        try:
+            for class_id in class_ids:
+                emit_assignment_created(assignments[0].id if assignments else None, class_id, 'category')
+        except Exception as e:
+            print(f"[WARNING] Failed to emit category assignment notifications: {e}")
         
         return assignments
-    
-    def create_explicit_assignment(self, simulation_id: int, class_id: int, title: str,
-                                 description: str = "", due_date: Optional[datetime] = None,
-                                 max_attempts: int = 3) -> SimulationAssignment:
-        """Create an explicit assignment with custom settings"""
-        print(f"[FIX] AssignmentService.create_explicit_assignment called")
-        print(f"[FIX] Params: sim_id={simulation_id}, class_id={class_id}, title={title}")
-        
-        assigned_by_id = 1
-        try:
-            # Prefer the actual logged-in admin if available
-            from flask_login import current_user
-            if getattr(current_user, 'is_authenticated', False):
-                # current_user.id may be a property or need get_id()
-                uid = getattr(current_user, 'id', None) or getattr(current_user, 'get_id', lambda: None)()
-                if uid is not None:
-                    try:
-                        assigned_by_id = int(uid)
-                        print(f"[FIX] Using current user ID as assigned_by: {assigned_by_id}")
-                    except (TypeError, ValueError):
-                        print(f"[FIX] Failed to convert user ID to int, using default: 1")
-                        pass
-        except Exception as auth_e:
-            print(f"[FIX] Error getting current user, using default assigned_by=1: {auth_e}")
-            # If anything goes wrong, keep default fallback
-            pass
-            
-        print(f"[FIX] Creating SimulationAssignment object...")
-        assignment = SimulationAssignment(
-            title=title,
-            description=description,
-            simulation_id=simulation_id,
-            class_id=class_id,
-            assignment_type='explicit',
-            due_date=due_date or (datetime.utcnow() + timedelta(days=7)),
-            max_attempts=max_attempts,
-            assigned_by=assigned_by_id,
-            is_active=True,
-            is_published=True
-        )
-        
-        print(f"[FIX] Adding assignment to database session...")
-        db.session.add(assignment)
-        
-        print(f"[FIX] Committing assignment with sequence retry...")
-        # Use the new sequence sync utility
-        try:
-            from utils.sequence_sync import commit_with_sequence_retry
-            commit_with_sequence_retry('simulation_assignments', 'id')
-        except ImportError:
-            # Fallback to the old method if new utility is not available
-            print(f"[FIX] Using fallback sequence sync method...")
-            self._sync_pk_sequence()
-            self._commit_with_sequence_retry()
-        
-        print(f"[FIX] Assignment committed successfully, ID: {assignment.id}")
-
-        # Real-time notification
-        try:
-            print(f"[FIX] Emitting assignment_created notification...")
-            emit_assignment_created(assignment.id, class_id, 'explicit')
-            print(f"[FIX] Notification emitted successfully")
-        except Exception as emit_e:
-            print(f"[WARNING]  Error emitting assignment_created: {emit_e}")
-        
-        print(f"[FIX] Assignment creation completed successfully")
-        return assignment
     
     def auto_assign_new_simulation(self, simulation_id: int) -> List[SimulationAssignment]:
         """Automatically assign a new simulation to relevant classes based on category"""

@@ -149,11 +149,16 @@ class SimulationController:
             }
             
             # Create the simulation
+            # Ensure category is never None - use simulation_type as fallback
+            category = basic_data.get('category') or basic_data.get('type', 'General')
+            if not category or category == 'None':
+                category = 'General'
+            
             simulation = Simulation(
                 title=basic_data['title'],
                 description=basic_data['description'],
                 simulation_type=basic_data['type'],
-                category=basic_data.get('category', 'General'),
+                category=category,
                 difficulty=basic_data['difficulty'],
                 learning_objectives=objectives,
                 estimated_duration=int(basic_data.get('duration', 30)),
