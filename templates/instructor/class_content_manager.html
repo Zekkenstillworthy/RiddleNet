@@ -8925,7 +8925,7 @@ function createNewSimulation() {
         console.log('📥 Response data:', data);
         
         if ((status === 200 || status === 201) && data.success && data.simulation) {
-            moduleBuilder.showToast('Simulation created successfully!', 'success');
+            console.log('✅ Simulation created successfully');
             
             // Now assign the simulation
             const assignmentTargetEl = document.getElementById('newSimAssignmentTarget');
@@ -8937,23 +8937,21 @@ function createNewSimulation() {
                 assignNewSimulation(data.simulation.id, assignmentTarget, moduleId);
             } else {
                 // No assignment target specified, just close modal
-                moduleBuilder.showToast('Simulation created successfully!', 'success');
+                console.log('✅ Closing modal, WebSocket will update UI');
                 closeSimulationAssignmentModal();
-                if (document.getElementById('classwork-content').classList.contains('active')) {
-                    loadClassworkContent();
-                }
+                // WebSocket will handle the UI update
             }
         } else {
             const errorMsg = data.error || 'Failed to create simulation';
             console.error('❌ Server error:', errorMsg);
-            moduleBuilder.showToast('Error: ' + errorMsg, 'error');
+            alert('Error: ' + errorMsg);
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
         }
     })
     .catch(error => {
         console.error('❌ Network error:', error);
-        moduleBuilder.showToast('Failed to create simulation: ' + error.message, 'error');
+        alert('Failed to create simulation: ' + error.message);
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });
@@ -8984,20 +8982,18 @@ function assignNewSimulation(simulationId, assignmentTarget, moduleId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            moduleBuilder.showToast('Simulation created and assigned successfully!', 'success');
+            console.log('✅ Simulation assigned successfully');
             closeSimulationAssignmentModal();
-            // Reload classwork content
-            if (document.getElementById('classwork-content').classList.contains('active')) {
-                loadClassworkContent();
-            }
+            // WebSocket will handle the UI update
         } else {
-            moduleBuilder.showToast('Simulation created but assignment failed: ' + (data.error || 'Unknown error'), 'warning');
+            console.error('❌ Assignment failed:', data.error);
+            alert('Simulation created but assignment failed: ' + (data.error || 'Unknown error'));
             closeSimulationAssignmentModal();
         }
     })
     .catch(error => {
         console.error('Error assigning simulation:', error);
-        moduleBuilder.showToast('Simulation created but assignment failed: ' + error.message, 'warning');
+        alert('Simulation created but assignment failed: ' + error.message);
         closeSimulationAssignmentModal();
     });
 }
@@ -10212,20 +10208,17 @@ function createAssignment() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            moduleBuilder.showToast('Assignment created successfully!', 'success');
+            console.log('✅ Assignment created successfully');
             closeModal('createAssignmentModal');
             document.getElementById('createAssignmentForm').reset();
-            // Reload the classwork tab content if active
-            if (document.getElementById('classwork-content').classList.contains('active')) {
-                loadClassworkContent();
-            }
+            // WebSocket will handle the UI update
         } else {
-            moduleBuilder.showToast('Error: ' + (data.error || 'Failed to create assignment'), 'error');
+            alert('Error: ' + (data.error || 'Failed to create assignment'));
         }
     })
     .catch(error => {
         console.error('Error creating assignment:', error);
-        moduleBuilder.showToast('Failed to create assignment. Please try again.', 'error');
+        alert('Failed to create assignment. Please try again.');
     });
 }
 
@@ -11548,18 +11541,15 @@ function deleteAssignment(assignmentId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                moduleBuilder.showToast('Assignment deleted successfully!', 'success');
-                // Reload classwork content
-                if (document.getElementById('classwork-content').classList.contains('active')) {
-                    loadClassworkContent();
-                }
+                console.log('✅ Assignment deleted successfully');
+                // WebSocket will handle the UI update
             } else {
-                moduleBuilder.showToast('Error: ' + (data.error || 'Failed to delete assignment'), 'error');
+                alert('Error: ' + (data.error || 'Failed to delete assignment'));
             }
         })
         .catch(error => {
             console.error('Error deleting assignment:', error);
-            moduleBuilder.showToast('Failed to delete assignment. Please try again.', 'error');
+            alert('Failed to delete assignment. Please try again.');
         });
     }
 }
@@ -11645,20 +11635,17 @@ function updateAssignment() {
     .then(data => {
         console.log('✅ Update assignment response:', data);
         if (data.success) {
-            moduleBuilder.showToast('Assignment updated successfully!', 'success');
+            console.log('✅ Assignment updated successfully');
             closeModal('editAssignmentModal');
-            // Reload classwork content to show updated assignment
-            if (document.getElementById('classwork-content').classList.contains('active')) {
-                loadClassworkContent();
-            }
+            // WebSocket will handle the UI update
         } else {
             const errorMsg = data.message || data.error || 'Unknown error occurred';
-            moduleBuilder.showToast('Error updating assignment: ' + errorMsg, 'error');
+            alert('Error updating assignment: ' + errorMsg);
         }
     })
     .catch(error => {
         console.error('❌ Error updating assignment:', error);
-        moduleBuilder.showToast('Failed to update assignment: ' + error.message, 'error');
+        alert('Failed to update assignment: ' + error.message);
     });
 }
 
@@ -11840,14 +11827,6 @@ function initializeWebSocket() {
         if (data.module && data.module.id) {
             // Remove module from UI without page refresh
             removeModuleFromUI(data.module.id, data.module.title);
-            
-            // Show toast notification
-            if (moduleBuilder) {
-                moduleBuilder.showToast(
-                    `Module "${data.module.title}" was deleted by ${data.module.deleted_by || 'admin'}`,
-                    'info'
-                );
-            }
         }
     });
     
@@ -11858,13 +11837,6 @@ function initializeWebSocket() {
         if (data.module && moduleBuilder && typeof moduleBuilder.loadModules === 'function') {
             // Reload modules to show new one
             moduleBuilder.loadModules();
-            
-            if (data.created_by !== (currentUser?.username || '')) {
-                moduleBuilder.showToast(
-                    `New module "${data.module.title}" created by ${data.created_by}`,
-                    'success'
-                );
-            }
         }
     });
     
@@ -11875,47 +11847,6 @@ function initializeWebSocket() {
         if (data.module && moduleBuilder && typeof moduleBuilder.loadModules === 'function') {
             // Reload modules to show updates
             moduleBuilder.loadModules();
-            
-            if (data.updated_by !== (currentUser?.username || '')) {
-                moduleBuilder.showToast(
-                    `Module "${data.module.title}" updated by ${data.updated_by}`,
-                    'info'
-                );
-            }
-        }
-    });
-    
-    // Listen for new simulation created events
-    socket.on('new_simulation_available', function(data) {
-        console.log('🎮 Received new simulation notification:', data);
-        
-        // Reload simulations list if on simulations tab
-        const activeTab = document.querySelector('.classwork-subtab.active')?.dataset?.subtab;
-        if (activeTab === 'simulations') {
-            console.log('🔄 Reloading simulations list...');
-            const simulationsContainer = document.getElementById('simulations-list');
-            if (simulationsContainer) {
-                loadSimulationsTabContent(simulationsContainer);
-            }
-        }
-        
-        // Show notification to instructor
-        if (typeof showToast === 'function') {
-            showToast(`New simulation created: ${data.title}`, 'success');
-        } else if (moduleBuilder && typeof moduleBuilder.showToast === 'function') {
-            moduleBuilder.showToast(`New simulation created: ${data.title}`, 'success');
-        }
-    });
-    
-    // Listen for assignment creation events  
-    socket.on('new_assignment_created', function(data) {
-        console.log('📋 Received new assignment notification:', data);
-        
-        // Show notification
-        if (typeof showToast === 'function') {
-            showToast(`Assignment created: ${data.assignment_title}`, 'success');
-        } else if (moduleBuilder && typeof moduleBuilder.showToast === 'function') {
-            moduleBuilder.showToast(`Assignment created: ${data.assignment_title}`, 'success');
         }
     });
     
@@ -11928,7 +11859,119 @@ function initializeWebSocket() {
         console.error('Module builder error:', data);
     });
     
+    // ===== REAL-TIME CRUD LISTENERS =====
+    
+    // Listen for simulation creation
+    socket.on('simulation_created', function(data) {
+        console.log('✨ Simulation created:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for simulation updates
+    socket.on('simulation_updated', function(data) {
+        console.log('📝 Simulation updated:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for simulation deletion
+    socket.on('simulation_deleted', function(data) {
+        console.log('🗑️ Simulation deleted:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for assignment creation
+    socket.on('assignment_created', function(data) {
+        console.log('✨ Assignment created:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for assignment updates
+    socket.on('assignment_updated', function(data) {
+        console.log('📝 Assignment updated:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for assignment deletion
+    socket.on('assignment_deleted', function(data) {
+        console.log('🗑️ Assignment deleted:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for announcement creation
+    socket.on('announcement_created', function(data) {
+        console.log('✨ Announcement created:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for announcement updates
+    socket.on('announcement_updated', function(data) {
+        console.log('📝 Announcement updated:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for announcement deletion
+    socket.on('announcement_deleted', function(data) {
+        console.log('🗑️ Announcement deleted:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for material creation
+    socket.on('material_created', function(data) {
+        console.log('✨ Material created:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for material updates
+    socket.on('material_updated', function(data) {
+        console.log('📝 Material updated:', data);
+        reloadCurrentTab();
+    });
+    
+    // Listen for material deletion
+    socket.on('material_deleted', function(data) {
+        console.log('🗑️ Material deleted:', data);
+        reloadCurrentTab();
+    });
+    
     console.log('🎧 WebSocket event listeners registered');
+}
+
+// Helper function to reload current active tab content
+function reloadCurrentTab() {
+    // Check which tab is currently active
+    const activeTab = document.querySelector('.tab-content.active');
+    if (!activeTab) return;
+    
+    const tabId = activeTab.id;
+    console.log('🔄 Reloading active tab:', tabId);
+    
+    // Reload based on active tab
+    if (tabId === 'stream-content') {
+        // Reload stream/announcements
+        if (typeof loadStreamContent === 'function') {
+            loadStreamContent();
+        }
+    } else if (tabId === 'classwork-content') {
+        // Reload classwork (assignments, materials, simulations)
+        if (typeof loadClassworkContent === 'function') {
+            loadClassworkContent();
+        }
+    } else if (tabId === 'modules-content') {
+        // Already handled by module_created_broadcast, module_updated_broadcast, etc.
+        if (moduleBuilder && typeof moduleBuilder.loadModules === 'function') {
+            moduleBuilder.loadModules();
+        }
+    } else if (tabId === 'people-content') {
+        // Reload people/students
+        if (typeof loadPeopleContent === 'function') {
+            loadPeopleContent();
+        }
+    } else if (tabId === 'grades-content') {
+        // Reload grades
+        if (typeof loadGradesContent === 'function') {
+            loadGradesContent();
+        }
+    }
 }
 
 // Function to remove module from UI without page refresh

@@ -36,8 +36,12 @@ def index():
         except Exception as e:
             print(f"Error getting current user: {e}")
     
+    # Create a simple challenge object for the template
+    # The ID is used for leaderboard API calls
+    challenge = type('Challenge', (), {'id': 1, 'challenge_type': 'quiz'})()
+    
     print(f"Quiz route - User: {user.username if user else 'None'}")
-    return render_template('user/quiz_challenge.html', user=user)
+    return render_template('user/quiz_challenge.html', user=user, challenge=challenge)
 
 @quiz_bp.route('/test-images')
 def test_images():
