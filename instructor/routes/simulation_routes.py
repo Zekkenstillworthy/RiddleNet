@@ -1411,10 +1411,10 @@ def create_simulation_from_class_api():
             'basic': {
                 'title': data.get('title'),
                 'description': data.get('description'),
-                'simulation_type': data.get('simulation_type'),
+                'type': data.get('simulation_type'),  # Controller expects 'type', not 'simulation_type'
                 'category': data.get('category'),
                 'difficulty': data.get('difficulty', 'Beginner'),
-                'estimated_duration': data.get('estimated_duration', 30),
+                'duration': data.get('estimated_duration', 30),  # Controller expects 'duration'
                 'is_published': data.get('is_published', True),
                 'is_active': data.get('is_active', True)
             },
