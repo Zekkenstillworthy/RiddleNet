@@ -384,6 +384,25 @@
                 this.saveProgress();
                 this.updateProgressUI();
             }
+            
+            // 📡 BROADCAST TO COLLABORATORS (always, even if already tracked)
+            if (window.collaborationRealTime && window.collaborationRealTime.socket) {
+                const simulationId = this.simulationId || window.simulationId;
+                window.collaborationRealTime.socket.emit('simulation_device_added', {
+                    simulation_id: simulationId,
+                    device: {
+                        id: device.id,
+                        type: device.type,
+                        label: device.label || device.id,
+                        x: device.x,
+                        y: device.y,
+                        config: device.config
+                    }
+                });
+                console.log(`📡 [COLLAB] Broadcasted device to collaborators: ${device.label || device.id}`);
+            } else {
+                console.warn('⚠️ [COLLAB] Collaboration socket not available for device broadcast');
+            }
         }
 
         trackDeviceConfiguration(device) {
@@ -430,6 +449,25 @@
             this.logActivity('connection_created', connectionData);
             this.saveProgress();
             this.updateProgressUI();
+            
+            // 📡 BROADCAST TO COLLABORATORS
+            if (window.collaborationRealTime && window.collaborationRealTime.socket) {
+                const simulationId = this.simulationId || window.simulationId;
+                window.collaborationRealTime.socket.emit('simulation_connection_added', {
+                    simulation_id: simulationId,
+                    connection: {
+                        id: connection.id,
+                        device1_id: connection.device1?.id || connection.source,
+                        device2_id: connection.device2?.id || connection.target,
+                        port1: connection.port1 || connection.source_interface,
+                        port2: connection.port2 || connection.target_interface,
+                        type: connection.type || 'ethernet'
+                    }
+                });
+                console.log(`📡 [COLLAB] Broadcasted connection to collaborators: ${connectionData.source_device} <-> ${connectionData.target_device}`);
+            } else {
+                console.warn('⚠️ [COLLAB] Collaboration socket not available for connection broadcast');
+            }
         }
 
         trackCLICommand(detail) {

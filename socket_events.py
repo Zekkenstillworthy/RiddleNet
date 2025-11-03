@@ -3064,3 +3064,98 @@ def handle_leave_live_quiz(data):
         
     except Exception as e:
         print(f"[ERROR] Error leaving live quiz: {str(e)}")
+
+
+# ===== SIMULATION COLLABORATION EVENTS =====
+@socketio.on('simulation_device_added')
+@authenticated_only
+def handle_simulation_device_added(data):
+    """Broadcast device addition to all users in the simulation"""
+    try:
+        simulation_id = data.get('simulation_id')
+        device_data = data.get('device')
+        
+        if not simulation_id or not device_data:
+            print("[ERROR] Missing simulation_id or device data")
+            return
+        
+        # Prepare broadcast data
+        broadcast_data = {
+            'simulation_id': simulation_id,
+            'device': device_data,
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Broadcast to all users in the simulation room (excluding sender)
+        room = f'simulation_{simulation_id}'
+        emit('simulation_device_added', broadcast_data, room=room, include_self=False, broadcast=True)
+        
+        print(f"[COLLABORATION] Device '{device_data.get('label')}' added by {current_user.username} broadcasted to simulation {simulation_id}")
+        
+    except Exception as e:
+        print(f"[ERROR] Error broadcasting device addition: {str(e)}")
+
+
+@socketio.on('simulation_device_moved')
+@authenticated_only
+def handle_simulation_device_moved(data):
+    """Broadcast device movement to all users in the simulation"""
+    try:
+        simulation_id = data.get('simulation_id')
+        device_data = data.get('device')
+        
+        if not simulation_id or not device_data:
+            print("[ERROR] Missing simulation_id or device data")
+            return
+        
+        # Prepare broadcast data
+        broadcast_data = {
+            'simulation_id': simulation_id,
+            'device': device_data,
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Broadcast to all users in the simulation room (excluding sender)
+        room = f'simulation_{simulation_id}'
+        emit('simulation_device_moved', broadcast_data, room=room, include_self=False, broadcast=True)
+        
+        print(f"[COLLABORATION] Device '{device_data.get('label')}' moved by {current_user.username} broadcasted to simulation {simulation_id}")
+        
+    except Exception as e:
+        print(f"[ERROR] Error broadcasting device movement: {str(e)}")
+
+
+@socketio.on('simulation_connection_added')
+@authenticated_only
+def handle_simulation_connection_added(data):
+    """Broadcast connection creation to all users in the simulation"""
+    try:
+        simulation_id = data.get('simulation_id')
+        connection_data = data.get('connection')
+        
+        if not simulation_id or not connection_data:
+            print("[ERROR] Missing simulation_id or connection data")
+            return
+        
+        # Prepare broadcast data
+        broadcast_data = {
+            'simulation_id': simulation_id,
+            'connection': connection_data,
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Broadcast to all users in the simulation room (excluding sender)
+        room = f'simulation_{simulation_id}'
+        emit('simulation_connection_added', broadcast_data, room=room, include_self=False, broadcast=True)
+        
+        print(f"[COLLABORATION] Connection {connection_data.get('device1_id')} <-> {connection_data.get('device2_id')} added by {current_user.username} broadcasted to simulation {simulation_id}")
+        
+    except Exception as e:
+        print(f"[ERROR] Error broadcasting connection addition: {str(e)}")
+

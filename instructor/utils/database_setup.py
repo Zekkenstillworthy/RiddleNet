@@ -44,20 +44,31 @@ def setup_database():
     # Migrate existing tables to add missing columns
     migrate_existing_tables()
     
-    # One-time safety: ensure PostgreSQL sequence for simulation_assignments.id is in sync
-    try:
-        print("[database_setup] Syncing simulation_assignments.id sequence with MAX(id)...")
-        max_id_result = db.session.execute(text("SELECT COALESCE(MAX(id), 0) FROM simulation_assignments"))
-        max_id = max_id_result.scalar_one() or 0
-        next_val = max_id if max_id > 0 else 1
-        seq_name_result = db.session.execute(text("SELECT pg_get_serial_sequence('simulation_assignments','id')"))
-        seq_name = seq_name_result.scalar_one()
-        db.session.execute(text("SELECT setval(:seq, :val, true)"), {"seq": seq_name, "val": next_val})
-        db.session.commit()
-        print("[database_setup] [OK] simulation_assignments.id sequence synced")
-    except Exception as e:
-        db.session.rollback()
-        print(f"[database_setup] [WARNING] Sequence sync skipped or failed: {e}")
+    # One-time safety: ensure PostgreSQL sequences are in sync with MAX(id)
+    sequences_to_fix = [
+        ('simulation_assignments', 'simulation_assignments.id'),
+        ('assignment_submissions', 'assignment_submissions.id')
+    ]
+    
+    for table_name, description in sequences_to_fix:
+        try:
+            print(f"[database_setup] Syncing {description} sequence with MAX(id)...")
+            max_id_result = db.session.execute(text(f"SELECT COALESCE(MAX(id), 0) FROM {table_name}"))
+            max_id = max_id_result.scalar_one() or 0
+            # Set to max_id so next nextval() returns max_id + 1
+            next_val = max_id
+            seq_name_result = db.session.execute(text(f"SELECT pg_get_serial_sequence('{table_name}','id')"))
+            seq_name = seq_name_result.scalar_one()
+            if seq_name:
+                # setval with is_called=true means "last value returned was next_val, so nextval() returns next_val+1"
+                db.session.execute(text("SELECT setval(:seq, :val, true)"), {"seq": seq_name, "val": next_val})
+                db.session.commit()
+                print(f"[database_setup] [OK] {description} sequence synced (next insert will use {next_val + 1})")
+            else:
+                print(f"[database_setup] [SKIP] No sequence found for {table_name}")
+        except Exception as e:
+            db.session.rollback()
+            print(f"[database_setup] [WARNING] {description} sequence sync failed: {e}")
     
     print("Database setup complete!")
     print("[OK] Performance feedback tables created successfully!")

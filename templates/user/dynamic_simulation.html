@@ -10466,6 +10466,21 @@ class DynamicSimulation {
         // Single render call only
         this.renderCanvas(); // This will render all devices once
         
+        // ✅ BROADCAST NEW DEVICE TO OTHER USERS
+        if (window.collaborationRealTime && window.collaborationRealTime.socket) {
+            window.collaborationRealTime.socket.emit('simulation_device_added', {
+                simulation_id: window.simulation_id,
+                device: {
+                    id: newDevice.id,
+                    type: newDevice.type,
+                    x: newDevice.x,
+                    y: newDevice.y,
+                    label: newDevice.label
+                }
+            });
+            console.log('📡 New device broadcasted to collaborators:', newDevice.label);
+        }
+        
         // Enhanced performance tracking with mobile device support
         if (window.performanceFeedback) {
             window.performanceFeedback.trackAction('device_placed', {
@@ -11245,6 +11260,21 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                     this.showToast(`Moved ${this.draggedDevice.label} to new position`, 'success');
                 } else {
                     console.log(`🔧 Finished dragging device: ${this.draggedDevice.label} to (${this.draggedDevice.x}, ${this.draggedDevice.y})`);
+                }
+                
+                // ✅ BROADCAST DEVICE MOVEMENT TO OTHER USERS
+                if (window.collaborationRealTime && window.collaborationRealTime.socket) {
+                    window.collaborationRealTime.socket.emit('simulation_device_moved', {
+                        simulation_id: window.simulation_id,
+                        device: {
+                            id: this.draggedDevice.id,
+                            label: this.draggedDevice.label,
+                            type: this.draggedDevice.type,
+                            x: this.draggedDevice.x,
+                            y: this.draggedDevice.y
+                        }
+                    });
+                    console.log('📡 Device movement broadcasted to collaborators:', this.draggedDevice.label);
                 }
                 
                 this.isDragging = false;
@@ -17994,6 +18024,16 @@ document.addEventListener('DOMContentLoaded', function() {
     window.simulation.initialized = true; // Mark as initialized
     console.log('🚀 DynamicSimulation instance created successfully');
     
+    // Join simulation room for real-time collaboration (devices/connections sync)
+    if (window.collaborationRealTime && typeof window.collaborationRealTime.joinSimulationRoom === 'function') {
+        setTimeout(() => {
+            const joined = window.collaborationRealTime.joinSimulationRoom();
+            if (!joined) {
+                console.log('⚠️ Failed to join simulation room, will retry on socket connect');
+            }
+        }, 500); // Small delay to ensure socket is connected
+    }
+    
     // Add cleanup for simulation room when leaving page
     window.addEventListener('beforeunload', function() {
         if (window.socketClient && window.simulation_id) {
@@ -21448,6 +21488,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.networkConfigEditor.handleRemoteConfigReset(data.username || 'Team Member');
                 }
             });
+            
+            // Note: Device and connection synchronization listeners moved to collaboration-real-time.js setupCollaborationEvents()
+            // This ensures they register AFTER socket connects, fixing timing issues
         }
     }
 });
@@ -21871,6 +21914,25 @@ class TaskAssignmentManager {
         });
         
         this.updateProgress();
+        
+        // 📡 BROADCAST TO COLLABORATORS
+        if (window.collaborationRealTime && window.collaborationRealTime.socket) {
+            const simulationId = this.simulationId || window.simulationId;
+            window.collaborationRealTime.socket.emit('simulation_device_added', {
+                simulation_id: simulationId,
+                device: {
+                    id: device.id,
+                    type: device.type,
+                    label: device.label,
+                    x: device.x,
+                    y: device.y,
+                    config: device.config
+                }
+            });
+            console.log(`📡 [COLLAB] Broadcasted device to collaborators: ${device.label || device.id}`);
+        } else {
+            console.warn('⚠️ [COLLAB] Collaboration socket not available for device broadcast');
+        }
     }
 
     handleConnectionMade(connection) {
@@ -21889,6 +21951,24 @@ class TaskAssignmentManager {
         });
         
         this.updateProgress();
+        
+        // 📡 BROADCAST TO COLLABORATORS
+        if (window.collaborationRealTime && window.collaborationRealTime.socket) {
+            const simulationId = this.simulationId || window.simulationId;
+            window.collaborationRealTime.socket.emit('simulation_connection_added', {
+                simulation_id: simulationId,
+                connection: {
+                    id: connection.id,
+                    device1_id: connection.device1.id,
+                    device2_id: connection.device2.id,
+                    port1: connection.port1,
+                    port2: connection.port2
+                }
+            });
+            console.log(`📡 [COLLAB] Broadcasted connection to collaborators: ${connection.device1.id} <-> ${connection.device2.id}`);
+        } else {
+            console.warn('⚠️ [COLLAB] Collaboration socket not available for connection broadcast');
+        }
     }
 
     updateProgress() {
@@ -21977,11 +22057,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // ===== END MVP TASK ASSIGNMENT SYSTEM =====
 
 </script>
-<script src="{{ url_for('static', filename='js/task_assignment_fix.js') }}"></script>
+<script src="{{ url_for('static', filename='js/task_assignment_fix.js') }}?v=1762202682"></script>
 
 <!-- Real-time Collaboration System -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="{{ url_for('static', filename='js/collaboration-real-time.js') }}"></script>
+<script src="{{ url_for('static', filename='js/collaboration-real-time.js') }}?v=1762203200"></script>
 
 <!-- Auto-Landscape Optimization System -->
 

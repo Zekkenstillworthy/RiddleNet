@@ -101,6 +101,9 @@ class CollaborationRealTime {
             this.reconnectAttempts = 0;
             this.startHeartbeat();
             this.emit('connected');
+            
+            // Try to join simulation room (will be called again after sim init if not available yet)
+            this.joinSimulationRoom();
         });
         
         this.socket.on('disconnect', () => {
@@ -252,6 +255,80 @@ class CollaborationRealTime {
                 console.log('🖱️ [SOCKET] Cursor moved:', data.username, data.position);
             }
             this.handleCursorUpdate(data);
+        });
+        
+        // Simulation device synchronization
+        this.socket.on('simulation_device_added', (data) => {
+            console.log('📡 Received device_added event from another user:', data);
+            
+            // Don't process our own events
+            if (String(data.user_id) === String(this.currentUser?.id)) {
+                console.log('⏭️ Skipping own device event');
+                return;
+            }
+            
+            // Create the device on our canvas
+            if (window.simulationEngine && typeof window.simulationEngine.createDevice === 'function') {
+                const device = window.simulationEngine.createDevice(
+                    data.device.type,
+                    data.device.x,
+                    data.device.y,
+                    data.device.label,
+                    data.device.id,
+                    data.device.config || {}
+                );
+                console.log('✅ Created device from collaborator:', device);
+            } else {
+                console.error('❌ simulationEngine not available or createDevice method missing');
+            }
+        });
+        
+        this.socket.on('simulation_device_moved', (data) => {
+            console.log('📡 Received device_moved event:', data);
+            
+            // Don't process our own events
+            if (String(data.user_id) === String(this.currentUser?.id)) {
+                return;
+            }
+            
+            // Update device position
+            if (window.networkEngine && Array.isArray(window.networkEngine.networkDevices)) {
+                const device = window.networkEngine.networkDevices.find(d => d.id === data.device_id);
+                if (device) {
+                    device.x = data.x;
+                    device.y = data.y;
+                    window.networkEngine.renderCanvas();
+                    console.log('✅ Moved device from collaborator:', data.device_id);
+                }
+            }
+        });
+        
+        this.socket.on('simulation_connection_added', (data) => {
+            console.log('📡 Received connection_added event:', data);
+            
+            // Don't process our own events
+            if (String(data.user_id) === String(this.currentUser?.id)) {
+                return;
+            }
+            
+            // Create the connection
+            if (window.networkEngine && typeof window.networkEngine.createConnection === 'function') {
+                const sourceDevice = window.networkEngine.networkDevices.find(d => d.id === data.connection.source_id);
+                const targetDevice = window.networkEngine.networkDevices.find(d => d.id === data.connection.target_id);
+                
+                if (sourceDevice && targetDevice) {
+                    window.networkEngine.createConnection(
+                        sourceDevice,
+                        targetDevice,
+                        data.connection.source_port,
+                        data.connection.target_port,
+                        data.connection.id
+                    );
+                    console.log('✅ Created connection from collaborator');
+                } else {
+                    console.error('❌ Could not find devices for connection:', data.connection);
+                }
+            }
         });
     }
     
@@ -1877,6 +1954,41 @@ class CollaborationRealTime {
                 viewport.remove();
             }
             this.viewportIndicators.clear();
+        }
+    }
+
+
+
+    // ===== SIMULATION ROOM MANAGEMENT =====
+    
+    /**
+     * Join the simulation-specific WebSocket room
+     * This ensures device/connection events are received by all collaborators
+     */
+    joinSimulationRoom() {
+        // Check multiple possible sources for simulation ID
+        const simulationId = window.simulation?.simulationId || 
+                            window.simulation?.id || 
+                            (typeof getSimulationId === 'function' ? getSimulationId() : null);
+        
+        if (!simulationId) {
+            console.log('⏳ Simulation ID not yet available, room join will be attempted later');
+            return false;
+        }
+        
+        console.log(`🚪 Joining simulation room: simulation_${simulationId}`);
+        
+        if (this.socket && this.isConnected) {
+            this.socket.emit('join_simulation_room', {
+                simulation_id: simulationId,
+                user_id: this.currentUser?.id,
+                username: this.currentUser?.username
+            });
+            console.log('✅ Simulation room join request sent');
+            return true;
+        } else {
+            console.log('⚠️ Socket not connected, cannot join simulation room yet');
+            return false;
         }
     }
 
