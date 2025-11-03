@@ -5301,7 +5301,8 @@ let liveQuizState = {
     hasJoined: false,
     quizEnded: false,  // GUARD: Track if quiz has ended to prevent timer loops
     currentUserId: CURRENT_USER_ID,
-    isLiveQuizActive: false  // NAVIGATION LOCK: Track if user is actively taking quiz
+    isLiveQuizActive: false,  // NAVIGATION LOCK: Track if user is actively taking quiz
+    questionLoadedByQuizState: false  // GUARD: Track if quiz_state already loaded a question to prevent duplicate from lobby
 };
 
 console.log('[LiveQuiz][UserContext] Current user id detected:', liveQuizState.currentUserId);
@@ -5466,6 +5467,12 @@ function initializeLiveQuizWithLobby(sessionId, questions) {
                     })
                     .finally(() => {
                         setTimeout(() => {
+                            // Check if quiz_state event already loaded a question
+                            if (liveQuizState.questionLoadedByQuizState) {
+                                console.log('[LiveQuiz][Lobby] ⏭️ Skipping auto-transition - quiz_state already loaded question');
+                                return;
+                            }
+                            
                             console.log('[LiveQuiz][Lobby] Auto-transitioning to active quiz...');
                             if (liveQuizState.questions.length > 0) {
                                 // Load the appropriate question for this student (skipping already answered)
@@ -5660,6 +5667,9 @@ function connectToLiveQuiz() {
             if (data.status === 'active') {
                 const instructorQuestionIndex = data.current_question_index || 0;
                 console.log('[MVP LiveQuiz] Session is active - instructor at question', instructorQuestionIndex);
+                
+                // Set flag to prevent duplicate loading from lobby auto-transition
+                liveQuizState.questionLoadedByQuizState = true;
                 
                 // Load the appropriate question for this student (skipping already answered)
                 loadQuestionForStudent(instructorQuestionIndex);
