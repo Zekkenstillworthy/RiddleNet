@@ -6683,10 +6683,17 @@ function showQuizCompletion(data) {
             : (typeof currentUserData.questions_answered === 'number' && currentUserData.questions_answered > 0)
                 ? currentUserData.questions_answered
                 : (Array.isArray(liveQuizState.questions) ? liveQuizState.questions.length : 0);
-        const accuracy = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+        
+        // Calculate total questions in the quiz (not just answered)
+        const totalQuestions = Array.isArray(liveQuizState.questions) 
+            ? liveQuizState.questions.length 
+            : (currentUserData?.total_questions || totalAnswered || 0);
+        
+        // Calculate accuracy based on total questions in quiz
+        const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
 
         if (finalRankEl) finalRankEl.textContent = safeRank;
-        if (finalCorrectEl) finalCorrectEl.textContent = `${correctAnswers}/${totalAnswered}`;
+        if (finalCorrectEl) finalCorrectEl.textContent = `${correctAnswers}/${totalQuestions}`;
         if (finalAccuracyEl) finalAccuracyEl.textContent = `${accuracy}%`;
     
         console.log('[STUDENT COMPLETION] 🏁 Final stats calculated:', {
