@@ -451,12 +451,20 @@ def module_detail(class_id, module_id):
             print(f"[DEBUG] Found {len(module_simulation_assignments)} assignments for module {module_id}")
             
             for assignment in module_simulation_assignments:
+                print(f"[DEBUG] Assignment {assignment.id}: is_active={assignment.is_active}, is_published={assignment.is_published}, available_from={assignment.available_from}, available_until={assignment.available_until}")
                 # Ensure assignment is actually available now and simulation is usable
                 if not assignment.is_available:
-                    print(f"[DEBUG] Skipping assignment {assignment.id} - not available")
+                    print(f"[DEBUG] Skipping assignment {assignment.id} - not available (is_available returned False)")
                     continue
+                
+                print(f"[DEBUG] Assignment {assignment.id} is available")
+                print(f"[DEBUG] Checking simulation: exists={assignment.simulation is not None}")
+                if assignment.simulation:
+                    print(f"[DEBUG] Simulation {assignment.simulation.id}: is_active={getattr(assignment.simulation, 'is_active', True)}, is_published={assignment.simulation.is_published}")
                     
-                if assignment.simulation and getattr(assignment.simulation, 'is_active', True) and assignment.simulation.is_published:
+                # Show simulation if assignment is valid, regardless of simulation's publish status
+                # The assignment being published/active is what matters for student visibility
+                if assignment.simulation:
                     # Skip if we've already added this simulation
                     if assignment.simulation.id in seen_simulation_ids:
                         print(f"[DEBUG] Skipping simulation {assignment.simulation.id} - already added")
@@ -650,10 +658,8 @@ def module_detail(class_id, module_id):
                         return
                     if sim_obj.id in seen_lesson_simulation_ids:
                         return
-                    if not getattr(sim_obj, 'is_active', True):
-                        return
-                    if hasattr(sim_obj, 'is_published') and not sim_obj.is_published:
-                        return
+                    # Removed is_active and is_published checks - if assigned to module, show it regardless
+                    # The assignment's publish status is what controls visibility, not the simulation's
 
                     user_sim_progress = SimulationAttempt.query.filter_by(
                         user_id=user_id,
@@ -736,21 +742,28 @@ def module_detail(class_id, module_id):
                             add_simulation_to_lesson(sim)
 
                 # Merge in simulations sourced from assignments when not explicitly listed on the lesson
+                print(f"[DEBUG] Merging module assignments into lesson simulations")
+                print(f"[DEBUG] module_simulation_assignments count: {len(module_simulation_assignments)}")
                 if module_simulation_assignments:
                     lesson_title_lower = (active_lesson.title or '').lower()
                     lesson_number_lower = (active_lesson.lesson_number or '').lower() if active_lesson.lesson_number else ''
 
                     for assignment in module_simulation_assignments:
+                        print(f"[DEBUG] Processing assignment {assignment.id} for lesson")
                         if not assignment.is_available:
+                            print(f"[DEBUG] Assignment {assignment.id} not available for lesson, skipping")
                             continue
                         sim_obj = assignment.simulation
                         if not sim_obj:
+                            print(f"[DEBUG] Assignment {assignment.id} has no simulation")
                             continue
 
+                        print(f"[DEBUG] Assignment {assignment.id} has simulation: {sim_obj.title}")
                         matches_lesson = False
                         # Direct module linkage takes priority
                         if assignment.module_id == module_id:
                             matches_lesson = True
+                            print(f"[DEBUG] Assignment {assignment.id} matches module {module_id}")
 
                         # Lesson-specific assignments (by title/number match)
                         if not matches_lesson and assignment.assignment_type == 'lesson':
@@ -762,7 +775,14 @@ def module_detail(class_id, module_id):
                                     matches_lesson = True
 
                         if matches_lesson:
+                            print(f"[DEBUG] Adding simulation {sim_obj.id} to lesson")
                             add_simulation_to_lesson(sim_obj)
+                        else:
+                            print(f"[DEBUG] Assignment {assignment.id} doesn't match this lesson")
+                
+                print(f"[DEBUG] Final lesson_simulations count: {len(lesson_simulations)}")
+                for sim in lesson_simulations:
+                    print(f"[DEBUG]   - {sim['title']} (ID: {sim['id']})")
         
         # Get questions assigned to this module/lesson via Quiz associations
         lesson_questions = []
