@@ -1,0 +1,754 @@
+﻿# ===== CRITICAL IMPORT ORDER =====
+# 1. Import eventlet initialization FIRST - this must happen before ANY other imports
+import eventlet_init
+
+# 2. Now import Flask and other modules
+import os
+import sys
+
+# Add project root to path to ensure imports work
+project_root = os.path.dirname(os.path.abspath(__file__))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# 5. Import Flask components with better error handling
+try:
+    from __init__ import create_app, db, login_manager
+except ImportError as e:
+    print(f"Error importing Flask app components: {e}")
+    sys.exit(1)
+
+try:
+    from socket_manager import socketio
+except ImportError as e:
+    print(f"Error importing socketio: {e}")
+    socketio = None
+
+from user.quiz import QuizController
+from flask_login import current_user
+from flask import redirect, url_for, request, flash
+from flask_cors import CORS
+from utils.session_guard import register_session_guard
+import socket_events 
+
+# ===== APPLICATION CREATION AND CONTEXT SETUP =====
+template_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
+
+# Create Flask app with better error handling
+try:
+    app = create_app({
+        'TEMPLATE_FOLDER': template_dir
+    })
+except Exception as e:
+    print(f"Fatal error creating Flask app: {e}")
+    sys.exit(1)
+
+# Configure session settings for production
+app.config.update(
+    SESSION_COOKIE_SECURE=False,      # Set to True in production with HTTPS
+    SESSION_COOKIE_HTTPONLY=True,     # Prevent JavaScript access to session cookie
+    SESSION_COOKIE_SAMESITE='Lax',    # CSRF protection
+    SESSION_PERMANENT=True,           # Make sessions persistent
+    PERMANENT_SESSION_LIFETIME=86400  # 24 hour session lifetime
+)
+
+# Initialize application context properly
+try:
+    ctx = app.app_context()
+    ctx.push()
+    print("[OK] Application context initialized successfully")
+except Exception as e:
+    print(f"Warning: Application context setup failed: {e}")
+    print("Continuing without explicit context push...")
+
+# Initialize SocketIO with better error handling
+if socketio:
+    try:
+        from socket_manager import init_socketio
+        init_socketio(app)
+        print("[OK] SocketIO initialized successfully")
+    except Exception as e:
+        print(f"Warning: SocketIO initialization failed: {e}")
+        print("WebSocket functionality may be limited")
+else:
+    print("[WARNING] SocketIO not available - WebSocket functionality disabled")
+
+# Configure structured logging
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Inject socketio instance into notification controller
+if socketio:
+    try:
+        from instructor.controllers.notification_controller import set_socketio_instance
+        set_socketio_instance(socketio)
+        logger.info("[OK] SocketIO instance injected into notification controller")
+    except ImportError as e:
+        logger.warning(f"Could not inject socketio into notification controller: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error injecting socketio: {e}", exc_info=True)
+else:
+    logger.warning("[WARNING] SocketIO not available - notification controller injection skipped")
+
+cors = CORS(app, resources={
+    r"/admin/topology/*": {"origins": "*"},
+    r"/admin/troubleshooting/*": {"origins": "*"}
+})
+
+instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
+os.makedirs(instance_path, exist_ok=True)
+
+# Initialize database with proper migration support
+with app.app_context():
+    try:
+        # In production, use Flask-Migrate for schema management
+        if app.config.get('FLASK_ENV') == 'production':
+            logger.info("Production mode: Using Flask-Migrate for database management")
+            logger.info("Run 'flask db upgrade' to apply migrations")
+        else:
+            # Development mode: still use create_all for convenience
+            logger.info("Development mode: Creating database tables")
+            db.create_all()
+            logger.info("Database tables created successfully")
+            
+        # Run custom database setup if available
+        try:
+            from instructor.utils.database_setup import setup_database, migrate_existing_tables
+            logger.info("Running database migrations and setup...")
+            migrate_existing_tables()
+            setup_database()
+            logger.info("Database setup completed successfully")
+        except ImportError:
+            logger.info("No custom database setup found, skipping")
+        except Exception as e:
+            logger.warning(f"Database setup completed with warnings: {e}")
+            
+    except Exception as e:
+        logger.error(f"Database initialization error: {e}", exc_info=True)
+        if app.config.get('FLASK_ENV') == 'production':
+            logger.critical("Database initialization failed in production mode")
+            raise  # Don't continue in production if DB setup fails
+        else:
+            logger.warning("Continuing with application startup despite database errors")
+
+# Initialize session cleanup middleware
+try:
+    logger.info("Initializing session cleanup middleware...")
+    from utils.session_cleanup_middleware import init_session_cleanup
+    logger.info("Session cleanup middleware imported successfully")
+    init_session_cleanup(app)
+    logger.info("Session cleanup middleware initialized successfully")
+except ImportError as e:
+    logger.warning(f"Failed to import session cleanup middleware: {e}")
+except Exception as e:
+    logger.error(f"Error initializing session cleanup middleware: {e}", exc_info=True)
+
+quiz_controller = QuizController(app)
+
+# Register dynamic simulation routes - already registered in __init__.py
+# try:
+#     from user.dynamic_simulation_routes import register_dynamic_routes
+#     register_dynamic_routes(app)
+#     print("[OK] Dynamic simulation routes registered")
+# except ImportError as e:
+#     print(f"[WARNING] Could not register dynamic routes: {e}")
+
+login_manager.init_app(app)
+login_manager.login_view = 'user.login'  
+login_manager.login_message_category = 'info'
+
+@login_manager.unauthorized_handler
+def handle_unauthorized():
+    """Route unauthenticated users to the correct login page per namespace."""
+    next_url = (request.full_path if request.query_string else request.path).rstrip('?')
+
+    if request.path.startswith('/instructor') or request.path.startswith('/admin'):
+        flash('Please log in with instructor credentials to continue.', 'warning')
+        return redirect(url_for('auth.login', next=next_url))
+
+    flash('Please log in to continue.', 'warning')
+    return redirect(url_for(login_manager.login_view, next=next_url))
+
+@login_manager.user_loader
+def load_user(user_id):
+    """ENHANCED user_loader - Proper session isolation between admin and user"""
+    from instructor.models.user import Instructor
+    from user.models import User
+    from flask import request, session
+    
+    try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError):
+        print(f"[ERROR] Invalid user_id: {user_id}")
+        return None
+    
+    # CRITICAL FIX: Check session namespace FIRST - this works for both HTTP and WebSocket
+    auth_namespace = session.get('auth_namespace', 'unknown')
+    request_path = getattr(request, 'path', '') if request else ''
+    
+    print(f"[DEBUG] User loader: ID={user_id_int}, namespace={auth_namespace}, path={request_path}")
+    
+    # PRIORITY 1: Load instructor user if session indicates admin auth (works for WebSocket + HTTP)
+    if auth_namespace == 'instructor':
+        admin = db.session.get(Instructor, user_id_int)
+        if admin:
+            print(f"[AUTH] Admin session: Loaded admin {admin.username} (ID: {user_id_int})")
+            return admin
+        print(f"[ERROR] Admin session: No admin found for ID {user_id_int}")
+        return None
+    
+    # PRIORITY 2: Load user if session indicates user auth
+    elif auth_namespace == 'user':
+        user = db.session.get(User, user_id_int)
+        if user:
+            print(f"[USER] User session: Loaded user {user.username} (ID: {user_id_int})")
+            return user
+        print(f"[ERROR] User session: No user found for ID {user_id_int}")
+        return None
+    
+    # FALLBACK: Use path-based detection if no namespace in session (legacy support)
+    elif request_path.startswith('/instructor') or request_path.startswith('/admin'):
+        # Try instructor table first for instructor/admin paths
+        admin = db.session.get(Instructor, user_id_int)
+        if admin:
+            print(f"[AUTH] Admin path fallback: Loaded admin {admin.username} (ID: {user_id_int})")
+            # Auto-fix the session namespace if missing
+            if auth_namespace == 'unknown':
+                session['auth_namespace'] = 'instructor'
+                print(f"[FIX] Auto-fixed instructor session namespace for {admin.username}")
+            return admin
+        print(f"[ERROR] Admin path fallback: No admin found for ID {user_id_int}")
+        return None
+    
+    else:
+        # Try user table as final fallback
+        user = db.session.get(User, user_id_int)
+        if user:
+            print(f"[USER] User path fallback: Loaded user {user.username} (ID: {user_id_int})")
+            # Auto-fix the session namespace if missing
+            if auth_namespace == 'unknown':
+                session['auth_namespace'] = 'user'
+                print(f"[FIX] Auto-fixed user session namespace for {user.username}")
+            return user
+        print(f"[ERROR] No user found in any table for ID {user_id_int}")
+        return None
+
+# Register global session guard to enforce single-device logins before other middleware
+register_session_guard(app)
+
+# Consolidated before_request handler for better performance
+@app.before_request
+def before_request_handler():
+    """Consolidated request handler for authentication and debugging"""
+    
+    # Debug logging (only in debug mode)
+    if app.debug and ('/preview' in request.path or '/class-content-manager' in request.path):
+        logger.debug("="*80)
+        logger.debug(f"REQUEST DEBUG: {request.method} {request.path}")
+        logger.debug(f"Full URL: {request.url}")
+        logger.debug(f"Referrer: {request.referrer}")
+        logger.debug(f"User-Agent: {request.headers.get('User-Agent', 'N/A')[:100]}")
+        if request.args:
+            logger.debug(f"Query params: {dict(request.args)}")
+        logger.debug("="*80)
+    
+    # Instructor authentication check
+    if request.path.startswith('/instructor'):
+        from flask import session
+        
+        # Fix namespace if user is authenticated as instructor but namespace is missing/unknown
+        try:
+            if current_user.is_authenticated and hasattr(current_user, 'id'):
+                current_namespace = session.get('auth_namespace', 'unknown')
+                # Check if this is an Instructor by checking the class name
+                if current_user.__class__.__name__ == 'Instructor':
+                    if current_namespace != 'instructor':
+                        print(f"[FIX] BEFORE_REQUEST: Fixing auth_namespace from '{current_namespace}' to 'instructor'")
+                        session['auth_namespace'] = 'instructor'
+                        session.modified = True
+                elif current_user.__class__.__name__ == 'User':
+                    if current_namespace != 'user':
+                        print(f"[FIX] BEFORE_REQUEST: Fixing auth_namespace from '{current_namespace}' to 'user'")
+                        session['auth_namespace'] = 'user'
+                        session.modified = True
+        except Exception as e:
+            print(f"[WARNING] BEFORE_REQUEST: Error fixing namespace: {e}")
+        
+        if app.debug:  # Only log in debug mode
+            logger.debug("="*80)
+            logger.debug(f"ADMIN AUTH CHECK: {request.path}")
+            logger.debug(f"current_user: {current_user}")
+            logger.debug(f"is_authenticated: {current_user.is_authenticated}")
+            logger.debug(f"current_user type: {type(current_user)}")
+            logger.debug(f"session keys: {list(session.keys())}")
+            logger.debug(f"session _user_id: {session.get('_user_id', 'NOT FOUND')}")
+            logger.debug(f"session auth_namespace: {session.get('auth_namespace', 'NOT FOUND')}")
+            logger.debug("="*80)
+        
+        # Get exempt routes from configuration instead of hardcoding
+        exempt_routes = app.config.get('ADMIN_EXEMPT_ROUTES', [
+            '/admin/login',
+            '/admin/signup',
+            '/admin/forgot-password',
+            '/admin/reset-password/',
+            '/admin/logout',
+            '/admin/static/',
+            '/admin/topology/',
+            '/admin/troubleshooting/',
+            '/instructor/',  # Allow access to instructor landing page
+            '/instructor/login',
+            '/instructor/signup',
+            '/instructor/forgot-password',
+            '/instructor/reset-password/',
+            '/instructor/logout'
+        ])
+        
+        # Check if route is exempt
+        if any(request.path.startswith(route) for route in exempt_routes):
+            logger.debug(f"Path {request.path} is exempt, allowing through")
+            return None
+        
+        # Check authentication
+        if not current_user.is_authenticated:
+            flash('Please log in to access the admin area', 'warning')
+            next_url = (request.full_path if request.query_string else request.path).rstrip('?')
+            return redirect(url_for('auth.login', next=next_url))
+        
+        # Check instructor privileges
+        if current_user.is_authenticated:
+            from instructor.models.user import Instructor
+            if not isinstance(current_user, Instructor):
+                flash('Access denied. Admin credentials required.', 'error')
+                next_url = (request.full_path if request.query_string else request.path).rstrip('?')
+                return redirect(url_for('auth.login', next=next_url))
+
+# Register API blueprints with proper error handling
+try:
+    import sys
+    import os
+    sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+    from user.api import api_blueprint as user_api_blueprint
+    app.register_blueprint(user_api_blueprint, url_prefix='/api')
+    logger.info("User API Blueprint registered successfully")
+    
+    # Register additional user blueprints
+    additional_blueprints = [
+        ('user.api.topology_progress_api', 'topology_progress_bp', None),
+        ('user.routes.troubleshooting_routes', 'troubleshooting_bp', None),
+        ('user.routes.quiz_routes', 'quiz_bp', None),
+        ('user.routes.collaborative_troubleshooting_api', 'collaborative_troubleshooting_api_bp', None),
+        ('user.api.feedback_api', 'feedback_api', None),
+        ('user.routes.notification_routes', 'notification_bp', None),
+        ('user.routes.assignment_routes', 'user_assignment_bp', None),
+        ('user.api.enhanced_simulation_api', 'enhanced_simulation_api', '/dynamic'),
+        ('api.live_quiz_api', 'live_quiz_bp', None),
+    ]
+    
+    for module_path, blueprint_name, url_prefix in additional_blueprints:
+        try:
+            module = __import__(module_path, fromlist=[blueprint_name])
+            blueprint = getattr(module, blueprint_name)
+            if blueprint.name in app.blueprints:
+                logger.info(f"Skipping {blueprint.name} from {module_path}; already registered")
+                continue
+            app.register_blueprint(blueprint, url_prefix=url_prefix)
+            logger.info(f"Registered {blueprint_name} from {module_path}")
+        except (ImportError, AttributeError) as e:
+            logger.warning(f"Could not register {blueprint_name} from {module_path}: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error registering {blueprint_name}: {e}", exc_info=True)
+            
+except Exception as e:
+    logger.error(f"Critical error registering user API blueprints: {e}", exc_info=True)
+    # Don't fail completely, continue with app initialization
+        
+# Register Admin Blueprints with structured error handling
+logger.info("Registering Admin Blueprints...")
+try:
+    import importlib
+    blueprints_to_register = [
+        ('instructor.controllers.auth_controller', 'auth_bp', '/instructor', None),
+        ('instructor.controllers.dashboard_controller', 'dashboard_bp', '/instructor', None),
+        ('instructor.controllers.user_controller', 'user_bp', '/instructor', None),
+        ('instructor.controllers.score_controller', 'score_bp', '/instructor', None),
+        ('instructor.controllers.essay_controller', 'essay_bp', '/instructor', None),
+        ('instructor.controllers.assignment_submission_controller', 'assignment_submission_bp', '/instructor', None),
+    ('instructor.controllers.question_controller', 'question_bp', '/instructor', None),
+        ('instructor.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
+        ('instructor.controllers.class_controller', 'class_controller', '/instructor', None),
+        ('instructor.controllers.class_content_controller', 'class_content_controller_old', '/instructor', None),
+        ('instructor.controllers.lesson_editor_controller', 'lesson_editor_bp', None, 'lesson_editor_bp'),
+        ('instructor.controllers.enhanced_module_controller', 'enhanced_module_bp', '/instructor', None),
+        ('instructor.controllers.deadline_controller', 'deadline_controller_bp', None, None),
+        ('instructor.controllers.module_lesson_editor_controller', 'module_lesson_editor_bp', None, None),
+        ('instructor.controllers.audit_log_controller', 'audit_log_bp', '/instructor', None),
+        ('instructor.controllers.notification_controller', 'notification_controller', None, None),
+        ('instructor.controllers.lesson_controller', 'lesson_bp', '/instructor', None),
+        ('instructor.controllers.tutorial_controller', 'tutorial_bp', None, None),
+        ('instructor.controllers.rubric_controller', 'rubric_bp', None, None),
+        ('instructor.controllers.admin_settings_controller', 'admin_settings_bp', None, None),
+        ('instructor.api.live_quiz_api', 'live_quiz_instructor_bp', None, 'live_quiz_instructor'),
+        ('instructor.api.deadlines_api', 'deadlines_api', None, None),
+        ('instructor.routes.api_routes', 'api_bp', None, 'admin_api_bp'),
+        ('instructor.routes.topology_routes', 'topology_bp', None, None),
+        ('instructor.routes.topology_api_routes', 'topology_api_bp', None, None),
+        ('instructor.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),
+        ('instructor.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),
+        ('instructor.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),
+        ('instructor.routes.device_sync_api', 'device_sync_bp', None, 'device_sync_bp'),
+        ('instructor.routes.collaboration_api', 'admin_collaboration_api_bp', None, 'admin_collaboration_api'),
+        ('instructor.controllers.instructor_lab_controller', 'instructor_lab_bp', None, None),
+        ('instructor.routes.lab_api', 'lab_api', None, None),
+        ('instructor.routes.rnet_viewer_routes', 'rnet_viewer_bp', None, 'rnet_viewer_bp')
+    ]
+    
+    successful_registrations = 0
+    failed_registrations = 0
+    
+    for module_path, blueprint_name, url_prefix, alias_name in blueprints_to_register:
+        try:
+            module = importlib.import_module(module_path)
+            blueprint = getattr(module, blueprint_name)
+            # Skip registration if blueprint already registered (avoids duplicate name errors)
+            if blueprint.name in app.blueprints:
+                logger.info(f"Skipping {blueprint.name} from {module_path}; already registered")
+                continue
+            # A previous refactor attempted to pass a custom name when registering blueprints.
+            # Flask's register_blueprint does not accept an arbitrary "name" kwarg, so the
+            # blueprint failed to register and the routes returned 404. We now always register
+            # without a custom name to ensure the blueprint mounts correctly.
+            app.register_blueprint(blueprint, url_prefix=url_prefix)
+            
+            # Update the blueprint's template search paths
+            try:
+                from utils.template_utils import ensure_blueprint_can_find_templates
+                ensure_blueprint_can_find_templates(blueprint, [
+                    app.template_folder,
+                    os.path.join(app.template_folder, 'admin')
+                ])
+            except ImportError:
+                pass  # Template utils not available
+            
+            display_name = alias_name or blueprint_name
+            logger.info(f"Registered {display_name} from {module_path}")
+            successful_registrations += 1
+            
+        except (ImportError, AttributeError) as e:
+            logger.warning(f"Could not register {blueprint_name} from {module_path}: {e}")
+            failed_registrations += 1
+        except Exception as e:
+            logger.error(f"Unexpected error registering {blueprint_name}: {e}", exc_info=True)
+            failed_registrations += 1
+    
+    logger.info(f"Admin blueprints registration complete: {successful_registrations} successful, {failed_registrations} failed")
+    
+except Exception as e:
+    logger.error(f"Critical error in admin blueprint registration: {e}", exc_info=True)
+
+# Register Enhanced User Routes for User-Facing Integration
+logger.info("Registering Enhanced User Routes...")
+try:
+    from user.routes.enhanced.hybrid_routes import enhanced_user_bp
+    app.register_blueprint(enhanced_user_bp, url_prefix='/enhanced')
+    logger.info("Enhanced user routes registered successfully")
+except Exception as e:
+    logger.error(f"Error registering enhanced user routes: {e}", exc_info=True)
+
+# Register Progression API for sequential unlock mechanics
+print("\n=== Registering Progression API ===")
+try:
+    from user.api.progression_api import progression_api
+    app.register_blueprint(progression_api)
+    print("[OK] Progression API registered successfully")
+    print("   • /api/progression/simulation/<id>/unlock-status - Check unlock status")
+    print("   • /api/progression/learning-path/<id>/progress - Get progress")
+    print("   • /api/progression/simulation/<id>/complete - Mark completed")
+    print("   • /api/progression/user/achievements - Get achievements")
+except Exception as e:
+    print(f"[ERROR] Error registering progression API: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Register User Lesson Routes
+print("\n=== Registering User Lesson Routes ===")
+try:
+    from user.routes.lesson_routes import lesson_bp
+    app.register_blueprint(lesson_bp)
+    print("[OK] User lesson routes registered successfully")
+    print("   • /lesson/class/<id>/lesson/<id> - View lesson content")
+    print("   • /lesson/class/<id>/lesson/<id>/complete - Mark lesson complete")
+    print("   • /lesson/class/<id>/lesson/<id>/progress - Update reading progress")
+    print("   • /lesson/class/<id>/lesson/<id>/start-simulation/<id> - Start simulation")
+    print("   • /lesson/api/class/<id>/lesson/<id>/analytics - Get lesson analytics")
+except Exception as e:
+    print(f"[ERROR] Error registering user lesson routes: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Register Enhanced User Simulation Routes
+print("\n=== Registering Enhanced User Simulation Routes ===")
+try:
+    from user.routes.simulation_runner import user_simulation_bp
+    app.register_blueprint(user_simulation_bp)
+    print("[OK] Enhanced user simulation routes registered successfully")
+    print("   • /simulation/dashboard - Simulation dashboard for users")
+    print("   • /simulation/<id> - Run specific simulation")
+    print("   • /simulation/<id>/results/<attempt_id> - View simulation results")
+    print("   • /simulation/api/<id>/submit-step - Submit step response")
+    print("   • /simulation/api/<id>/complete - Complete simulation")
+    print("   • /simulation/api/<id>/restart - Restart simulation")
+except Exception as e:
+    print(f"[ERROR] Error registering enhanced user simulation routes: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Initialize and register dynamic class routes
+print("\n=== Registering Dynamic Class Routes ===")
+try:
+    from instructor.services.dynamic_route_registry import route_registry
+    
+    # Initialize the route registry with the app
+    route_registry.init_app(app)
+    
+    # Get statistics about registered routes
+    stats = route_registry.get_statistics()
+    print(f"[OK] Dynamic route registry initialized")
+    print(f"   Total classes: {stats.get('total_classes', 0)}")
+    print(f"   Registered classes: {stats.get('registered_classes', 0)}")
+    print(f"   Route files: {stats.get('route_files', 0)}")
+    print(f"   Registration rate: {stats.get('registration_rate', 0):.1f}%")
+    
+    if stats.get('registered_class_ids'):
+        print(f"   Registered class IDs: {stats['registered_class_ids']}")
+    
+except Exception as e:
+    print(f"[ERROR] Error initializing dynamic route registry: {e}")
+    print("[OK] Continuing with universal template system only...")
+    # Universal template system should handle all classes
+    # No need for class-specific route fallback
+
+# Print all registered routes for debugging
+print("\n=== Registered Routes ===")
+for rule in sorted(app.url_map.iter_rules(), key=lambda x: str(x)):
+    methods = ', '.join(sorted(rule.methods)) if rule.methods else ''
+    print(f"{rule.endpoint:30} {methods:20} {rule.rule}")
+print("=========================\n")
+
+# Set up Jinja2 environment to ensure it can find templates
+def setup_jinja_environment():
+    """Configure the Jinja2 environment to properly find templates"""
+    from jinja2 import ChoiceLoader, FileSystemLoader
+    
+    # Get all possible template directories
+    template_dirs = [
+        app.template_folder,  # Main template folder
+        os.path.join(app.template_folder, 'admin'),  # Admin subfolder
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'admin', 'templates')  # Admin module templates
+    ]
+    
+    # Filter out non-existent directories
+    template_dirs = [d for d in template_dirs if os.path.exists(d)]
+    
+    # Create loaders for each directory
+    loaders = []
+    if app.jinja_loader:
+        loaders.append(app.jinja_loader)
+    
+    for template_dir in template_dirs:
+        loaders.append(FileSystemLoader(template_dir))
+        print(f"Added template directory to Jinja2 environment: {template_dir}")
+    
+    # Set up the ChoiceLoader
+    if len(loaders) > 1:
+        app.jinja_loader = ChoiceLoader(loaders)
+        print("Created ChoiceLoader for application")
+
+# Configure Jinja2 environment
+setup_jinja_environment()
+
+# Essential routes that should be available regardless of deployment method
+import logging
+from flask import send_from_directory
+import os as _os
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Define static folder path
+STATIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+
+@app.route('/media/video/<path:filename>')
+def serve_video(filename):
+    """Serve video files with optimized settings"""
+    try:
+        video_path = os.path.join(STATIC_FOLDER, 'video')
+        response = send_from_directory(video_path, filename)
+        
+        # Set proper headers for video streaming
+        response.headers['Accept-Ranges'] = 'bytes'
+        response.headers['Content-Type'] = 'video/mp4'
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Range'
+        
+        logger.info(f"Served video file: {filename}")
+        return response
+    except Exception as e:
+        logger.error(f"Error serving video file {filename}: {e}")
+        return f"Error serving video: {filename}", 404
+
+@app.route('/media/audio/<path:filename>')
+def serve_audio(filename):
+    """Serve audio files with optimized settings"""
+    try:
+        audio_path = os.path.join(STATIC_FOLDER, 'audio')
+        response = send_from_directory(audio_path, filename)
+        # Set proper headers for audio streaming
+        response.headers['Accept-Ranges'] = 'bytes'
+        response.headers['Content-Type'] = 'audio/mpeg'
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Range'
+        
+        logger.info(f"Served audio file: {filename}")
+        return response
+    except Exception as e:
+        logger.error(f"Error serving audio file {filename}: {e}")
+        return f"Error serving audio: {filename}", 404
+
+@app.route('/health')
+def health_check():
+    return {'status': 'healthy', 'server': 'main'}, 200
+
+# Debug endpoints - only register when FLASK_DEBUG is enabled
+if os.getenv('FLASK_DEBUG', '').lower() in ('true', '1', 'yes'):
+    @app.route('/debug/simulations')
+    def debug_simulations():
+        """Debug endpoint to check simulations without auth"""
+        try:
+            from instructor.models.simulation import Simulation
+            simulations = Simulation.query.limit(10).all()
+            sim_list = []
+            for sim in simulations:
+                sim_list.append({
+                    'id': sim.id,
+                    'title': sim.title,
+                    'is_active': getattr(sim, 'is_active', True),
+                    'created_at': str(getattr(sim, 'created_at', 'Unknown'))
+                })
+            return {
+                'total_simulations': len(sim_list),
+                'simulations': sim_list
+            }
+        except Exception as e:
+            return {'error': str(e)}, 500
+    
+    @app.route('/debug/routes')
+    def debug_routes():
+        """Debug endpoint to list all registered routes"""
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': list(rule.methods),
+                'rule': rule.rule
+            })
+        return {'routes': sorted(routes, key=lambda x: x['rule'])}
+        
+    @app.route('/debug/auth')
+    def debug_auth():
+        """Debug endpoint to check current authentication state"""
+        from flask_login import current_user
+        from flask import session
+        return {
+            'is_authenticated': current_user.is_authenticated,
+            'current_user_type': str(type(current_user)),
+            'current_user_id': getattr(current_user, 'id', None),
+            'session_keys': list(session.keys()),
+            'auth_namespace': session.get('auth_namespace', 'Not set'),
+            'user_id_in_session': session.get('_user_id', 'Not set')
+        }
+    
+    @app.route('/debug/simulation/edit/<int:simulation_id>')
+    def debug_simulation_edit(simulation_id):
+        """Debug endpoint to access simulation edit without auth"""
+        try:
+            from instructor.controllers.simulation_controller import SimulationController
+            simulation_controller = SimulationController()
+            simulation_data = simulation_controller.get_simulation_by_id(simulation_id, include_steps=True)
+            
+            if 'error' in simulation_data:
+                return {'error': simulation_data['error']}, 404
+            
+            return {
+                'simulation_id': simulation_id,
+                'simulation_found': True,
+                'simulation_title': simulation_data.get('simulation', {}).get('title', 'Unknown'),
+                'message': f'Simulation {simulation_id} exists and can be edited',
+                'edit_url': f'/admin/simulation/edit/{simulation_id}',
+                'note': 'This is a debug endpoint. Use the proper instructor route after logging in.'
+            }
+        except Exception as e:
+            return {'error': f'Debug error: {str(e)}'}, 500
+
+if __name__ == "__main__":
+
+
+    # Removed debug/test announcement routes (/demo/announcements, /test/announcements, /api/debug/announce)
+    # to prevent accidental broadcast of test system announcements in production.
+
+    import socket as _socket
+
+
+
+    # Database setup for development mode only
+    if not app.config.get('FLASK_ENV') == 'production':
+        with app.app_context():
+            try:
+                # Re-run database setup for development
+                db.create_all()
+                logger.info("Development database tables verified")
+            except Exception as e:
+                logger.error(f"Development database setup error: {e}")
+    
+    # Determine host, port and debug mode from environment
+    env_port = int(_os.getenv('PORT', '5001'))
+    env_host = _os.getenv('HOST', '0.0.0.0')  # Changed to 0.0.0.0 for EC2 compatibility
+    debug_mode = _os.getenv('FLASK_DEBUG', '').lower() in ('true', '1', 'yes')
+    
+    # Use the configured port (no fallback needed in production)
+    chosen_port = env_port
+    chosen_host = env_host
+
+    logger.info(f"Starting unified Flask-SocketIO server on {chosen_host}:{chosen_port}...")
+    logger.info(f"Debug mode: {debug_mode}")
+    logger.info("WebSocket events loaded and ready")
+    logger.info("Static files will be served by Flask's built-in handler")
+    
+    # Start the appropriate server based on SocketIO availability
+    if socketio:
+        # Start the Flask-SocketIO server
+        socketio.run(
+            app,
+            debug=debug_mode,  # Use environment variable
+            host=chosen_host,
+            port=chosen_port,
+            use_reloader=False,  # Disable reloader to prevent threading issues
+            allow_unsafe_werkzeug=debug_mode  # Only allow in debug mode
+        )
+    else:
+        # Fallback to standard Flask server if SocketIO is not available
+        logger.warning("[WARNING] Starting without SocketIO - WebSocket features disabled")
+        app.run(
+            debug=debug_mode,
+            host=chosen_host,
+            port=chosen_port,
+            use_reloader=False
+        )
+
+

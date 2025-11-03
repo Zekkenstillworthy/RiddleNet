@@ -1400,27 +1400,21 @@ def create_simulation_from_class_api():
         if not data:
             return jsonify({'error': 'No data provided'}), 400
 
-        # Required fields validation - only title is required
-        if not data.get('title', '').strip():
-            return jsonify({'error': 'Missing required field: title'}), 400
-        
-        # Auto-generate missing fields with defaults
-        if not data.get('description'):
-            data['description'] = f"Interactive simulation: {data['title']}"
-        if not data.get('simulation_type'):
-            data['simulation_type'] = 'network'
-        if not data.get('estimated_duration'):
-            data['estimated_duration'] = 30
+        # Required fields validation
+        required_fields = ['title', 'description', 'simulation_type', 'category']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'Missing required field: {field}'}), 400
 
         # Build simulation data structure for the controller
         simulation_data = {
             'basic': {
                 'title': data.get('title'),
                 'description': data.get('description'),
-                'type': data.get('simulation_type'),  # Controller expects 'type', not 'simulation_type'
+                'simulation_type': data.get('simulation_type'),
                 'category': data.get('category'),
                 'difficulty': data.get('difficulty', 'Beginner'),
-                'duration': data.get('estimated_duration', 30),  # Controller expects 'duration'
+                'estimated_duration': data.get('estimated_duration', 30),
                 'is_published': data.get('is_published', True),
                 'is_active': data.get('is_active', True)
             },

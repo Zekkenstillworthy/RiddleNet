@@ -378,7 +378,53 @@ class CollaborationManager {
         this.setupWebSocketConnection();
     }
 
-   
+    createMonitoringDashboard() {
+        // Check if we're on a page that should have monitoring
+        if (!document.querySelector('.admin-dashboard, .class-content')) return;
+        
+        const dashboard = document.createElement('div');
+        dashboard.className = 'collaboration-monitoring-dashboard';
+        dashboard.innerHTML = `
+            <div class="dashboard-header">
+                <h3><i class="fas fa-eye"></i> Live Collaboration Monitoring</h3>
+                <button class="btn btn-sm btn-secondary" onclick="collaborationManager.toggleMonitoring()">
+                    <i class="fas fa-pause"></i> Pause Monitoring
+                </button>
+            </div>
+            
+            <div class="active-collaborations">
+                <div class="collaboration-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="activeGroups">0</span>
+                        <span class="stat-label">Active Groups</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="totalParticipants">0</span>
+                        <span class="stat-label">Participants</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="avgDuration">0m</span>
+                        <span class="stat-label">Avg Duration</span>
+                    </div>
+                </div>
+                
+                <div class="collaboration-list" id="collaborationList">
+                    <!-- Active collaborations will be populated here -->
+                </div>
+            </div>
+        `;
+
+        // Add to sidebar or main content area
+        const sidebar = document.querySelector('.sidebar, .admin-sidebar');
+        if (sidebar) {
+            sidebar.appendChild(dashboard);
+        } else {
+            const mainContent = document.querySelector('.main-content, .content-area');
+            if (mainContent) {
+                mainContent.insertBefore(dashboard, mainContent.firstChild);
+            }
+        }
+    }
 
     setupWebSocketConnection() {
         // Check if WebSocket is disabled, but allow admin override

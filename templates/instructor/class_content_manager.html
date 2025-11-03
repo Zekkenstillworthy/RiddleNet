@@ -8634,59 +8634,13 @@ function showSimulationAssignmentModal() {
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p class="modal-description">Create a new simulation and assign it to your class:</p>
+                    <p class="modal-description">Create a new simulation for your class:</p>
                         
                         <form id="createSimulationForm">
                             <div class="form-group">
                                 <label class="form-label">Simulation Title *</label>
-                                <input type="text" id="simTitle" class="form-input" placeholder="Enter simulation title" required>
-                            </div>
-                            
-                            
-                            
-                            
-                            <div class="form-group">
-                                <label class="form-label">Description *</label>
-                                <textarea id="simDescription" class="form-textarea" rows="3" placeholder="Describe what students will learn..." required></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Simulation Type *</label>
-                                <select id="simType" class="form-select" required>
-                                    <option value="">Select type...</option>
-                                    <option value="network">Network Simulation</option>
-                                    <option value="security">Security Scenario</option>
-                                    <option value="troubleshooting">Troubleshooting</option>
-                                    <option value="configuration">Configuration</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Estimated Duration (minutes) *</label>
-                                <input type="number" id="simDuration" class="form-input" value="30" min="5" max="240" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Learning Objectives</label>
-                                <textarea id="simObjectives" class="form-textarea" rows="3" placeholder="Enter learning objectives (one per line)..."></textarea>
-                                <small class="form-hint">Enter each objective on a new line</small>
-                            </div>
-                            
-                            <!-- Assignment Options for New Simulation -->
-                            <div class="form-group">
-                                <label class="form-label">Assign to:</label>
-                                <select id="newSimAssignmentTarget" class="form-select">
-                                    <option value="class">Entire Class</option>
-                                    <option value="module">Specific Module</option>
-                                </select>
-                                
-                                <div id="newSimModuleSelector" style="display: none; margin-top: 10px;">
-                                    <label class="form-label">Select Module:</label>
-                                    <select id="newSimTargetModule" class="form-select">
-                                        <option value="">Choose a module...</option>
-                                    </select>
-                                </div>
+                                <input type="text" id="simTitle" class="form-input" placeholder="e.g., Network Configuration Lab" required>
+                                <small class="form-hint">Give your simulation a clear, descriptive name</small>
                             </div>
                             
                             <div class="form-actions">
@@ -8901,21 +8855,24 @@ function setupSimulationFormHandlers() {
 }
 
 function createNewSimulation() {
+    const title = document.getElementById('simTitle').value.trim();
+    
+    // Validate title
+    if (!title) {
+        moduleBuilder.showToast('Please enter a simulation title', 'warning');
+        return;
+    }
+    
+    // Auto-generate fields based on title
     const formData = {
-        title: document.getElementById('simTitle').value,
-        description: document.getElementById('simDescription').value,
-        simulation_type: document.getElementById('simType').value,
-        estimated_duration: parseInt(document.getElementById('simDuration').value) || 30,
-        learning_objectives: document.getElementById('simObjectives').value.split('\n').filter(obj => obj.trim()),
+        title: title,
+        description: `Interactive simulation: ${title}`,
+        simulation_type: 'network',  // Default to network
+        estimated_duration: 30,
+        learning_objectives: [],
         is_published: true,
         is_active: true
     };
-    
-    // Validate required fields
-    if (!formData.title || !formData.description || !formData.simulation_type) {
-        moduleBuilder.showToast('Please fill in all required fields', 'warning');
-        return;
-    }
     
     // Show loading state
     const submitBtn = document.querySelector('#createSimulationForm button[type="submit"]');
