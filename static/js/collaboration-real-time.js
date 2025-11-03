@@ -1,6 +1,9 @@
 
 class CollaborationRealTime {
     constructor() {
+        // Disable excessive debug logging in production
+        this.DEBUG_MODE = false; // Set to true only for debugging
+        
         this.socket = null;
         this.isConnected = false;
         this.currentSession = null;
@@ -53,9 +56,11 @@ class CollaborationRealTime {
      * Initialize the collaboration system
      */
     init() {
-        console.log('🤝 [DEBUG] ============================================');
-        console.log('🤝 [DEBUG] Initializing Collaboration Real-Time System');
-        console.log('🤝 [DEBUG] ============================================');
+        if (this.DEBUG_MODE) {
+            console.log('🤝 [DEBUG] ============================================');
+            console.log('🤝 [DEBUG] Initializing Collaboration Real-Time System');
+            console.log('🤝 [DEBUG] ============================================');
+        }
         
         this.setupSocketConnection();
         this.setupUIElements();
@@ -63,13 +68,17 @@ class CollaborationRealTime {
         this.loadCurrentUser();
         this.initializeCursorTracking(); // Initialize cursor tracking
         
-        console.log('🤝 [DEBUG] After loadCurrentUser - this.currentUser:', this.currentUser);
+        if (this.DEBUG_MODE) {
+            console.log('🤝 [DEBUG] After loadCurrentUser - this.currentUser:', this.currentUser);
+        }
         
         // Check if user is already in a session
         this.checkExistingSession();
         
-        console.log('✅ [DEBUG] Collaboration system initialized');
-        console.log('🤝 [DEBUG] ============================================');
+        if (this.DEBUG_MODE) {
+            console.log('✅ [DEBUG] Collaboration system initialized');
+            console.log('🤝 [DEBUG] ============================================');
+        }
     }
     
     /**
@@ -237,12 +246,9 @@ class CollaborationRealTime {
         
         // Cursor updates
         this.socket.on('cursor_moved', (data) => {
-            console.log('🖱️ ============================================');
-            console.log('🖱️ [SOCKET] Cursor moved event received from backend!');
-            console.log('🖱️ [SOCKET] Incoming cursor data:', data);
-            console.log('🖱️ [SOCKET] User:', data.username, '| ID:', data.user_id);
-            console.log('🖱️ [SOCKET] Position:', data.position);
-            console.log('🖱️ ============================================');
+            if (this.DEBUG_MODE) {
+                console.log('🖱️ [SOCKET] Cursor moved:', data.username, data.position);
+            }
             this.handleCursorUpdate(data);
         });
     }
