@@ -410,15 +410,22 @@ def get_class_students(class_id):
 def get_class_assignments(class_id):
     """Get assignments for a specific class"""
     try:
+        from instructor.models.class_content import ClassAssignment
+        
         cls = Class.query.get_or_404(class_id)
-        # TODO: Query actual assignments from database when assignment model is created
-        # For now, return an empty, consistently shaped response
+        
+        # Query actual assignments from database
+        assignments = ClassAssignment.query.filter_by(class_id=class_id).order_by(ClassAssignment.sort_order, ClassAssignment.created_at.desc()).all()
+        
         return jsonify({
             'success': True,
-            'assignments': []
+            'assignments': [assignment.to_dict() for assignment in assignments]
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error fetching assignments for class {class_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/generate-class-code', methods=['GET'])
 def generate_class_code():
