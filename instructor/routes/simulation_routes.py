@@ -1412,15 +1412,15 @@ def create_simulation_from_class_api():
         if not data.get('estimated_duration'):
             data['estimated_duration'] = 30
 
-    # Build simulation data structure for the controller
-    sim_type_value = data.get('simulation_type') or data.get('type') or 'network'
+        # Build simulation data structure for the controller
+        sim_type_value = data.get('simulation_type') or data.get('type') or 'network'
 
-    simulation_data = {
+        simulation_data = {
             'basic': {
                 'title': data.get('title'),
                 'description': data.get('description'),
-        'simulation_type': sim_type_value,
-        'type': sim_type_value,  # Builder controller still references "type" in some paths
+                'simulation_type': sim_type_value,
+                'type': sim_type_value,  # Builder controller still references "type" in some paths
                 'category': data.get('category'),
                 'difficulty': data.get('difficulty', 'Beginner'),
                 'duration': data.get('estimated_duration', 30),
