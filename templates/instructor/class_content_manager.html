@@ -8628,25 +8628,13 @@ function showSimulationAssignmentModal() {
         <div class="modal-overlay" id="simulationAssignmentModalOverlay" onclick="closeSimulationAssignmentModal()">
             <div class="modal-content simulation-assignment-modal" onclick="event.stopPropagation()">
                 <div class="modal-header">
-                    <h2><i class="fas fa-desktop"></i> Create Simulations</h2>
+                    <h2><i class="fas fa-desktop"></i> Create Simulation</h2>
                     <button class="modal-close" onclick="closeSimulationAssignmentModal()">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <!-- Tab Navigation -->
-                    <div class="modal-tabs">
-                        <button class="modal-tab active" data-tab="create-tab">
-                            <i class="fas fa-plus"></i> Create New
-                        </button>
-                        <button class="modal-tab" data-tab="assign-tab">
-                            <i class="fas fa-link"></i> Assign Existing
-                        </button>
-                    </div>
-                    
-                    <!-- Create New Tab -->
-                    <div id="create-tab" class="modal-tab-content active">
-                        <p class="modal-description">Create a new simulation for this class:</p>
+                    <p class="modal-description">Create a new simulation and assign it to your class:</p>
                         
                         <form id="createSimulationForm">
                             <div class="form-group">
@@ -8722,18 +8710,6 @@ function showSimulationAssignmentModal() {
                                 </button>
                             </div>
                         </form>
-                    </div>
-                    
-                    <!-- Assign Existing Tab -->
-                    <div id="assign-tab" class="modal-tab-content">
-                        <p class="modal-description">Select an existing simulation to assign:</p>
-                        <div id="availableSimulations" class="simulations-grid">
-                            <div class="loading-state">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <p>Loading simulations...</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -8742,9 +8718,8 @@ function showSimulationAssignmentModal() {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     setTimeout(() => {
         document.getElementById('simulationAssignmentModalOverlay').classList.add('show');
-        loadAvailableSimulations();
         populateModuleSelectors();
-        initializeModalEvents();
+        setupSimulationFormHandlers();
     }, 10);
 }
 
@@ -8915,21 +8890,8 @@ function populateModuleSelectors() {
     });
 }
 
-function initializeModalEvents() {
+function setupSimulationFormHandlers() {
     // Assignment target change handler
-    const assignmentTarget = document.getElementById('assignmentTarget');
-    if (assignmentTarget) {
-        assignmentTarget.addEventListener('change', function() {
-            const moduleSelector = document.getElementById('moduleSelector');
-            if (this.value === 'module') {
-                moduleSelector.style.display = 'block';
-            } else {
-                moduleSelector.style.display = 'none';
-            }
-        });
-    }
-    
-    // New simulation assignment target change handler
     const newSimAssignmentTarget = document.getElementById('newSimAssignmentTarget');
     if (newSimAssignmentTarget) {
         newSimAssignmentTarget.addEventListener('change', function() {
