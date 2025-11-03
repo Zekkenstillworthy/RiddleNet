@@ -40,8 +40,8 @@ def dynamic_class_detail(class_id):
     """
     print(f"🚀 ROUTE HIT: /class/{class_id} - dynamic_class_detail called")
     try:
-        # QUICK REDIRECT: For legacy class 7, send users directly to first module's first lesson
-        if class_id == 7:
+        # QUICK REDIRECT: For classes 6 and 7, send users directly to first module's first lesson
+        if class_id in [6, 7]:
             try:
                 first_module = Module.query.filter_by(class_id=class_id, is_active=True, is_published=True).order_by(Module.order_index.asc()).first()
                 if first_module:
@@ -49,7 +49,7 @@ def dynamic_class_detail(class_id):
                     if first_lesson:
                         return redirect(url_for('universal_class.module_detail', class_id=class_id, module_id=first_module.id) + f'?lesson_id={first_lesson.id}')
             except Exception as redirect_err:
-                print(f"Redirect logic for class 7 failed: {redirect_err}")
+                print(f"Redirect logic for class {class_id} failed: {redirect_err}")
         
         # Get user context
         user_context = get_current_user_context()
