@@ -659,8 +659,13 @@
             statusIndicator.title = 'Network Status: Connected';
             sidebar.appendChild(statusIndicator);
             
-            // DEBUG: Comprehensive layout measurements
+            // DEBUG: Comprehensive layout measurements (with safety checks)
             const mainContent = document.querySelector('.main-content');
+            if (!mainContent) {
+                console.warn('⚠️ Main content element not found');
+                return;
+            }
+            
             console.log('=== ADMIN LAYOUT DEBUG ===');
             console.log('Sidebar Width:', sidebar.offsetWidth + 'px');
             console.log('Sidebar Computed Width:', window.getComputedStyle(sidebar).width);
@@ -675,12 +680,19 @@
             // Check for empty elements before main-content
             console.log('\n--- Checking for empty elements ---');
             const mainContentParent = mainContent.parentElement;
+            if (!mainContentParent) {
+                console.warn('⚠️ Main content parent not found');
+                return;
+            }
+            
             console.log('Main Content Parent:', mainContentParent.tagName);
             const siblings = Array.from(mainContentParent.children);
             const mainContentIndex = siblings.indexOf(mainContent);
             console.log('Elements before main-content:', mainContentIndex);
             
             siblings.slice(0, mainContentIndex).forEach((el, idx) => {
+                if (!el) return;
+                
                 const hasContent = el.textContent.trim().length > 0 || el.children.length > 0;
                 const styles = window.getComputedStyle(el);
                 console.log(`  [${idx}] ${el.tagName}:`, {

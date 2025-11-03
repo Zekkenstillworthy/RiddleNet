@@ -9042,8 +9042,8 @@ function submitCreateModule() {
             'order_index': '1'
         })
     })
-    .then(response => response.json())
     .then(data => {
+        // adminFetch already parses JSON, so data is the parsed response
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
         
@@ -10047,7 +10047,7 @@ function saveEssayGrade() {
     console.log('💾 Saving grade for essay:', essayId, 'Grade:', grade);
     
     // Send grade to API
-    fetch(`/instructor/essays/api/essays/${essayId}/grade`, {
+    fetch(`/instructor/api/essays/${essayId}/grade`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -12987,6 +12987,11 @@ function updateAssignmentDeadlines() {
 
     const assignments = deadlineData.assignments || [];
     
+    console.log('📋 Updating assignments list. Count:', assignments.length);
+    if (assignments.length > 0) {
+        console.log('📋 Assignment IDs:', assignments.map(a => a.id));
+    }
+    
     if (assignments.length === 0) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-clock"></i><p>No assignments found</p></div>';
         return;
@@ -13702,11 +13707,29 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function editDeadline(assignmentId) {
+    console.log('🔍 Edit deadline clicked for assignment:', assignmentId);
+    console.log('📋 Available assignments in deadlineData:', deadlineData?.assignments?.map(a => ({ id: a.id, title: a.title })));
+    
+    // Verify the assignment exists in our data before opening the modal
+    if (deadlineData && deadlineData.assignments) {
+        const assignment = deadlineData.assignments.find(a => a.id === assignmentId);
+        if (!assignment) {
+            console.error('❌ Assignment not found in deadline data:', assignmentId);
+            moduleBuilder.showToast(`Assignment ${assignmentId} not found. It may have been deleted.`, 'error');
+            // Reload the deadline data to get fresh state
+            loadDeadlineData();
+            return;
+        }
+        console.log('✅ Assignment found:', assignment.title);
+    }
+    
     // Open deadline settings modal instead of new window
     openDeadlineSettingsModal(assignmentId);
 }
 
 function openDeadlineSettingsModal(assignmentId) {
+    console.log('🔍 Opening deadline settings for assignment:', assignmentId);
+    
     // Set assignment ID
     document.getElementById('deadlineSettingsAssignmentId').value = assignmentId;
     
@@ -13719,7 +13742,42 @@ function openDeadlineSettingsModal(assignmentId) {
     document.getElementById('deadlineSettingsLoading').style.display = 'flex';
     document.getElementById('deadlineSettingsContent').style.display = 'none';
     
-    // Fetch deadline settings
+    // Try to build from existing deadline data first (faster and avoids 404 issues)
+    if (deadlineData && deadlineData.assignments) {
+        const assignment = deadlineData.assignments.find(a => a.id === assignmentId);
+        if (assignment) {
+            console.log('✅ Building settings from cached deadline data');
+            
+            // Get extensions for this assignment
+            const extensions = (deadlineData.extensions || []).filter(e => e.assignment_id === assignmentId);
+            
+            // Build data object in same format as API response
+            const localData = {
+                success: true,
+                assignment: {
+                    id: assignment.id,
+                    title: assignment.title,
+                    due_date: assignment.due_date,
+                    description: assignment.description || ''
+                },
+                availability: null, // Not available in deadline data
+                extensions: extensions,
+                deadline_policy: null, // Not available in deadline data
+                available_policies: deadlineData.policies || []
+            };
+            
+            // Populate modal with data
+            populateDeadlineSettings(localData);
+            
+            // Hide loading, show content
+            document.getElementById('deadlineSettingsLoading').style.display = 'none';
+            document.getElementById('deadlineSettingsContent').style.display = 'block';
+            return;
+        }
+    }
+    
+    // Fallback: Fetch from API if data not available locally
+    console.log('⚠️ Fetching from API as fallback...');
     fetch(`/instructor/assignment/${assignmentId}/deadline-settings`, {
         method: 'GET',
         headers: {
@@ -13728,6 +13786,7 @@ function openDeadlineSettingsModal(assignmentId) {
         }
     })
     .then(response => {
+        console.log('📡 Deadline settings response status:', response.status);
         if (!response.ok) {
             const statusMessage = response.status === 404 ? 'Assignment not found' : `Failed to load deadline settings (${response.status})`;
             throw new Error(statusMessage);
@@ -13749,6 +13808,7 @@ function openDeadlineSettingsModal(assignmentId) {
     })
     .catch(error => {
         console.error('Error loading deadline settings:', error);
+        console.error('Assignment ID that failed:', assignmentId);
         moduleBuilder.showToast(error.message || 'Error loading deadline settings', 'error');
         closeDeadlineSettingsModal();
     });
@@ -14091,7 +14151,7 @@ async function saveExtensionEdit(event, extensionId) {
     const isActive = document.getElementById('editExtensionActive').checked;
     
     try {
-        const response = await fetch(`/instructor/api/deadline-extensions/${extensionId}`, {
+        const response = await fetch(`/instructor/api/extensions/${extensionId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'

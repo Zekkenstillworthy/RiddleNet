@@ -532,7 +532,21 @@
                         </div>
                     </div>
 
-                    
+                    <!-- Activity Feed Section -->
+                    <div class="modern-card" style="margin-top: 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="color: var(--cyber-glow); margin: 0; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-stream"></i> Activity Feed
+                            </h3>
+                            <div class="real-time-badge" style="background: var(--neon-green); color: black; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">LIVE</div>
+                        </div>
+                        <div id="activity-feed" class="activity-feed" style="max-height: 400px; overflow-y: auto;">
+                            <div style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.5);">
+                                <i class="fas fa-spinner fa-spin"></i> Loading activity feed...
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
                 
     <script>
@@ -1421,6 +1435,12 @@
                     if (data.success) {
                         const feed = document.getElementById('activity-feed');
                         
+                        // Safety check: ensure element exists
+                        if (!feed) {
+                            console.warn('⚠️ Activity feed element not found in DOM');
+                            return;
+                        }
+                        
                         if (data.data.length === 0) {
                             feed.innerHTML = '<div style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.6);">No recent activity</div>';
                             return;
@@ -1474,7 +1494,10 @@
                 })
                 .catch(error => {
                     console.error('Error loading activity feed:', error);
-                    document.getElementById('activity-feed').innerHTML = '<div style="text-align: center; padding: 20px; color: #ff6b6b;">Error loading activity feed</div>';
+                    const feed = document.getElementById('activity-feed');
+                    if (feed) {
+                        feed.innerHTML = '<div style="text-align: center; padding: 20px; color: #ff6b6b;">Error loading activity feed</div>';
+                    }
                 });
         }
 
