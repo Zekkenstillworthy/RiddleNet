@@ -128,17 +128,34 @@ class TroubleshootingController:
         # Save to database
         db.session.add(progress)
         
+        # 🔧 FIX: Get existing completed_challenges array to accumulate all completions
+        from user.models.challenge_score import ChallengeScore
+        existing_score = ChallengeScore.query.filter_by(
+            user_id=user_id,
+            challenge_type='troubleshooting'
+        ).first()
+        
+        # Build accumulated completed_challenges array
+        completed_challenges = []
+        if existing_score and existing_score.challenge_metadata:
+            completed_challenges = existing_score.challenge_metadata.get('completed_challenges', [])
+        
+        # Add current scenario if not already in list
+        if scenario.id not in completed_challenges:
+            completed_challenges.append(scenario.id)
+            print(f"[Link Up] Added {scenario.id} to completed_challenges. Total: {len(completed_challenges)}/26")
+        
         # Save to new ChallengeScore table (MVP)
         # Use match_percentage (0-100) which is already normalized
-        from user.models.challenge_score import ChallengeScore
         challenge_score = ChallengeScore.save_score(
             user_id=user_id,
             challenge_type='troubleshooting',
             score=match_percentage,  # Already normalized 0-100 percentage
             metadata={
-                'scenario_id': scenario.id,
+                'scenario_id': scenario.id,  # Most recent scenario
                 'time_taken': time_taken,
-                'attempts': progress.attempts
+                'attempts': progress.attempts,
+                'completed_challenges': completed_challenges  # 🔧 FIX: Accumulate ALL completed scenarios
             },
             completion_time=time_taken
         )

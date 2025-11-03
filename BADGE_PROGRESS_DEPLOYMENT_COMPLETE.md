@@ -307,7 +307,7 @@ body: JSON.stringify({
 
 2. **Backup Current Files**
    ```bash
-   cd /home/ubuntu/riddlenet
+   cd /home/ubuntu/RiddleNet
    cp user/services/badge_service.py user/services/badge_service.py.backup
    cp user/views.py user/views.py.backup
    cp user/routes/quiz_routes.py user/routes/quiz_routes.py.backup
@@ -317,11 +317,11 @@ body: JSON.stringify({
 
 3. **Upload Modified Files** (from local machine)
    ```bash
-   scp -i riddlenetv1.pem user/services/badge_service.py ubuntu@54.66.229.118:/home/ubuntu/riddlenet/user/services/
-   scp -i riddlenetv1.pem user/views.py ubuntu@54.66.229.118:/home/ubuntu/riddlenet/user/
-   scp -i riddlenetv1.pem user/routes/quiz_routes.py ubuntu@54.66.229.118:/home/ubuntu/riddlenet/user/routes/
-   scp -i riddlenetv1.pem templates/user/crimping-simulation.html ubuntu@54.66.229.118:/home/ubuntu/riddlenet/templates/user/
-   scp -i riddlenetv1.pem templates/user/quiz_challenge.html ubuntu@54.66.229.118:/home/ubuntu/riddlenet/templates/user/
+   scp -i riddlenetv1.pem user/services/badge_service.py ubuntu@54.66.229.118:/home/ubuntu/RiddleNet/user/services/
+   scp -i riddlenetv1.pem user/views.py ubuntu@54.66.229.118:/home/ubuntu/RiddleNet/user/
+   scp -i riddlenetv1.pem user/routes/quiz_routes.py ubuntu@54.66.229.118:/home/ubuntu/RiddleNet/user/routes/
+   scp -i riddlenetv1.pem templates/user/crimping-simulation.html ubuntu@54.66.229.118:/home/ubuntu/RiddleNet/templates/user/
+   scp -i riddlenetv1.pem templates/user/quiz_challenge.html ubuntu@54.66.229.118:/home/ubuntu/RiddleNet/templates/user/
    ```
 
 4. **Restart Application** (on server)
@@ -372,7 +372,7 @@ body: JSON.stringify({
 
 ```bash
 # On production server
-cd /home/ubuntu/riddlenet
+cd /home/ubuntu/RiddleNet
 cp user/services/badge_service.py.backup user/services/badge_service.py
 cp user/views.py.backup user/views.py
 cp user/routes/quiz_routes.py.backup user/routes/quiz_routes.py

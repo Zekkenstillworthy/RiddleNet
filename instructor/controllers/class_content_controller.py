@@ -1644,6 +1644,19 @@ def create_question_in_group(group_id):
         # Get the next question number
         max_numb = db.session.query(db.func.max(Question.numb)).scalar() or 0
         
+        # Find the first available ID gap to reuse deleted IDs
+        from sqlalchemy import text
+        gap_query = text("""
+            SELECT t1.id + 1 AS gap_id
+            FROM question t1
+            LEFT JOIN question t2 ON t1.id + 1 = t2.id
+            WHERE t2.id IS NULL AND t1.id + 1 < (SELECT MAX(id) FROM question)
+            ORDER BY gap_id
+            LIMIT 1
+        """)
+        gap_result = db.session.execute(gap_query).fetchone()
+        reuse_id = gap_result[0] if gap_result else None
+        
         # Create new question
         new_question = Question(
             numb=max_numb + 1,
@@ -1654,6 +1667,10 @@ def create_question_in_group(group_id):
             question_type=data.get('question_type', 'multiple_choice'),
             options=data.get('options', [])
         )
+        
+        # If we found a gap, manually set the ID before adding
+        if reuse_id:
+            new_question.id = reuse_id
         
         db.session.add(new_question)
         db.session.flush()  # Get the ID

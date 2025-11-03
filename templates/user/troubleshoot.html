@@ -17968,9 +17968,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('foundation_progress', JSON.stringify(foundationProgress));
                 console.log(`💾 Progress saved to localStorage`);
                 
-                // **MVP FIX: Save to backend database immediately**
+                // **MVP FIX: Save to NEW backend API endpoint for Link Up Foundation sync**
                 console.log(`💾 Saving Foundation module completion to backend: ${currentModule}`);
-                saveTopologyScoreToBackend(100, currentModule);
+                fetch('/api/linkup/foundation/complete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        module_id: currentModule,
+                        score: 100,
+                        time_spent: 0  // Time tracking handled by scenario timer
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log(`✅ Foundation ${currentModule} synced to backend: ${data.total_completed}/26 (${data.progress_percentage.toFixed(1)}%)`);
+                        
+                        // ✅ CRITICAL FIX: Also update completed_linkup_challenges localStorage for Challenges page
+                        const linkupChallenges = JSON.parse(localStorage.getItem('completed_linkup_challenges') || '[]');
+                        if (!linkupChallenges.includes(currentModule)) {
+                            linkupChallenges.push(currentModule);
+                            localStorage.setItem('completed_linkup_challenges', JSON.stringify(linkupChallenges));
+                            console.log(`✅ Updated completed_linkup_challenges: ${linkupChallenges.length}/26`);
+                        }
+                    } else {
+                        console.error(`❌ Failed to save ${currentModule}: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    console.error(`❌ Network error saving Foundation module:`, error);
+                });
                 
                 // Update difficulty access when foundation is completed
                 updateDifficultyAccess();

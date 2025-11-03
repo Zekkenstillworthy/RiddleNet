@@ -6415,42 +6415,7 @@
     }
     
     // Save crimping score function with WebSocket integration
-    function saveCrimpingScore(score, category) {
-      const scoreData = {
-        score: score,
-        wiring_type: category,
-        completion_time: Math.round((Date.now() - gameStats.startTime) / 1000) // in seconds
-      };      
-
-      fetch('{{ url_for("user.save_crimping_score") }}', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(scoreData)
-      })      
-      .then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          showCrimpingNotification('Score Saved!', `Your crimping score of ${score}% has been recorded.`, 'success');
-        } else {
-          showCrimpingNotification('Score Save Failed', data.message || 'Failed to save score', 'error');
-        }
-      })
-      .catch(error => {
-        showCrimpingNotification('Network Error', 'Failed to save score due to network error', 'error');
-      });
-            
-      // Emit score save event
-      if (window.socketClient) {
-        window.socketClient.emit('crimping_score_saved', {
-          user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
-          score: score,
-          category: category,
-          timestamp: new Date().toISOString()
-        });
-      }
-    }
+    // ⚠️ DUPLICATE FUNCTION REMOVED - Using the updated version at line 5841 with metadata support
     
     // Add real-time wire placement tracking
     const wireSlots = document.querySelectorAll('.wire-slot');

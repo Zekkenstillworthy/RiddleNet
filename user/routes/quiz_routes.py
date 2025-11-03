@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, session
 from flask_login import login_required, current_user
 from __init__ import db
+from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime
 import json
 
@@ -147,9 +148,27 @@ def save_progress():
         if not challenge_score.challenge_metadata:
             challenge_score.challenge_metadata = {}
         
+        # 🔧 FIX: Also update permanent completedSets for Challenges page progress
+        completed_sets = data.get('completedSets', [])
+        print(f"[Quiz Save] Received data: completedSets={completed_sets}, currentSet={data.get('currentSet')}, currentQuestion={data.get('currentQuestion')}")
+        if completed_sets:
+            challenge_score.challenge_metadata['completedSets'] = completed_sets
+            # Update best_score based on completed sets (for Challenges page)
+            progress_percentage = (len(completed_sets) / 3) * 100.0
+            print(f"[Quiz Progress] Current best_score: {challenge_score.best_score}, New progress: {progress_percentage:.1f}%")
+            if progress_percentage > challenge_score.best_score:
+                challenge_score.best_score = progress_percentage
+                challenge_score.latest_score = progress_percentage
+                print(f"[Quiz Progress] ✅ Updated best_score to {progress_percentage:.1f}%")
+            else:
+                print(f"[Quiz Progress] ❌ NOT updating best_score ({progress_percentage:.1f}% <= {challenge_score.best_score}%)")
+            print(f"[Quiz Progress] Updated completedSets: {completed_sets}")
+        
         challenge_score.challenge_metadata['in_progress'] = True
         challenge_score.challenge_metadata['progress'] = {
             'currentQuestion': data.get('currentQuestion', 0),
+            'currentSet': data.get('currentSet', 0),  # 🔧 FIX: Save current set
+            'completedSets': completed_sets,  # 🔧 FIX: Save completed sets
             'score': data.get('score', 0),
             'answeredQuestions': data.get('answeredQuestions', []),
             'lifelinesUsed': data.get('lifelinesUsed', {}),
@@ -159,7 +178,10 @@ def save_progress():
             'savedAt': datetime.now().isoformat()
         }
         
+        # 🔧 CRITICAL FIX: Flag JSONB field as modified so PostgreSQL commits the change
+        flag_modified(challenge_score, 'challenge_metadata')
         db.session.commit()
+        print(f"[Quiz Save] ✅ Database committed with completedSets={completed_sets}")
         
         return jsonify({
             'success': True,

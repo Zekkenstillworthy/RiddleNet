@@ -4,6 +4,7 @@ Unified tracking of challenge completions across all challenge types
 """
 from __init__ import db
 from datetime import datetime
+from sqlalchemy.orm.attributes import flag_modified
 
 
 class ChallengeScore(db.Model):
@@ -120,6 +121,30 @@ class ChallengeScore(db.Model):
         if challenge.challenge_type == 'osi':
             osi_state = ChallengeScore._evaluate_osi_progress(challenge)
             return osi_state['fully_completed']
+        
+        # 🔧 FIX: Link Up! completion requires ALL 26 sub-items (not just is_completed flag)
+        if challenge.challenge_type == 'troubleshooting':
+            if challenge.challenge_metadata:
+                completed_challenges = challenge.challenge_metadata.get('completed_challenges', [])
+                TOTAL_LINK_UP_ITEMS = 26  # Foundation (17) + Easy (3) + Intermediate (3) + Hard (3)
+                return len(completed_challenges) >= TOTAL_LINK_UP_ITEMS
+            return False
+        
+        # 🔧 FIX: Crimping completion requires ALL 3 difficulties complete (not just high score)
+        if challenge.challenge_type == 'crimping':
+            if challenge.challenge_metadata:
+                easy_complete = challenge.challenge_metadata.get('easyCompleted', False)
+                medium_complete = challenge.challenge_metadata.get('mediumCompleted', False)
+                hard_complete = challenge.challenge_metadata.get('hardCompleted', False)
+                return easy_complete and medium_complete and hard_complete
+            return False
+        
+        # 🔧 FIX: Quiz completion requires all 3 sets complete (not just high score)
+        if challenge.challenge_type == 'quiz':
+            if challenge.challenge_metadata:
+                completed_sets = challenge.challenge_metadata.get('completedSets', [])
+                return len(completed_sets) >= 3
+            return False
 
         return bool(challenge.is_completed)
 
@@ -184,6 +209,9 @@ class ChallengeScore(db.Model):
             else:
                 # No nested challenge_data to merge, use regular update
                 self.challenge_metadata.update(metadata)
+            
+            # CRITICAL: Mark JSONB field as modified for SQLAlchemy to detect changes
+            flag_modified(self, 'challenge_metadata')
         
         self.updated_at = datetime.utcnow()
     
