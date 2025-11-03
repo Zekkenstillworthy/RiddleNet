@@ -1063,19 +1063,20 @@ def create_class_assignment(class_id):
         new_assignment = ClassAssignment(
             title=data['title'],
             description=data.get('description', ''),
-            instructions=data.get('instructions', ''),  # Use instructions field
+            instructions=data.get('instructions', ''),
             due_date=due_date,
-            points=data.get('points', 0),
-            priority=data.get('priority', 'medium'),
-            category=data.get('category', 'general'),
+            points=data.get('points', 100),
+            assignment_type=data.get('assignment_type', 'assignment'),
+            is_published=data.get('is_published', True),
             sort_order=next_order,
             class_id=class_id,
-            created_by=current_user.id
+            module_id=data.get('module_id'),
+            created_by=current_user.id,
+            allow_file_uploads=data.get('allow_file_uploads', True),
+            allow_text_submission=data.get('allow_text_submission', True),
+            allow_late_submissions=data.get('allow_late_submissions', True),
+            allow_resubmission=data.get('allow_resubmission', True)
         )
-        
-        # Add additional fields if they exist in the model
-        if hasattr(new_assignment, 'is_published'):
-            new_assignment.is_published = data.get('is_published', True)
         
         db.session.add(new_assignment)
         db.session.commit()
@@ -1083,13 +1084,7 @@ def create_class_assignment(class_id):
         return jsonify({
             'success': True,
             'message': f'Assignment "{new_assignment.title}" created successfully!',
-            'assignment': {
-                'id': new_assignment.id,
-                'title': new_assignment.title,
-                'description': new_assignment.description,
-                'due_date': new_assignment.due_date.isoformat() if new_assignment.due_date else None,
-                'points': new_assignment.points
-            }
+            'assignment': new_assignment.to_dict()
         })
         
     except Exception as e:
@@ -1108,19 +1103,7 @@ def get_class_assignment(class_id, assignment_id):
         
         return jsonify({
             'success': True,
-            'assignment': {
-                'id': assignment.id,
-                'title': assignment.title,
-                'description': assignment.description,
-                'instructions': getattr(assignment, 'instructions', ''),
-                'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
-                'points': assignment.points,
-                'priority': getattr(assignment, 'priority', 'medium'),
-                'category': getattr(assignment, 'category', 'general'),
-                'is_published': getattr(assignment, 'is_published', True),
-                'sort_order': assignment.sort_order,
-                'created_at': assignment.created_at.isoformat() if assignment.created_at else None
-            }
+            'assignment': assignment.to_dict()
         })
         
     except Exception as e:
@@ -1151,12 +1134,20 @@ def update_class_assignment(class_id, assignment_id):
             assignment.instructions = data['instructions']
         if 'points' in data:
             assignment.points = data['points']
-        if 'priority' in data and hasattr(assignment, 'priority'):
-            assignment.priority = data['priority']
-        if 'category' in data and hasattr(assignment, 'category'):
-            assignment.category = data['category']
-        if 'is_published' in data and hasattr(assignment, 'is_published'):
+        if 'assignment_type' in data:
+            assignment.assignment_type = data['assignment_type']
+        if 'is_published' in data:
             assignment.is_published = data['is_published']
+        if 'module_id' in data:
+            assignment.module_id = data['module_id']
+        if 'allow_file_uploads' in data:
+            assignment.allow_file_uploads = data['allow_file_uploads']
+        if 'allow_text_submission' in data:
+            assignment.allow_text_submission = data['allow_text_submission']
+        if 'allow_late_submissions' in data:
+            assignment.allow_late_submissions = data['allow_late_submissions']
+        if 'allow_resubmission' in data:
+            assignment.allow_resubmission = data['allow_resubmission']
         if 'due_date' in data:
             if data['due_date']:
                 try:
