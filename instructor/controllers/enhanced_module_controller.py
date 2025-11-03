@@ -137,13 +137,18 @@ def update_module(class_id, module_id):
         except (ValueError, TypeError):
             module.estimated_duration = 60  # Default fallback
         
-        # Handle active status - check for both possible field names
+        # Handle active status - ONLY update if the field is present in the form
+        # This prevents accidentally deactivating modules when editing from simple forms
         is_active_value = request.form.get('is_active') or request.form.get('active_module')
-        module.is_active = bool(is_active_value)
+        if is_active_value is not None:
+            module.is_active = bool(is_active_value)
+        # If not present, keep existing value
         
-        # Handle published status independently
+        # Handle published status independently - ONLY update if present
         is_published_value = request.form.get('is_published')
-        module.is_published = bool(is_published_value)
+        if is_published_value is not None:
+            module.is_published = bool(is_published_value)
+        # If not present, keep existing value
         
         # Log the changes
         logging.debug(f'Module update - is_active: {module.is_active}, is_published: {module.is_published}, estimated_duration: {module.estimated_duration}')
