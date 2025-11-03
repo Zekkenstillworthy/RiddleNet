@@ -1401,7 +1401,7 @@ def create_simulation_from_class_api():
             return jsonify({'error': 'No data provided'}), 400
 
         # Required fields validation
-        required_fields = ['title', 'description', 'simulation_type', 'category']
+        required_fields = ['title', 'description', 'simulation_type']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
