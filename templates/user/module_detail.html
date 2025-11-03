@@ -3741,8 +3741,29 @@ async function checkAndRestoreStudentLiveQuiz() {
                 
                 console.log('[STUDENT QUIZ RESTORE] ✅ Displaying current question:', liveQuizState.currentQuestionIndex + 1);
             } else if (session.status === 'completed') {
-                console.log('[STUDENT QUIZ RESTORE] Quiz has ended, showing completion state');
-                showQuizCompletion({ leaderboard: [] });
+                console.log('[STUDENT QUIZ RESTORE] Quiz has ended');
+                
+                // Check if the participant has answered questions
+                const hasAnsweredQuestions = session.participant_stats.total_answered > 0;
+                
+                if (hasAnsweredQuestions) {
+                    console.log('[STUDENT QUIZ RESTORE] Participant answered', session.participant_stats.total_answered, 'questions - showing completion state');
+                    showQuizCompletion({ leaderboard: [] });
+                } else {
+                    console.log('[STUDENT QUIZ RESTORE] Participant did not answer any questions - quiz already ended');
+                    // Show a message that the quiz has ended without participation
+                    const lessonContent = document.querySelector('.lesson-content');
+                    const liveQuizContainer = document.getElementById('liveQuizContainer');
+                    
+                    if (liveQuizContainer) {
+                        liveQuizContainer.style.display = 'none';
+                    }
+                    if (lessonContent) {
+                        lessonContent.style.display = 'block';
+                    }
+                    
+                    alert('This live quiz has ended. You did not participate in this session.');
+                }
             } else {
                 console.log('[STUDENT QUIZ RESTORE] Quiz status:', session.status, '- waiting for instructor');
                 showWaitingState();
@@ -6660,6 +6681,31 @@ function showQuizCompletion(data) {
   // 🔓 Disable navigation blocking (safety measure)
   disableLiveQuizNavigationBlock();
   
+  const leaderboardEntries = data && Array.isArray(data.leaderboard) ? data.leaderboard : [];
+  const normalizedLeaderboard = normalizeLeaderboardEntries(leaderboardEntries);
+  console.log('[STUDENT COMPLETION] Normalized leaderboard:', normalizedLeaderboard);
+  
+  // Find current user in leaderboard
+  const currentUserData = normalizedLeaderboard.find(p => p.is_current_user);
+  
+  // Check if user actually participated (answered at least one question)
+  const totalAnswered = currentUserData ? 
+    (currentUserData.total_answered || currentUserData.questions_answered || 0) : 0;
+  
+  if (totalAnswered === 0) {
+    console.log('[STUDENT COMPLETION] ⚠️ User did not answer any questions - not showing completion screen');
+    
+    // Exit quiz view and return to lesson
+    const liveQuizContainer = document.getElementById('liveQuizContainer');
+    const lessonContent = document.querySelector('.lesson-content');
+    
+    if (liveQuizContainer) liveQuizContainer.style.display = 'none';
+    if (lessonContent) lessonContent.style.display = 'block';
+    
+    alert('This live quiz has ended. You did not participate in this session.');
+    return;
+  }
+  
   document.getElementById('questionArea').style.display = 'none';
   
   const completionEl = document.getElementById('quizCompletion');
@@ -6670,13 +6716,6 @@ function showQuizCompletion(data) {
     if (finalRankEl) finalRankEl.textContent = '--';
     if (finalCorrectEl) finalCorrectEl.textContent = '--';
     if (finalAccuracyEl) finalAccuracyEl.textContent = '--';
-  
-    const leaderboardEntries = data && Array.isArray(data.leaderboard) ? data.leaderboard : [];
-    const normalizedLeaderboard = normalizeLeaderboardEntries(leaderboardEntries);
-    console.log('[STUDENT COMPLETION] Normalized leaderboard:', normalizedLeaderboard);
-  
-    // Find current user in leaderboard
-    const currentUserData = normalizedLeaderboard.find(p => p.is_current_user);
   
   if (currentUserData) {
         const safeRank = currentUserData.rank != null ? `#${currentUserData.rank}` : '--';
