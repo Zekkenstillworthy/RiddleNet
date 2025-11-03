@@ -1473,6 +1473,18 @@ def create_simulation_from_class_api():
         if 'error' in result:
             return jsonify(result), 400
 
+        # Emit real-time notification to class about new simulation
+        simulation = result['simulation']
+        try:
+            emit_new_simulation_available(
+                simulation_id=simulation['id'],
+                category=simulation.get('category', 'General'),
+                class_ids=None  # Will broadcast to all classes
+            )
+            print(f"[REALTIME] Emitted new simulation notification: {simulation['title']}")
+        except Exception as e:
+            print(f"[WARNING] Failed to emit simulation notification: {e}")
+
         return jsonify({
             'success': True,
             'simulation': result['simulation'],

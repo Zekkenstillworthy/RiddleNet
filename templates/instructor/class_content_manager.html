@@ -11885,6 +11885,40 @@ function initializeWebSocket() {
         }
     });
     
+    // Listen for new simulation created events
+    socket.on('new_simulation_available', function(data) {
+        console.log('🎮 Received new simulation notification:', data);
+        
+        // Reload simulations list if on simulations tab
+        const activeTab = document.querySelector('.classwork-subtab.active')?.dataset?.subtab;
+        if (activeTab === 'simulations') {
+            console.log('🔄 Reloading simulations list...');
+            const simulationsContainer = document.getElementById('simulations-list');
+            if (simulationsContainer) {
+                loadSimulationsTabContent(simulationsContainer);
+            }
+        }
+        
+        // Show notification to instructor
+        if (typeof showToast === 'function') {
+            showToast(`New simulation created: ${data.title}`, 'success');
+        } else if (moduleBuilder && typeof moduleBuilder.showToast === 'function') {
+            moduleBuilder.showToast(`New simulation created: ${data.title}`, 'success');
+        }
+    });
+    
+    // Listen for assignment creation events  
+    socket.on('new_assignment_created', function(data) {
+        console.log('📋 Received new assignment notification:', data);
+        
+        // Show notification
+        if (typeof showToast === 'function') {
+            showToast(`Assignment created: ${data.assignment_title}`, 'success');
+        } else if (moduleBuilder && typeof moduleBuilder.showToast === 'function') {
+            moduleBuilder.showToast(`Assignment created: ${data.assignment_title}`, 'success');
+        }
+    });
+    
     // Error handlers
     socket.on('instructor_room_error', function(data) {
         console.error('Admin room error:', data);
