@@ -811,9 +811,42 @@ class DynamicSimulationController:
         """Check if user can access a simulation (simplified without Learning Paths)"""
         try:
             simulation = Simulation.query.get(simulation_id)
-            return bool(simulation and simulation.is_published and simulation.is_active)
+            if not simulation:
+                return False
+            
+            # Get the user object
+            user = UserModel.query.get(user_id)
+            if not user:
+                return False
+            
+            # Check if simulation is assigned to any of the user's classes
+            # If assigned, allow access regardless of publish status (matching universal_class_routes logic)
+            from instructor.models.simulation_assignment import SimulationAssignment
+            
+            # Get user's enrolled classes using the enrolled_classes relationship
+            user_classes = user.enrolled_classes.all() if hasattr(user, 'enrolled_classes') else []
+            user_class_ids = [c.id for c in user_classes]
+            
+            # Check if simulation is assigned to any of user's classes
+            if user_class_ids:
+                assignment = SimulationAssignment.query.filter(
+                    SimulationAssignment.simulation_id == simulation_id,
+                    SimulationAssignment.class_id.in_(user_class_ids),
+                    SimulationAssignment.is_active == True,
+                    SimulationAssignment.is_published == True
+                ).first()
+                
+                if assignment:
+                    # Simulation is assigned to user's class - allow access regardless of simulation publish status
+                    print(f"[ACCESS] User {user_id} can access simulation {simulation_id} via assignment {assignment.id}")
+                    return True
+            
+            # Fall back to checking simulation's own publish/active status
+            return bool(simulation.is_published and simulation.is_active)
         except Exception as e:
             print(f"Error checking simulation access: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
 # Route Handlers
