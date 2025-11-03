@@ -5750,8 +5750,10 @@ function connectToLiveQuiz() {
             
             // Check if we should show leaderboard break (every 5 questions)
             if (data.show_leaderboard_break) {
-                console.log('[STUDENT SOCKET] 🏆 Showing leaderboard break for 5 seconds');
+                console.log('[STUDENT SOCKET] 🏆 Showing leaderboard break - backend will auto-advance');
                 showLeaderboardBreakScreen(data.leaderboard, data.question_index);
+                // NOTE: Backend timer will emit next next_question event after 5 seconds
+                // So we DON'T call loadQuestion here
             } else {
                 // Load the new question immediately
                 console.log('[STUDENT SOCKET] 📝 Loading question index:', data.question_index);
@@ -5808,6 +5810,26 @@ function connectToLiveQuiz() {
                         showRankChangeNotification(`Rank changed to #${newRank}`, 'info');
                     }
                 }
+            }
+        });
+
+        activeSocket.on('timer_expired', (data) => {
+            console.log('%c[TIMER EXPIRED] ════════════════════════════════════════', 'color: #ff0000; font-weight: bold');
+            console.log('[TIMER EXPIRED] ⏰ Timer expired for question', data.question_index);
+            console.log('[TIMER EXPIRED] Time to reveal correct answer');
+            console.log('[TIMER EXPIRED] Data:', data);
+            console.log('%c[TIMER EXPIRED] ════════════════════════════════════════', 'color: #ff0000; font-weight: bold');
+            
+            // Stop timer
+            stopQuestionTimer();
+            liveQuizState.answered = true;
+            
+            // Show correct answer
+            showCorrectAnswerReveal();
+            
+            // Update leaderboard if provided
+            if (data.leaderboard && Array.isArray(data.leaderboard)) {
+                updateLeaderboard(data.leaderboard);
             }
         });
 
@@ -5938,9 +5960,62 @@ function joinLiveQuiz() {
   showWaitingForInstructor();
 }
 
-// Show Leaderboard Break Screen (every 5 questions)
+// Show correct answer when timer expires
+function showCorrectAnswerReveal() {
+  console.log('[CORRECT ANSWER] 🎯 Revealing correct answer');
+  
+  if (!liveQuizState.currentQuestion) {
+    console.warn('[CORRECT ANSWER] No current question to reveal');
+    return;
+  }
+  
+  const questionArea = document.getElementById('questionArea');
+  if (!questionArea) return;
+  
+  const currentQuestion = liveQuizState.currentQuestion;
+  const correctAnswer = currentQuestion.answer;
+  
+  // Disable all answer options
+  document.querySelectorAll('.answer-option').forEach(el => {
+    el.style.pointerEvents = 'none';
+    
+    const optionLetter = el.getAttribute('data-answer');
+    if (optionLetter === correctAnswer) {
+      // Highlight correct answer
+      el.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2))';
+      el.style.border = '2px solid #10b981';
+      el.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="color: #10b981; font-size: 1.5rem;"><i class="fas fa-check-circle"></i></span>
+          <div style="flex: 1;">
+            <div style="font-size: 0.9rem; color: #10b981; font-weight: 600; margin-bottom: 4px;">CORRECT ANSWER</div>
+            <div style="color: var(--text-primary);">${el.querySelector('div:last-child').textContent}</div>
+          </div>
+        </div>
+      `;
+    }
+  });
+  
+  // Show explanation if available
+  if (currentQuestion.explanation) {
+    const feedbackEl = document.getElementById('answerFeedback');
+    if (feedbackEl) {
+      feedbackEl.innerHTML = `
+        <div class="feedback-content" style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 20px; border-radius: 8px; margin-top: 20px;">
+          <h3 style="color: #10b981; margin-bottom: 12px;"><i class="fas fa-lightbulb"></i> Explanation</h3>
+          <p style="color: var(--text-primary); line-height: 1.6;">${currentQuestion.explanation}</p>
+        </div>
+      `;
+      feedbackEl.style.display = 'block';
+    }
+  }
+  
+  console.log('[CORRECT ANSWER] ✅ Correct answer revealed:', correctAnswer);
+}
+
+// Show Leaderboard Break Screen (every 5 questions) - DISPLAYED IN questionArea
 function showLeaderboardBreakScreen(leaderboard, nextQuestionIndex) {
-  console.log('[LEADERBOARD BREAK] Showing leaderboard for 5 seconds');
+  console.log('[LEADERBOARD BREAK] 🏆 Showing leaderboard for 5 seconds in questionArea');
   console.log('[LEADERBOARD BREAK] Next question index:', nextQuestionIndex);
   
   const questionArea = document.getElementById('questionArea');
@@ -5949,44 +6024,47 @@ function showLeaderboardBreakScreen(leaderboard, nextQuestionIndex) {
     return;
   }
   
-  // Build leaderboard HTML
-  let leaderboardHTML = '<div style="text-align: center; padding: 20px; animation: fadeIn 0.3s;">';
-  leaderboardHTML += '<h2 style="color: var(--primary); margin-bottom: 10px;"><i class="fas fa-trophy"></i> Live Leaderboard</h2>';
-  leaderboardHTML += '<p style="color: var(--text-muted); margin-bottom: 20px;">Great job! Next question in 5 seconds...</p>';
-  leaderboardHTML += '<div style="background: var(--card-bg); border-radius: 8px; padding: 20px; max-width: 600px; margin: 0 auto;">';
+  // Build leaderboard HTML with animation
+  let leaderboardHTML = '<div style="text-align: center; padding: 40px 20px; animation: fadeIn 0.5s;">';
+  leaderboardHTML += '<div style="font-size: 3rem; margin-bottom: 20px;"><i class="fas fa-trophy" style="color: #FFD700;"></i></div>';
+  leaderboardHTML += '<h2 style="color: var(--primary); margin-bottom: 10px; font-size: 2rem;">🏆 Live Leaderboard</h2>';
+  leaderboardHTML += '<p style="color: var(--text-muted); margin-bottom: 30px; font-size: 1.1rem;">Great job everyone! Get ready for the next question...</p>';
+  leaderboardHTML += '<div style="background: var(--card-bg); border-radius: 12px; padding: 24px; max-width: 700px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">';
   
   if (leaderboard && leaderboard.length > 0) {
-    leaderboard.forEach((entry, index) => {
+    leaderboard.slice(0, 10).forEach((entry, index) => {
       const rankColor = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-muted)';
-      const isCurrentUser = entry.is_current_user ? 'font-weight: bold; background: rgba(79, 70, 229, 0.1);' : '';
+      const isCurrentUser = entry.is_current_user;
+      const bgStyle = isCurrentUser ? 'background: rgba(79, 70, 229, 0.2); border: 2px solid var(--primary);' : 'background: rgba(255, 255, 255, 0.05);';
+      const rankIcon = index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
       
       leaderboardHTML += `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; margin-bottom: 8px; border-radius: 6px; ${isCurrentUser}">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="color: ${rankColor}; font-size: 1.2rem; font-weight: bold; width: 30px;">#${entry.rank}</span>
-            <span style="color: var(--text-primary);">${entry.username}${entry.is_current_user ? ' (You)' : ''}</span>
-          </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; margin-bottom: 10px; border-radius: 8px; ${bgStyle} transition: all 0.3s;">
           <div style="display: flex; align-items: center; gap: 16px;">
-            <span style="color: var(--success);"><i class="fas fa-check-circle"></i> ${entry.correct_answers}</span>
-            <span style="color: var(--primary); font-weight: bold;">${entry.total_score} pts</span>
+            <span style="color: ${rankColor}; font-size: 1.4rem; font-weight: bold; width: 40px;">${rankIcon} #${entry.rank}</span>
+            <span style="color: var(--text-primary); font-size: 1.1rem; ${isCurrentUser ? 'font-weight: 700;' : ''}">${entry.display_name || entry.username}${isCurrentUser ? ' 🌟' : ''}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 20px;">
+            <span style="color: var(--success); font-size: 1rem;"><i class="fas fa-check-circle"></i> ${entry.total_correct || entry.correct_answers || 0}</span>
+            <span style="color: var(--primary); font-weight: bold; font-size: 1.2rem;">${entry.total_score} pts</span>
           </div>
         </div>
       `;
     });
   } else {
-    leaderboardHTML += '<p style="color: var(--text-muted);">No participants yet</p>';
+    leaderboardHTML += '<p style="color: var(--text-muted); padding: 20px;">No participants yet</p>';
   }
   
-  leaderboardHTML += '</div></div>';
+  leaderboardHTML += '</div>';
+  leaderboardHTML += '<div style="margin-top: 20px; font-size: 1.1rem; color: var(--cyber-glow);">';
+  leaderboardHTML += '<i class="fas fa-clock"></i> Next question starting soon...';
+  leaderboardHTML += '</div>';
+  leaderboardHTML += '</div>';
   
-  // Display leaderboard in question area
+  // Display leaderboard in question area (replaces question display)
   questionArea.innerHTML = leaderboardHTML;
   
-  // After 5 seconds, load the next question
-  setTimeout(() => {
-    console.log('[LEADERBOARD BREAK] 5 seconds elapsed - loading next question');
-    loadQuestion(nextQuestionIndex);
-  }, 5000);
+  console.log('[LEADERBOARD BREAK] ✅ Leaderboard displayed in questionArea - auto-advancing in 5 seconds');
 }
 
 // Load question for student (checks answered questions and skips to appropriate question)
@@ -6232,9 +6310,9 @@ function updateTimerDisplay() {
   }
 }
 
-// Handle Quiz Timeout
+// Handle Quiz Timeout (Called locally when client timer expires)
 function handleQuizTimeout() {
-  console.log('⏰ [TIMEOUT] Handling quiz timeout');
+  console.log('⏰ [TIMEOUT] Local timer expired - waiting for backend timer_expired event');
   
   // GUARD: Check quiz ended FIRST - most critical check
   if (liveQuizState.quizEnded) {
@@ -6251,7 +6329,7 @@ function handleQuizTimeout() {
   // Mark as answered to prevent duplicate submissions
   liveQuizState.answered = true;
   
-  // Disable all options
+  // Disable all options temporarily
   document.querySelectorAll('.answer-option').forEach(el => {
     el.style.pointerEvents = 'none';
     el.style.opacity = '0.6';
@@ -6260,12 +6338,16 @@ function handleQuizTimeout() {
   // Show timeout message
   const feedbackEl = document.getElementById('answerFeedback');
   if (feedbackEl) {
-    feedbackEl.querySelector('.feedback-title').textContent = 'Time\'s Up!';
-    feedbackEl.querySelector('.feedback-details').textContent = 'You ran out of time.';
+    feedbackEl.innerHTML = `
+      <div class="feedback-content" style="background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; padding: 16px; border-radius: 8px;">
+        <h3 class="feedback-title" style="color: #fbbf24; margin-bottom: 8px;"><i class="fas fa-clock"></i> Time's Up!</h3>
+        <p class="feedback-details" style="color: var(--text-secondary);">Waiting to reveal correct answer...</p>
+      </div>
+    `;
     feedbackEl.style.display = 'block';
   }
   
-  // Auto-submit with no answer
+  // Auto-submit with no answer if not already answered
   if (liveQuizState.socket && liveQuizState.sessionId && liveQuizState.currentQuestion) {
     liveQuizState.socket.emit('submit_live_answer', {
       session_id: liveQuizState.sessionId,
@@ -6273,16 +6355,10 @@ function handleQuizTimeout() {
       selected_answer: null,
       response_time: 30
     });
-    
-    // Auto-hide timeout message and show "waiting for next question" after 3 seconds
-    if (!liveQuizState.quizEnded) {
-      setTimeout(() => {
-        if (!liveQuizState.quizEnded) {
-          showWaitingForNextQuestion();
-        }
-      }, 3000);
-    }
   }
+  
+  // Backend will emit timer_expired event to reveal answer and auto-advance
+  console.log('⏰ [TIMEOUT] Waiting for backend to reveal answer and advance');
 }
 
 // Show Answer Feedback

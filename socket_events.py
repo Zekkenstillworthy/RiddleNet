@@ -9,6 +9,10 @@ from typing import List
 import json
 import time
 import uuid
+import threading
+
+# Auto-progression tracking
+_active_timers = {}  # session_id -> timer_thread
 
 try:
     # Use a lazy import to avoid circular dependencies
@@ -2699,6 +2703,10 @@ def handle_instructor_start_quiz(data):
         
         print(f"[MVP REALTIME] ✅ Broadcast complete - All students on module {session.module_id} should see LIVE button")
         
+        # Start automatic timer for first question
+        from flask import current_app
+        _start_question_timer(session_id, app=current_app._get_current_object())
+        
         # Confirm to instructor
         emit('quiz_start_confirmed', {
             'success': True,
@@ -2715,10 +2723,122 @@ def handle_instructor_start_quiz(data):
         emit('live_quiz_error', {'message': str(e)})
 
 
+def auto_advance_question(session_id, question_duration=30, leaderboard_duration=5, app=None):
+    """
+    Automatically advance to next question after timer expires
+    - Shows correct answer when timer reaches 0
+    - Every 5 questions: shows leaderboard for 5 seconds
+    - Then auto-advances to next question
+    """
+    time.sleep(question_duration)  # Wait for question timer to expire
+    
+    from user.models.live_quiz import LiveQuizSession
+    from user.routes.live_quiz_routes import get_session_leaderboard
+    
+    if app is None:
+        # Try to get app from socketio
+        from __init__ import db as app_db, create_app
+        app = create_app()
+    
+    with app.app_context():
+        try:
+            session = LiveQuizSession.query.get(session_id)
+            if not session or session.status != 'active':
+                print(f"[AUTO-ADVANCE] Session {session_id} no longer active, stopping timer")
+                if session_id in _active_timers:
+                    del _active_timers[session_id]
+                return
+            
+            # Get current question info for correct answer reveal
+            room = f'live_quiz_{session_id}'
+            current_q_index = session.current_question_index
+            
+            print(f"[AUTO-ADVANCE] Timer expired for session {session_id}, Q{current_q_index + 1}")
+            
+            # Emit timer_expired event to show correct answer
+            leaderboard = get_session_leaderboard(session_id)
+            socketio.emit('timer_expired', {
+                'question_index': current_q_index,
+                'timestamp': datetime.utcnow().isoformat(),
+                'leaderboard': leaderboard
+            }, room=room, namespace='/')
+            
+            print(f"[AUTO-ADVANCE] Sent timer_expired event to show correct answer")
+            
+            # Check if this is a leaderboard break (every 5 questions)
+            show_leaderboard_break = (current_q_index + 1) % 5 == 0 and current_q_index > 0
+            
+            if show_leaderboard_break:
+                print(f"[AUTO-ADVANCE] Leaderboard break at Q{current_q_index + 1} - showing for {leaderboard_duration}s")
+                time.sleep(leaderboard_duration)  # Show leaderboard for 5 seconds
+            else:
+                time.sleep(3)  # Brief pause to show correct answer
+            
+            # Advance to next question
+            session.current_question_index += 1
+            db.session.commit()
+            
+            # Get updated leaderboard
+            leaderboard = get_session_leaderboard(session_id)
+            
+            # Broadcast next question
+            socketio.emit('next_question', {
+                'question_index': session.current_question_index,
+                'timestamp': datetime.utcnow().isoformat(),
+                'leaderboard': leaderboard,
+                'show_leaderboard_break': show_leaderboard_break
+            }, room=room, namespace='/')
+            
+            print(f"[AUTO-ADVANCE] Advanced to Q{session.current_question_index + 1}")
+            
+            # Start timer for next question
+            _start_question_timer(session_id, question_duration, leaderboard_duration, app)
+            
+        except Exception as e:
+            print(f"[AUTO-ADVANCE ERROR] {str(e)}")
+            import traceback
+            traceback.print_exc()
+            if session_id in _active_timers:
+                del _active_timers[session_id]
+
+
+def _start_question_timer(session_id, question_duration=30, leaderboard_duration=5, app=None):
+    """Start automatic timer for current question"""
+    # Cancel any existing timer for this session
+    if session_id in _active_timers:
+        _active_timers[session_id].cancel()
+    
+    # Get app instance if not provided
+    if app is None:
+        from flask import current_app
+        try:
+            app = current_app._get_current_object()
+        except RuntimeError:
+            # No app context, get from socketio
+            from __init__ import create_app
+            app = create_app()
+    
+    # Create and start new timer
+    timer = threading.Timer(question_duration, auto_advance_question, args=(session_id, question_duration, leaderboard_duration, app))
+    timer.daemon = True
+    timer.start()
+    _active_timers[session_id] = timer
+    
+    print(f"[AUTO-TIMER] Started {question_duration}s timer for session {session_id}")
+
+
+def _cancel_question_timer(session_id):
+    """Cancel automatic timer for a session"""
+    if session_id in _active_timers:
+        _active_timers[session_id].cancel()
+        del _active_timers[session_id]
+        print(f"[AUTO-TIMER] Cancelled timer for session {session_id}")
+
+
 @socketio.on('instructor_next_question')
 @instructor_required
 def handle_instructor_next_question(data):
-    """Instructor advances to next question - MVP FIX"""
+    """Instructor manually advances to next question - NOW DEPRECATED (auto-advance handles this)"""
     try:
         session_id = data.get('session_id')
         
@@ -2733,7 +2853,10 @@ def handle_instructor_next_question(data):
             emit('live_quiz_error', {'message': 'Quiz is not active'})
             return
         
-        print(f"[MVP LiveQuiz] Instructor advancing session {session_id} from Q{session.current_question_index}")
+        print(f"[MVP LiveQuiz] Instructor manually advancing session {session_id} from Q{session.current_question_index}")
+        
+        # Cancel auto-timer since instructor is manually advancing
+        _cancel_question_timer(session_id)
         
         # Advance to next question
         session.current_question_index += 1
@@ -2743,15 +2866,23 @@ def handle_instructor_next_question(data):
         from user.routes.live_quiz_routes import get_session_leaderboard
         leaderboard = get_session_leaderboard(session_id)
         
+        # Check if leaderboard break
+        show_leaderboard_break = (session.current_question_index % 5 == 0) and (session.current_question_index > 0)
+        
         # Broadcast to all participants in the room
         room = f'live_quiz_{session_id}'
-        emit('next_question', {
+        socketio.emit('next_question', {
             'question_index': session.current_question_index,
             'timestamp': datetime.utcnow().isoformat(),
-            'leaderboard': leaderboard  # Include updated leaderboard
+            'leaderboard': leaderboard,
+            'show_leaderboard_break': show_leaderboard_break
         }, room=room)
         
         print(f"[MVP LiveQuiz] Broadcast next_question to room {room} - Now showing Q{session.current_question_index + 1}")
+        
+        # Restart auto-timer for new question
+        from flask import current_app
+        _start_question_timer(session_id, app=current_app._get_current_object())
         
     except Exception as e:
         db.session.rollback()
@@ -2774,6 +2905,9 @@ def handle_instructor_end_quiz(data):
         if not session:
             emit('live_quiz_error', {'message': 'Session not found'})
             return
+        
+        # Cancel automatic timer
+        _cancel_question_timer(session_id)
         
         # Update session status
         session.status = 'completed'
