@@ -288,6 +288,14 @@ def start_session(session_id):
         
         print(f'[MVP REALTIME] ✅ Module room broadcast complete')
         print(f'[MVP REALTIME] 📢 All students on module page should now see LIVE button')
+        
+        # ===== START AUTO-ADVANCE TIMER =====
+        print(f'[AUTO-ADVANCE] 🔥 Starting automatic timer for session {session_id}')
+        from socket_events import _start_question_timer
+        from flask import current_app
+        _start_question_timer(session_id, app=current_app._get_current_object())
+        print(f'[AUTO-ADVANCE] ✅ Timer started - questions will auto-advance every 30 seconds')
+        
         print(f'[INSTRUCTOR START QUIZ] 🎉 Quiz started successfully!')
         print(f'{"="*80}\n')
         
@@ -374,14 +382,19 @@ def next_question(session_id):
             }, room=room_name)
             print(f'[INSTRUCTOR NEXT QUESTION] ✅ Quiz ended event broadcast complete')
         else:
+            # Check if we should show leaderboard break (every 5 questions)
+            show_leaderboard_break = (session.current_question_index + 1) % 5 == 0
+            
             print(f'[INSTRUCTOR NEXT QUESTION] 📡 Broadcasting next_question to room: {room_name}')
             print(f'[INSTRUCTOR NEXT QUESTION]    - Question index: {session.current_question_index}')
             print(f'[INSTRUCTOR NEXT QUESTION]    - Leaderboard size: {len(leaderboard)}')
+            print(f'[INSTRUCTOR NEXT QUESTION]    - Show leaderboard break: {show_leaderboard_break}')
             
             socketio.emit('next_question', {
                 'question_index': session.current_question_index,
                 'timestamp': datetime.utcnow().isoformat(),
-                'leaderboard': leaderboard  # Include updated leaderboard
+                'leaderboard': leaderboard,  # Include updated leaderboard
+                'show_leaderboard_break': show_leaderboard_break  # Flag for showing leaderboard
             }, room=room_name)
             
             print(f'[INSTRUCTOR NEXT QUESTION] ✅ Next question event broadcast complete')
