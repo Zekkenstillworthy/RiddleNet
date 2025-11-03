@@ -2595,7 +2595,7 @@ def handle_submit_live_answer(data):
         # Compute Slido-like points
         points = _compute_points(is_correct, response_time)
         
-        # Update participant stats
+        # Update participant stats IN MEMORY
         p['total_answered'] += 1
         p['total_time_sec'] += response_time
         p['last_answer_at'] = time()
@@ -2605,6 +2605,37 @@ def handle_submit_live_answer(data):
             p['total_score'] += points
         
         print(f'[SUBMIT ANSWER] Score update: {p["total_score"]} ({"+" + str(points) if is_correct else "0"} points)')
+        
+        # 🔥 CRITICAL FIX: Update database participant scores
+        from user.models.live_quiz import LiveQuizParticipant, LiveQuizResponse
+        db_participant = LiveQuizParticipant.query.filter_by(
+            session_id=int(session_id),
+            user_id=uid
+        ).first()
+        
+        if db_participant:
+            db_participant.total_score = p['total_score']
+            db_participant.total_correct = p['total_correct']
+            db_participant.total_answered = p['total_answered']
+            db_participant.total_time = p['total_time_sec']
+            db_participant.average_response_time = p['total_time_sec'] / p['total_answered'] if p['total_answered'] > 0 else 0.0
+            
+            # Save response record
+            response = LiveQuizResponse(
+                participant_id=db_participant.id,
+                session_id=int(session_id),
+                question_id=int(question_id),
+                selected_answer=str(selected_answer),
+                is_correct=is_correct,
+                response_time=response_time,
+                points_awarded=points if is_correct else 0
+            )
+            db.session.add(response)
+            db.session.commit()
+            
+            print(f'[SUBMIT ANSWER] ✅ Database updated - User {uid} now has {db_participant.total_score} total points')
+        else:
+            print(f'[SUBMIT ANSWER] ⚠️ WARNING: No database participant found for user {uid}')
         
         # Get updated leaderboard
         leaderboard = _leaderboard_payload(s, current_uid=uid)
