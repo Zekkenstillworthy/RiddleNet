@@ -2499,6 +2499,7 @@ def handle_instructor_join_live_quiz(data):
         join_room(room)
         print(f"[MVP LiveQuiz] Instructor {current_user.username} joined room {room}")
 
+        # Get fresh participant count from database
         participant_count = LiveQuizParticipant.query.filter_by(
             session_id=session_id,
             is_active=True
@@ -2506,6 +2507,7 @@ def handle_instructor_join_live_quiz(data):
 
         leaderboard = get_session_leaderboard(session_id)
 
+        # Send initial sync to instructor
         emit('instructor_joined_live_quiz', {
             'session_id': session_id,
             'participant_count': participant_count,
@@ -2518,6 +2520,18 @@ def handle_instructor_join_live_quiz(data):
             f"[MVP LiveQuiz] Sent instructor_joined_live_quiz to {current_user.username} "
             f"- Participants: {participant_count}, Status: {session.status}"
         )
+        
+        # CRITICAL FIX: Immediately notify instructor of any existing participants
+        # This ensures participant count is synced even if students joined before instructor
+        if participant_count > 0:
+            print(f"[MVP LiveQuiz] Instructor joined AFTER students - broadcasting current state")
+            # Broadcast participant count update to ensure instructor UI syncs
+            emit('participant_count_sync', {
+                'session_id': session_id,
+                'participant_count': participant_count,
+                'leaderboard': leaderboard
+            }, room=room)
+            print(f"[MVP LiveQuiz] Sent participant_count_sync to room {room}")
 
     except Exception as e:
         print(f"[ERROR] Instructor join live quiz: {str(e)}")
@@ -2527,85 +2541,69 @@ def handle_instructor_join_live_quiz(data):
 @socketio.on('submit_live_answer')
 @authenticated_only
 def handle_submit_live_answer(data):
-    """Handle real-time answer submission"""
+    """Handle real-time answer submission via MVP API"""
     try:
-        session_id = data.get('session_id')
-        question_id = data.get('question_id')
+        session_id = str(data.get('session_id', ''))
+        question_id = str(data.get('question_id', ''))
         selected_answer = data.get('selected_answer')
         response_time = data.get('response_time', 0)
         
-        from user.models.live_quiz import LiveQuizSession, LiveQuizParticipant, LiveQuizResponse
-        from instructor.models.question import Question
+        # Use MVP API's submit logic to maintain consistency
+        from api.live_quiz_api import _get_session, _leaderboard_payload, _compute_points
+        from time import time
         
-        # Get session and participant
-        session = LiveQuizSession.query.get(session_id)
-        participant = LiveQuizParticipant.query.filter_by(
-            session_id=session_id,
-            user_id=current_user.id
-        ).first()
+        s = _get_session(session_id)
+        uid = int(current_user.get_id())
+        p = s['participants'].get(uid)
         
-        if not session or not participant:
-            emit('live_quiz_error', {'message': 'Invalid session or participant'})
+        if p is None:
+            emit('live_quiz_error', {'message': 'You must join the session first'})
             return
         
-        # Check if already answered
-        existing = LiveQuizResponse.query.filter_by(
-            participant_id=participant.id,
-            question_id=question_id
-        ).first()
+        # Initialize answered questions tracking if not exists
+        if 'answered_questions' not in s:
+            s['answered_questions'] = {}
+        if uid not in s['answered_questions']:
+            s['answered_questions'][uid] = set()
         
-        if existing:
+        # Check if already answered this question
+        if question_id in s['answered_questions'][uid]:
+            print(f'[SUBMIT ANSWER] ⚠️ User {uid} already answered question {question_id} in session {session_id}')
             emit('live_quiz_error', {'message': 'Already answered this question'})
             return
         
-        # Get question and check answer
-        question = Question.query.get(question_id)
-        if not question:
-            emit('live_quiz_error', {'message': 'Question not found'})
-            return
+        # Mark question as answered
+        print(f'[SUBMIT ANSWER] ✅ User {uid} answering question {question_id} in session {session_id}')
+        s['answered_questions'][uid].add(question_id)
         
-        # Handle cases where selected_answer is None (e.g., timer expired without answer)
+        # Get question metadata from session
+        meta = s['questions'].get(question_id, {})
+        correct_answer = meta.get('correct_answer')
+        explanation = meta.get('explanation')
+        
+        # Check if answer is correct
         if selected_answer is None or selected_answer == '':
             is_correct = False
-            selected_answer = ''  # Convert None to empty string for database NOT NULL constraint
         else:
-            is_correct = (selected_answer.strip().lower() == question.answer.strip().lower())
+            is_correct = (correct_answer is not None and 
+                          str(selected_answer).strip() == str(correct_answer).strip())
         
-        # Create response
-        response = LiveQuizResponse(
-            participant_id=participant.id,
-            session_id=session_id,
-            question_id=question_id,
-            selected_answer=selected_answer,
-            is_correct=is_correct,
-            response_time=response_time,
-            question_text=question.question,
-            correct_answer=question.answer
-        )
-        
-        # Calculate points (Slido-style scoring)
-        points = response.calculate_points(
-            max_time=session.time_per_question,
-            max_points=1000
-        )
-        response.points_awarded = points
-        
-        db.session.add(response)
+        # Compute Slido-like points
+        points = _compute_points(is_correct, response_time)
         
         # Update participant stats
-        participant.total_answered += 1
+        p['total_answered'] += 1
+        p['total_time_sec'] += response_time
+        p['last_answer_at'] = time()
+        
         if is_correct:
-            participant.total_correct += 1
-            participant.total_score += points
+            p['total_correct'] += 1
+            p['total_score'] += points
         
-        participant.total_time += response_time
-        participant.average_response_time = participant.total_time / participant.total_answered
-        
-        db.session.commit()
+        print(f'[SUBMIT ANSWER] Score update: {p["total_score"]} ({"+" + str(points) if is_correct else "0"} points)')
         
         # Get updated leaderboard
-        from user.routes.live_quiz_routes import get_session_leaderboard
-        leaderboard = get_session_leaderboard(session_id)
+        leaderboard = _leaderboard_payload(s, current_uid=uid)
         
         # Broadcast to all participants in this quiz
         room = f'live_quiz_{session_id}'
@@ -2614,17 +2612,15 @@ def handle_submit_live_answer(data):
         emit('answer_result', {
             'is_correct': is_correct,
             'points_awarded': points,
-            'total_score': participant.total_score,
-            'correct_answer': question.answer
+            'total_score': p['total_score'],
+            'correct_answer': correct_answer,
+            'explanation': explanation
         })
         
         # Broadcast leaderboard update to all participants
         emit('leaderboard_update', {
             'leaderboard': leaderboard,
-            'answered_count': LiveQuizResponse.query.filter_by(
-                session_id=session_id,
-                question_id=question_id
-            ).count(),
+            'answered_count': sum(1 for u in s['answered_questions'] if question_id in s['answered_questions'].get(u, set())),
             'session_id': session_id
         }, room=room)
         
@@ -2772,7 +2768,7 @@ def handle_instructor_end_quiz(data):
     try:
         session_id = data.get('session_id')
         
-        from user.models.live_quiz import LiveQuizSession
+        from user.models.live_quiz import LiveQuizSession, LiveQuizParticipant
         
         session = LiveQuizSession.query.get(session_id)
         if not session:
@@ -2782,7 +2778,17 @@ def handle_instructor_end_quiz(data):
         # Update session status
         session.status = 'completed'
         session.ended_at = datetime.utcnow()
+        
+        # CRITICAL: Mark all participants as completed for gradebook integration
+        participants = LiveQuizParticipant.query.filter_by(session_id=session_id).all()
+        completed_count = 0
+        for participant in participants:
+            if not participant.completed_at:  # Only set if not already completed
+                participant.completed_at = datetime.utcnow()
+                completed_count += 1
+        
         db.session.commit()
+        print(f"[GRADEBOOK] Marked {completed_count} participants as completed for session {session_id}")
         
         # Get final leaderboard
         from user.routes.live_quiz_routes import get_session_leaderboard

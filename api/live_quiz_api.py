@@ -583,6 +583,9 @@ def get_my_active_session():
                 print(f'[CHECK ACTIVE SESSION] Answered questions: {len(answered_questions)}')
                 print(f'{"="*80}\n')
                 
+                # Get question count from memory session
+                total_questions = len(memory_session.get('questions', [])) if memory_session else 0
+                
                 return jsonify({
                     'success': True,
                     'has_active_session': True,
@@ -594,7 +597,7 @@ def get_my_active_session():
                         'title': db_session.title,
                         'status': db_session.status,
                         'current_question_index': db_session.current_question_index or 0,
-                        'total_questions': db_session.question_count or 0,
+                        'total_questions': total_questions,
                         'answered_questions': answered_questions,
                         'participant_stats': {
                             'total_score': participant.get('total_score', 0),
