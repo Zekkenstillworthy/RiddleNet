@@ -430,10 +430,12 @@ def next_question(session_id):
 @live_quiz_instructor_bp.route('/session/<int:session_id>/end', methods=['POST'])
 @instructor_required
 def end_session(session_id):
-    """End a live quiz session"""
+    """End a live quiz session and auto-grade all participants"""
     try:
-        from user.models.live_quiz import LiveQuizSession
+        from user.models.live_quiz import LiveQuizSession, LiveQuizParticipant
         from user.routes.live_quiz_routes import get_session_leaderboard
+        from instructor.models.class_content import ClassAssignment
+        from instructor.models.assignment_submission import AssignmentSubmission, AssignmentSubmissionHistory
         
         session = LiveQuizSession.query.get(session_id)
         if not session or session.created_by != current_user.id:
@@ -445,6 +447,127 @@ def end_session(session_id):
         
         # Get final leaderboard
         leaderboard = get_session_leaderboard(session_id)
+        
+        # ===== AUTO-GRADING: Create assignment submissions for all participants =====
+        print(f'\n[LIVE QUIZ AUTO-GRADE] 🎓 Starting automatic grading for session {session_id}')
+        print(f'[LIVE QUIZ AUTO-GRADE] Quiz title: {session.title}')
+        
+        # Check if there's a linked assignment for this quiz
+        # Find any assignment in this class/module that references this quiz session
+        linked_assignment = ClassAssignment.query.filter_by(
+            class_id=session.class_id,
+            assignment_type='quiz'
+        ).filter(
+            ClassAssignment.title.ilike(f'%{session.title}%')
+        ).first()
+        
+        if not linked_assignment:
+            # Create a default assignment for this quiz
+            print(f'[LIVE QUIZ AUTO-GRADE] No linked assignment found - creating default quiz assignment')
+            linked_assignment = ClassAssignment(
+                class_id=session.class_id,
+                title=f'{session.title} - Live Quiz',
+                description=f'Auto-generated assignment for Live Quiz session {session.session_code}',
+                assignment_type='quiz',
+                points=100,  # Default 100 points
+                created_by=session.created_by,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(linked_assignment)
+            db.session.flush()  # Get the assignment ID
+            print(f'[LIVE QUIZ AUTO-GRADE] ✅ Created assignment ID: {linked_assignment.id}')
+        else:
+            print(f'[LIVE QUIZ AUTO-GRADE] Found linked assignment ID: {linked_assignment.id}')
+        
+        # Get all participants who completed the quiz
+        participants = LiveQuizParticipant.query.filter_by(
+            session_id=session_id,
+            is_active=True
+        ).all()
+        
+        print(f'[LIVE QUIZ AUTO-GRADE] Found {len(participants)} participants to grade')
+        
+        graded_count = 0
+        for participant in participants:
+            try:
+                # Calculate percentage score (total_correct / total_answered * 100)
+                percentage_score = 0
+                if participant.total_answered > 0:
+                    percentage_score = (participant.total_correct / participant.total_answered) * 100
+                
+                # Convert to points based on assignment max points
+                grade = round((percentage_score / 100) * linked_assignment.points, 2)
+                
+                print(f'[LIVE QUIZ AUTO-GRADE] Student {participant.user_id}: {participant.total_correct}/{participant.total_answered} correct = {percentage_score:.1f}% = {grade}/{linked_assignment.points} points')
+                
+                # Check if submission already exists
+                existing_submission = AssignmentSubmission.query.filter_by(
+                    assignment_id=linked_assignment.id,
+                    student_id=participant.user_id
+                ).first()
+                
+                if existing_submission:
+                    # Update existing submission
+                    print(f'[LIVE QUIZ AUTO-GRADE]   - Updating existing submission ID: {existing_submission.id}')
+                    old_grade = existing_submission.grade
+                    existing_submission.grade = grade
+                    existing_submission.status = 'graded'
+                    existing_submission.graded_at = datetime.utcnow()
+                    existing_submission.graded_by = current_user.id
+                    existing_submission.feedback = f'Auto-graded from Live Quiz: {participant.total_correct} correct out of {participant.total_answered} answered'
+                    
+                    # Add history entry
+                    db.session.add(AssignmentSubmissionHistory(
+                        submission_id=existing_submission.id,
+                        action='graded',
+                        old_grade=old_grade,
+                        new_grade=grade,
+                        old_status='submitted',
+                        new_status='graded',
+                        changed_by=current_user.id,
+                        changed_by_type='instructor',
+                        notes=f'Auto-graded from Live Quiz session {session.session_code}'
+                    ))
+                else:
+                    # Create new submission
+                    print(f'[LIVE QUIZ AUTO-GRADE]   - Creating new submission')
+                    new_submission = AssignmentSubmission(
+                        assignment_id=linked_assignment.id,
+                        student_id=participant.user_id,
+                        submission_text=f'Live Quiz completed: {participant.total_correct}/{participant.total_answered} correct',
+                        submitted_at=session.ended_at,
+                        status='graded',
+                        grade=grade,
+                        max_points=linked_assignment.points,
+                        feedback=f'Auto-graded from Live Quiz: {participant.total_correct} correct out of {participant.total_answered} answered',
+                        graded_at=datetime.utcnow(),
+                        graded_by=current_user.id
+                    )
+                    db.session.add(new_submission)
+                    db.session.flush()
+                    
+                    # Add history entry
+                    db.session.add(AssignmentSubmissionHistory(
+                        submission_id=new_submission.id,
+                        action='graded',
+                        old_grade=None,
+                        new_grade=grade,
+                        old_status='submitted',
+                        new_status='graded',
+                        changed_by=current_user.id,
+                        changed_by_type='instructor',
+                        notes=f'Auto-graded from Live Quiz session {session.session_code}'
+                    ))
+                
+                graded_count += 1
+                
+            except Exception as participant_error:
+                print(f'[LIVE QUIZ AUTO-GRADE] ⚠️ Error grading participant {participant.user_id}: {participant_error}')
+                continue
+        
+        # Commit all grading changes
+        db.session.commit()
+        print(f'[LIVE QUIZ AUTO-GRADE] ✅ Successfully auto-graded {graded_count}/{len(participants)} participants')
         
         # Emit socket event to notify participants
         from socket_manager import socketio
@@ -477,14 +600,18 @@ def end_session(session_id):
         
         return jsonify({
             'success': True,
-            'message': 'Quiz ended!',
+            'message': 'Quiz ended and auto-graded!',
             'session': session.to_dict(),
-            'leaderboard': leaderboard
+            'leaderboard': leaderboard,
+            'graded_count': graded_count,
+            'total_participants': len(participants)
         })
         
     except Exception as e:
         db.session.rollback()
         print(f"Error ending quiz: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
