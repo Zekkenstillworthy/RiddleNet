@@ -5742,10 +5742,13 @@ function connectToLiveQuiz() {
             console.log('[STUDENT SOCKET] Full event data:', data);
             
             // Update leaderboard if provided (shows results from previous question)
-            if (data.leaderboard && Array.isArray(data.leaderboard)) {
-                console.log('[STUDENT SOCKET] 📊 Updating leaderboard from event...');
+            // ONLY update sidebar leaderboard if we're NOT showing the full-screen break
+            if (data.leaderboard && Array.isArray(data.leaderboard) && !data.show_leaderboard_break) {
+                console.log('[STUDENT SOCKET] 📊 Updating sidebar leaderboard from event...');
                 updateLeaderboard(data.leaderboard);
-                console.log('[STUDENT SOCKET] ✅ Leaderboard updated');
+                console.log('[STUDENT SOCKET] ✅ Sidebar leaderboard updated');
+            } else if (data.show_leaderboard_break) {
+                console.log('[STUDENT SOCKET] ⏭️ Skipping sidebar update - showing full-screen leaderboard break instead');
             }
             
             // Clear any existing answer feedback
