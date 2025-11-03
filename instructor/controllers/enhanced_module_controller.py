@@ -215,8 +215,9 @@ def create_module(class_id):
         module_content = request.form.get('content', '').strip()  # Get content for lessons, not module
         estimated_duration = int(request.form.get('estimated_duration', 60))
         order_index = int(request.form.get('order_index', 1))
-        is_active = bool(request.form.get('is_active'))
-        is_published = bool(request.form.get('is_published'))
+        # Default to True if not present (e.g., when creating via modal)
+        is_active = bool(request.form.get('is_active', True))
+        is_published = bool(request.form.get('is_published', True))
         requires_sequential_completion = bool(request.form.get('requires_sequential_completion'))
         
         # Validate required fields
