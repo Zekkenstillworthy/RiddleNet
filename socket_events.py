@@ -2724,75 +2724,118 @@ def handle_instructor_start_quiz(data):
 
 
 def auto_advance_question(session_id, question_duration=30, leaderboard_duration=5, app=None):
-    """
-    Automatically advance to next question after timer expires
-    - Shows correct answer when timer reaches 0
-    - Every 5 questions: shows leaderboard for 5 seconds
-    - Then auto-advances to next question
-    """
-    time.sleep(question_duration)  # Wait for question timer to expire
+    """Automatically advance to the next question when the timer expires."""
+    time.sleep(question_duration)  # Wait for the active question timer to finish
     
-    from user.models.live_quiz import LiveQuizSession
+    from user.models.live_quiz import LiveQuizSession, LiveQuizParticipant
     from user.routes.live_quiz_routes import get_session_leaderboard
     
     if app is None:
-        # Try to get app from socketio
-        from __init__ import db as app_db, create_app
-        app = create_app()
+        print(f"[AUTO-ADVANCE] No app context available for session {session_id}, aborting auto-advance")
+        if session_id in _active_timers:
+            _active_timers.pop(session_id, None)
+        return
     
     with app.app_context():
         try:
             session = LiveQuizSession.query.get(session_id)
             if not session or session.status != 'active':
-                print(f"[AUTO-ADVANCE] Session {session_id} no longer active, stopping timer")
+                print(f"[AUTO-ADVANCE] Session {session_id} is no longer active. Cancelling timer.")
                 if session_id in _active_timers:
                     del _active_timers[session_id]
                 return
             
-            # Get current question info for correct answer reveal
             room = f'live_quiz_{session_id}'
             current_q_index = session.current_question_index
+            question_number = current_q_index + 1
             
-            print(f"[AUTO-ADVANCE] Timer expired for session {session_id}, Q{current_q_index + 1}")
+            print(f"[AUTO-ADVANCE] Timer expired for session {session_id} (Question #{question_number})")
             
-            # Emit timer_expired event to show correct answer
-            leaderboard = get_session_leaderboard(session_id)
+            # Capture leaderboard snapshot after the question completes
+            leaderboard_snapshot = get_session_leaderboard(session_id)
+
+            total_questions = 0
+            try:
+                total_questions = session._get_total_questions() or 0
+            except Exception as total_questions_error:
+                print(f"[AUTO-ADVANCE] Unable to determine total questions for session {session_id}: {total_questions_error}")
+                total_questions = 0
+            is_last_question = total_questions > 0 and question_number >= total_questions
+            
             socketio.emit('timer_expired', {
+                'session_id': session_id,
                 'question_index': current_q_index,
                 'timestamp': datetime.utcnow().isoformat(),
-                'leaderboard': leaderboard
+                'leaderboard': leaderboard_snapshot
             }, room=room, namespace='/')
+            print(f"[AUTO-ADVANCE] Broadcast timer_expired for Q{question_number}")
             
-            print(f"[AUTO-ADVANCE] Sent timer_expired event to show correct answer")
+            # Allow a short window for the answer reveal UI
+            answer_reveal_delay = 3
+            time.sleep(answer_reveal_delay)
             
-            # Check if this is a leaderboard break (every 5 questions)
-            show_leaderboard_break = (current_q_index + 1) % 5 == 0 and current_q_index > 0
+            if is_last_question:
+                print(f"[AUTO-ADVANCE] Session {session_id} reached final question. Completing quiz.")
+                completion_time = datetime.utcnow()
+                session.status = 'completed'
+                session.ended_at = completion_time
+
+                completed_count = 0
+                try:
+                    participants = LiveQuizParticipant.query.filter_by(session_id=session_id).all()
+                    for participant in participants:
+                        if not participant.completed_at:
+                            participant.completed_at = completion_time
+                            completed_count += 1
+                except Exception as participant_error:
+                    print(f"[AUTO-ADVANCE] Warning: Unable to mark participants as completed for session {session_id}: {participant_error}")
+
+                db.session.commit()
+                print(f"[AUTO-ADVANCE] Marked session {session_id} completed. Participants updated: {completed_count}")
+
+                socketio.emit('quiz_ended', {
+                    'session_id': session_id,
+                    'ended_at': completion_time.isoformat(),
+                    'leaderboard': leaderboard_snapshot
+                }, room=room, namespace='/')
+                module_room = f'module_{session.module_id}'
+                socketio.emit('live_quiz_session_status_changed', {
+                    'session_id': session_id,
+                    'status': 'completed',
+                    'class_id': session.class_id,
+                    'module_id': session.module_id,
+                    'lesson_id': session.lesson_id,
+                    'ended_at': completion_time.isoformat()
+                }, room=module_room, namespace='/', broadcast=True)
+
+                if session_id in _active_timers:
+                    _active_timers.pop(session_id, None)
+                print(f"[AUTO-ADVANCE] Completed session {session_id}. No further timers scheduled.")
+                return
+
+            # Determine if we should show a leaderboard break (every 5th question)
+            show_leaderboard_break = (question_number % 5 == 0)
             
-            if show_leaderboard_break:
-                print(f"[AUTO-ADVANCE] Leaderboard break at Q{current_q_index + 1} - showing for {leaderboard_duration}s")
-                time.sleep(leaderboard_duration)  # Show leaderboard for 5 seconds
-            else:
-                time.sleep(3)  # Brief pause to show correct answer
-            
-            # Advance to next question
+            # Advance to the next question index
             session.current_question_index += 1
             db.session.commit()
+            next_question_index = session.current_question_index
+            print(f"[AUTO-ADVANCE] Advanced session {session_id} to question index {next_question_index}")
             
-            # Get updated leaderboard
-            leaderboard = get_session_leaderboard(session_id)
-            
-            # Broadcast next question
+            # Broadcast next question payload
             socketio.emit('next_question', {
-                'question_index': session.current_question_index,
+                'session_id': session_id,
+                'question_index': next_question_index,
                 'timestamp': datetime.utcnow().isoformat(),
-                'leaderboard': leaderboard,
-                'show_leaderboard_break': show_leaderboard_break
+                'leaderboard': leaderboard_snapshot,
+                'show_leaderboard_break': show_leaderboard_break,
+                'break_duration': leaderboard_duration if show_leaderboard_break else 0
             }, room=room, namespace='/')
+            print(f"[AUTO-ADVANCE] Emitted next_question (break={show_leaderboard_break}) for session {session_id}")
             
-            print(f"[AUTO-ADVANCE] Advanced to Q{session.current_question_index + 1}")
-            
-            # Start timer for next question
-            _start_question_timer(session_id, question_duration, leaderboard_duration, app)
+            # Schedule next timer (delay start if we are showing a leaderboard break)
+            delay_before_start = leaderboard_duration if show_leaderboard_break else 0
+            _start_question_timer(session_id, question_duration, leaderboard_duration, app, delay_before_start=delay_before_start)
             
         except Exception as e:
             print(f"[AUTO-ADVANCE ERROR] {str(e)}")
@@ -2802,7 +2845,7 @@ def auto_advance_question(session_id, question_duration=30, leaderboard_duration
                 del _active_timers[session_id]
 
 
-def _start_question_timer(session_id, question_duration=30, leaderboard_duration=5, app=None):
+def _start_question_timer(session_id, question_duration=30, leaderboard_duration=5, app=None, delay_before_start=0):
     """Start automatic timer for current question"""
     # Cancel any existing timer for this session
     if session_id in _active_timers:
@@ -2811,20 +2854,23 @@ def _start_question_timer(session_id, question_duration=30, leaderboard_duration
     # Get app instance if not provided
     if app is None:
         from flask import current_app
-        try:
-            app = current_app._get_current_object()
-        except RuntimeError:
-            # No app context, get from socketio
-            from __init__ import create_app
-            app = create_app()
+        app = current_app._get_current_object()
     
-    # Create and start new timer
-    timer = threading.Timer(question_duration, auto_advance_question, args=(session_id, question_duration, leaderboard_duration, app))
-    timer.daemon = True
-    timer.start()
-    _active_timers[session_id] = timer
+    def _begin_timer():
+        timer = threading.Timer(question_duration, auto_advance_question, args=(session_id, question_duration, leaderboard_duration, app))
+        timer.daemon = True
+        timer.start()
+        _active_timers[session_id] = timer
+        print(f"[AUTO-TIMER] Started {question_duration}s timer for session {session_id}")
     
-    print(f"[AUTO-TIMER] Started {question_duration}s timer for session {session_id}")
+    if delay_before_start and delay_before_start > 0:
+        delay_timer = threading.Timer(delay_before_start, _begin_timer)
+        delay_timer.daemon = True
+        delay_timer.start()
+        _active_timers[session_id] = delay_timer
+        print(f"[AUTO-TIMER] Delaying timer start by {delay_before_start}s for session {session_id}")
+    else:
+        _begin_timer()
 
 
 def _cancel_question_timer(session_id):

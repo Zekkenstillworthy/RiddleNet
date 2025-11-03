@@ -14555,7 +14555,6 @@ function displayQuestions(questions, groupId) {
         <div class="question-item" data-question-id="${question.id}">
             <div class="question-content">
                 <div class="question-header">
-                    <span class="question-number">#${question.numb}</span>
                     <span class="question-type-badge ${question.question_type}">${formatQuestionType(question.question_type)}</span>
                 </div>
                 <div class="question-text">${question.question_text}</div>
@@ -17890,6 +17889,36 @@ console.log('✅ [ADMIN] Global collaboration functions loaded');
 
 let activeLiveQuizSession = null;
 let liveQuizSocket = null;
+let autoAdvanceTimer = null;
+let autoAdvanceTimeRemaining = 0;
+let questionsAnswered = 0;  // Track how many questions have been completed
+
+// ==================================================================================
+// AUTO-ADVANCE - Backend Controlled
+// ==================================================================================
+// The backend (socket_events.py) automatically handles question progression:
+//   - auto_advance_question() runs server-side timer
+//   - Emits 'timer_expired' to show correct answer
+//   - Emits 'next_question' to advance all students simultaneously
+//   - Automatically shows leaderboard break every 5 questions
+// Instructor UI now passively displays state without client-side timers
+// ==================================================================================
+
+function startAutoAdvanceTimer() {
+    console.log('[AUTO-ADVANCE] ⚠️ Client-side timer disabled - backend controls progression');
+    // Backend handles auto-advance via socket_events.py
+}
+
+function stopAutoAdvanceTimer() {
+    console.log('[AUTO-ADVANCE] ⚠️ Client-side timer disabled - backend controls progression');
+    // Backend handles stopping timers
+}
+
+function showLeaderboardBreak() {
+    console.log('[LEADERBOARD BREAK] ⚠️ Backend handles leaderboard breaks every 5 questions');
+    // Backend automatically shows leaderboard every 5 questions
+    }, 5000);
+}
 
 function showLiveQuizModal(questionGroupId, questionGroupName) {
     const overlayId = 'liveQuizModalOverlay';
@@ -18170,6 +18199,70 @@ function connectToLiveQuizSocket(sessionId) {
                 }
             }
         });
+
+        // CRITICAL FIX: Handle participant count sync when instructor joins after students
+        window.socket.on('participant_count_sync', (data) => {
+            if (data.session_id === window.__liveQuizInstructorSessionId) {
+                console.log('[INSTRUCTOR SOCKET] 🔄 participant_count_sync received!');
+                console.log('[INSTRUCTOR SOCKET] Syncing participant count:', data.participant_count);
+                
+                document.getElementById('participant-count').textContent = data.participant_count;
+                
+                if (Array.isArray(data.leaderboard)) {
+                    console.log('[INSTRUCTOR SOCKET] Updating leaderboard from sync');
+                    displayInstructorLeaderboard(data.leaderboard);
+                }
+            }
+        });
+
+        // AUTO-ADVANCE: Listen for backend timer events
+        window.socket.on('timer_expired', (data) => {
+            if (data.session_id === window.__liveQuizInstructorSessionId) {
+                console.log('[INSTRUCTOR SOCKET] ⏰ timer_expired - backend timer ran out');
+                console.log('[INSTRUCTOR SOCKET] Question index:', data.question_index);
+                moduleBuilder?.showToast?.('Time expired! Showing correct answer...', 'warning');
+            }
+        });
+
+        window.socket.on('next_question', (data) => {
+            if (data.session_id === window.__liveQuizInstructorSessionId) {
+                console.log('[INSTRUCTOR SOCKET] ⏭️ next_question - backend auto-advancing');
+                console.log('[INSTRUCTOR SOCKET] New question index:', data.question_index);
+                console.log('[INSTRUCTOR SOCKET] Show leaderboard break:', data.show_leaderboard_break);
+                
+                // Update question counter
+                const currentQuestionNum = document.getElementById('current-question-num');
+                if (currentQuestionNum) {
+                    currentQuestionNum.textContent = data.question_index + 1;
+                }
+                
+                // Update leaderboard
+                if (data.leaderboard && Array.isArray(data.leaderboard)) {
+                    displayInstructorLeaderboard(data.leaderboard);
+                }
+                
+                // Show notification
+                if (data.show_leaderboard_break) {
+                    moduleBuilder?.showToast?.(`Question ${data.question_index + 1} - Showing leaderboard for 5s`, 'info');
+                } else {
+                    moduleBuilder?.showToast?.(`Question ${data.question_index + 1} started`, 'info');
+                }
+            }
+        });
+
+        window.socket.on('quiz_ended', (data) => {
+            if (data.session_id === window.__liveQuizInstructorSessionId) {
+                console.log('[INSTRUCTOR SOCKET] 🏁 quiz_ended - backend completed quiz');
+                moduleBuilder?.showToast?.('Quiz completed! Final results shown.', 'success');
+                
+                // Update leaderboard with final results
+                if (data.leaderboard && Array.isArray(data.leaderboard)) {
+                    displayInstructorLeaderboard(data.leaderboard);
+                }
+                
+                console.log('[INSTRUCTOR SOCKET] ✅ Participant count synced to:', data.participant_count);
+            }
+        });
     }
 
     console.log('[MVP LiveQuiz] Instructor socket listeners configured - joining session:', sessionId);
@@ -18199,18 +18292,22 @@ async function startLiveQuiz() {
             console.log('[INSTRUCTOR START] Updating UI...');
             
             document.getElementById('start-quiz-btn').style.display = 'none';
-            document.getElementById('next-question-btn').style.display = 'block';
+            document.getElementById('next-question-btn').style.display = 'none';  // Hide manual next button
             document.getElementById('current-question-num').textContent = '1';
             
-            console.log('[INSTRUCTOR START] UI updated - Start button hidden, Next button visible');
+            console.log('[INSTRUCTOR START] UI updated - Start button hidden, Next button hidden (auto-advance enabled)');
             console.log('[INSTRUCTOR START] Fetching initial leaderboard...');
             
-            moduleBuilder?.showToast?.('MVP: Quiz started! Students can now see questions.', 'success');
+            moduleBuilder?.showToast?.('MVP: Quiz started! Auto-advancing enabled.', 'success');
             
             // Fetch and display initial leaderboard
             updateInstructorLeaderboard();
             
-            console.log('[INSTRUCTOR START] ✅ Start quiz complete!');
+            // Start auto-advance timer for first question
+            questionsAnswered = 0;  // Reset counter
+            startAutoAdvanceTimer();
+            
+            console.log('[INSTRUCTOR START] ✅ Start quiz complete with auto-advance!');
             console.log('%c[INSTRUCTOR START] ════════════════════════════════════════', 'color: #00ff00; font-weight: bold');
         } else {
             console.error('[INSTRUCTOR START] ❌ Failed to start quiz:', data.error);
@@ -18223,11 +18320,16 @@ async function startLiveQuiz() {
     }
 }
 
+// DEPRECATED: This function is kept for backward compatibility but should not be called manually
+// The system now uses automatic question progression via backend timer (auto_advance_question)
+// The "Next Question" button is hidden by default (display: none)
 async function nextQuestion() {
+    console.warn('[DEPRECATED] nextQuestion() called manually - auto-advance should handle this');
+    
     if (!activeLiveQuizSession) return;
     
     try {
-        console.log('[MVP LiveQuiz] Instructor advancing to next question');
+        console.log('[MVP LiveQuiz] Manual advance requested (should not happen in normal flow)');
         
         const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/next-question`, {
             method: 'POST'
@@ -18252,11 +18354,14 @@ async function nextQuestion() {
             }
             
             if (data.quiz_completed) {
+                stopAutoAdvanceTimer();  // Stop timer when quiz completes
                 document.getElementById('next-question-btn').style.display = 'none';
                 moduleBuilder?.showToast?.('MVP: Quiz completed! Final leaderboard shown to students.', 'success');
                 console.log('[MVP LiveQuiz] Quiz completed - showing final results');
             } else {
-                moduleBuilder?.showToast?.(`MVP: Question ${currentQ}/${totalQ} shown to students`, 'success');
+                // Restart auto-advance timer for next question
+                startAutoAdvanceTimer();
+                moduleBuilder?.showToast?.(`MVP: Question ${currentQ}/${totalQ} - auto-advancing in ${activeLiveQuizSession.time_per_question}s`, 'success');
             };
         } else {
             console.error('[MVP LiveQuiz] Failed to advance question:', data.error);
