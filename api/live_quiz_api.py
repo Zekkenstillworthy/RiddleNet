@@ -18,6 +18,7 @@ def _get_session(session_id: str) -> Dict[str, Any]:
     return _sessions.setdefault(session_id, {
         'participants': {},   # user_id -> stats
         'questions': {},      # question_id -> {correct_answer, explanation}
+        'answered_questions': {},  # user_id -> set of answered question_ids
         'created_at': time(),
         'finalized': False,
     })
@@ -203,6 +204,12 @@ def join():
         print(f'[STUDENT JOIN] ✅ Participant created')
     else:
         print(f'[STUDENT JOIN] User {uid} already a participant - using existing data')
+    
+    # Initialize answered questions set for this user if not exists
+    if 'answered_questions' not in s:
+        s['answered_questions'] = {}
+    if uid not in s['answered_questions']:
+        s['answered_questions'][uid] = set()
 
     leaderboard_snapshot = _leaderboard_payload(s, current_uid=uid)
 
@@ -261,7 +268,8 @@ def submit_answer():
         "explanation": "...",
         "points_awarded": 850,
         "total_score": 1700,
-        "leaderboard": [...]
+        "leaderboard": [...],
+        "already_answered": false
     }
     """
     data = request.get_json(silent=True) or {}
@@ -279,6 +287,31 @@ def submit_answer():
     
     if p is None:
         return jsonify({'success': False, 'error': 'You must join the session first'}), 400
+
+    # Initialize answered questions tracking if not exists
+    if 'answered_questions' not in s:
+        s['answered_questions'] = {}
+    if uid not in s['answered_questions']:
+        s['answered_questions'][uid] = set()
+    
+    # Check if already answered this question
+    if question_id in s['answered_questions'][uid]:
+        # Return cached result without updating stats
+        meta = s['questions'].get(question_id, {})
+        return jsonify({
+            'success': True,
+            'already_answered': True,
+            'is_correct': False,  # We don't know their previous answer
+            'correct_answer': meta.get('correct_answer'),
+            'explanation': meta.get('explanation'),
+            'points_awarded': 0,
+            'total_score': p['total_score'],
+            'leaderboard': _leaderboard_payload(s, current_uid=uid),
+            'message': 'You have already answered this question'
+        })
+
+    # Mark question as answered
+    s['answered_questions'][uid].add(question_id)
 
     # Get question metadata
     meta = s['questions'].get(question_id, {})
@@ -307,6 +340,7 @@ def submit_answer():
 
     return jsonify({
         'success': True,
+        'already_answered': False,
         'is_correct': is_correct,
         'correct_answer': correct_answer,
         'explanation': explanation,
@@ -446,6 +480,33 @@ def get_session_status(session_id):
         }), 500
 
 
+@live_quiz_bp.route('/answered-questions/<session_id>', methods=['GET'])
+@login_required
+def get_answered_questions(session_id):
+    """
+    Get list of question IDs that current user has already answered
+    
+    Response:
+    {
+        "success": true,
+        "answered_questions": ["1", "2", "5"]
+    }
+    """
+    s = _get_session(str(session_id))
+    uid = int(current_user.get_id())
+    
+    # Initialize if not exists
+    if 'answered_questions' not in s:
+        s['answered_questions'] = {}
+    if uid not in s['answered_questions']:
+        s['answered_questions'][uid] = set()
+    
+    return jsonify({
+        'success': True,
+        'answered_questions': list(s['answered_questions'][uid])
+    })
+
+
 @live_quiz_bp.route('/my-active-session', methods=['GET'])
 @login_required
 def get_my_active_session():
@@ -469,6 +530,7 @@ def get_my_active_session():
             "status": "active",
             "current_question_index": 2,
             "total_questions": 10,
+            "answered_questions": ["1", "2"],
             "participant_stats": {...}
         }
     }
@@ -510,9 +572,15 @@ def get_my_active_session():
             if memory_session and user_id in memory_session['participants']:
                 participant = memory_session['participants'][user_id]
                 
+                # Get answered questions for this user
+                answered_questions = []
+                if 'answered_questions' in memory_session and user_id in memory_session['answered_questions']:
+                    answered_questions = list(memory_session['answered_questions'][user_id])
+                
                 print(f'[CHECK ACTIVE SESSION] ✅ User is participant in session {session_id}')
                 print(f'[CHECK ACTIVE SESSION] Session status: {db_session.status}')
                 print(f'[CHECK ACTIVE SESSION] Current question: {db_session.current_question_index}')
+                print(f'[CHECK ACTIVE SESSION] Answered questions: {len(answered_questions)}')
                 print(f'{"="*80}\n')
                 
                 return jsonify({
@@ -527,6 +595,7 @@ def get_my_active_session():
                         'status': db_session.status,
                         'current_question_index': db_session.current_question_index or 0,
                         'total_questions': db_session.question_count or 0,
+                        'answered_questions': answered_questions,
                         'participant_stats': {
                             'total_score': participant.get('total_score', 0),
                             'total_correct': participant.get('total_correct', 0),
