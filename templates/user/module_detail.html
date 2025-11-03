@@ -5468,10 +5468,10 @@ function initializeLiveQuizWithLobby(sessionId, questions) {
                         setTimeout(() => {
                             console.log('[LiveQuiz][Lobby] Auto-transitioning to active quiz...');
                             if (liveQuizState.questions.length > 0) {
-                                // Load the current question from session status, not always question 0
-                                const currentIndex = statusData.current_question_index || 0;
-                                console.log('[LiveQuiz][Lobby] Loading current question index:', currentIndex);
-                                loadQuestion(currentIndex);
+                                // Load the appropriate question for this student (skipping already answered)
+                                const instructorQuestionIndex = statusData.current_question_index || 0;
+                                console.log('[LiveQuiz][Lobby] Instructor at question index:', instructorQuestionIndex);
+                                loadQuestionForStudent(instructorQuestionIndex);
                             } else {
                                 console.warn('[LiveQuiz][Lobby] No cached questions available during active transition.');
                             }
@@ -5658,8 +5658,11 @@ function connectToLiveQuiz() {
             }
 
             if (data.status === 'active') {
-                console.log('[MVP LiveQuiz] Session is active - loading question', data.current_question_index || 0);
-                loadQuestion(data.current_question_index || 0);
+                const instructorQuestionIndex = data.current_question_index || 0;
+                console.log('[MVP LiveQuiz] Session is active - instructor at question', instructorQuestionIndex);
+                
+                // Load the appropriate question for this student (skipping already answered)
+                loadQuestionForStudent(instructorQuestionIndex);
             } else if (data.status === 'waiting') {
                 console.log('[MVP LiveQuiz] Session is waiting - showing waiting screen');
                 showWaitingForInstructor();
@@ -5962,6 +5965,58 @@ function showLeaderboardBreakScreen(leaderboard, nextQuestionIndex) {
     console.log('[LEADERBOARD BREAK] 5 seconds elapsed - loading next question');
     loadQuestion(nextQuestionIndex);
   }, 5000);
+}
+
+// Load question for student (checks answered questions and skips to appropriate question)
+async function loadQuestionForStudent(instructorQuestionIndex) {
+  console.log('[LiveQuiz] Loading question for student up to instructor index:', instructorQuestionIndex);
+  
+  try {
+    // Fetch the list of questions this student has already answered
+    const response = await fetch(`/api/live-quiz-mvp/answered-questions/${liveQuizState.sessionId}`);
+    if (!response.ok) {
+      console.error('[LiveQuiz] Failed to fetch answered questions:', response.status);
+      // Fallback: just load the instructor's current question
+      loadQuestion(instructorQuestionIndex);
+      return;
+    }
+    
+    const data = await response.json();
+    const answeredQuestionIds = new Set(data.answered_questions || []);
+    console.log('[LiveQuiz] Student has answered question IDs:', Array.from(answeredQuestionIds));
+    
+    // Find the first question up to instructorQuestionIndex that hasn't been answered
+    let targetIndex = null;
+    for (let i = 0; i <= instructorQuestionIndex; i++) {
+      const question = liveQuizState.questions[i];
+      if (question && !answeredQuestionIds.has(question.id)) {
+        targetIndex = i;
+        console.log('[LiveQuiz] Found first unanswered question at index:', i);
+        break;
+      }
+    }
+    
+    if (targetIndex !== null) {
+      // Load the first unanswered question
+      loadQuestion(targetIndex);
+    } else {
+      // All questions up to instructor's position have been answered
+      // Show "waiting for next question" state
+      console.log('[LiveQuiz] Student has answered all questions up to instructor position');
+      document.getElementById('questionText').textContent = 'Waiting for instructor to advance to the next question...';
+      document.getElementById('answerOptions').innerHTML = '<p class="text-muted text-center py-4">You\'ve answered all questions so far. Please wait.</p>';
+      
+      // Hide submit button since there's nothing to answer
+      const submitBtn = document.getElementById('submitAnswerBtn');
+      if (submitBtn) {
+        submitBtn.style.display = 'none';
+      }
+    }
+  } catch (error) {
+    console.error('[LiveQuiz] Error in loadQuestionForStudent:', error);
+    // Fallback: load instructor's current question
+    loadQuestion(instructorQuestionIndex);
+  }
 }
 
 // Load Question
