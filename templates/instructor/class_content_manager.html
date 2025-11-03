@@ -13987,7 +13987,138 @@ async function grantExtensionFor(assignmentId) {
 }
 
 function editExtension(extensionId) {
-    alert(`Edit extension ${extensionId}`);
+    // Find the extension in the deadlineData
+    const extension = deadlineData.extensions.find(ext => ext.id === extensionId);
+    
+    if (!extension) {
+        moduleBuilder.showToast('Extension not found', 'error');
+        return;
+    }
+    
+    // Create and show the edit extension modal
+    showEditExtensionModal(extension);
+}
+
+function showEditExtensionModal(extension) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('editExtensionModalOverlay');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const extendedDate = extension.extended_due_date ? 
+        new Date(extension.extended_due_date).toISOString().slice(0, 16) : '';
+    
+    const modalHtml = `
+        <div class="modal-overlay" id="editExtensionModalOverlay" onclick="if(event.target === this) closeEditExtensionModal()">
+            <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2><i class="fas fa-edit"></i> Edit Extension</h2>
+                    <button class="modal-close" onclick="closeEditExtensionModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editExtensionForm" onsubmit="saveExtensionEdit(event, ${extension.id})">
+                        <div class="form-group">
+                            <label>Student</label>
+                            <input type="text" value="${extension.student_name}" disabled readonly style="background: var(--surface-dark); cursor: not-allowed;">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Assignment</label>
+                            <input type="text" value="${extension.assignment_title}" disabled readonly style="background: var(--surface-dark); cursor: not-allowed;">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editExtendedDate">Extended Due Date</label>
+                            <input type="datetime-local" id="editExtendedDate" value="${extendedDate}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editExtensionHours">Extension Hours</label>
+                            <input type="number" id="editExtensionHours" value="${extension.extension_hours || 0}" min="0" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editExtensionReason">Reason</label>
+                            <textarea id="editExtensionReason" rows="3" placeholder="Reason for extension">${extension.reason || ''}</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="editExtensionActive" ${extension.is_active ? 'checked' : ''}>
+                                <span>Extension is Active</span>
+                            </label>
+                        </div>
+                        
+                        <div class="modal-actions" style="margin-top: 20px;">
+                            <button type="button" class="action-btn secondary" onclick="closeEditExtensionModal()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="submit" class="action-btn primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Animate modal in
+    setTimeout(() => {
+        document.getElementById('editExtensionModalOverlay').classList.add('show');
+    }, 10);
+}
+
+function closeEditExtensionModal() {
+    const modal = document.getElementById('editExtensionModalOverlay');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+async function saveExtensionEdit(event, extensionId) {
+    event.preventDefault();
+    
+    const extendedDate = document.getElementById('editExtendedDate').value;
+    const extensionHours = document.getElementById('editExtensionHours').value;
+    const reason = document.getElementById('editExtensionReason').value;
+    const isActive = document.getElementById('editExtensionActive').checked;
+    
+    try {
+        const response = await fetch(`/instructor/api/deadline-extensions/${extensionId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                extended_due_date: extendedDate,
+                extension_hours: parseInt(extensionHours),
+                reason: reason,
+                is_active: isActive
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            moduleBuilder.showToast('Extension updated successfully', 'success');
+            closeEditExtensionModal();
+            
+            // Reload the extensions list
+            await loadDeadlineData();
+        } else {
+            moduleBuilder.showToast(data.error || 'Failed to update extension', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating extension:', error);
+        moduleBuilder.showToast('Error updating extension', 'error');
+    }
 }
 
 function revokeExtension(extensionId) {
@@ -13998,7 +14129,181 @@ function revokeExtension(extensionId) {
 }
 
 function editPolicy(policyId) {
-    window.open(`/instructor/deadline-policies/${policyId}/edit`, '_blank');
+    // Find the policy in the deadlineData
+    const policy = deadlineData.policies.find(p => p.id === policyId);
+    
+    if (!policy) {
+        moduleBuilder.showToast('Policy not found', 'error');
+        return;
+    }
+    
+    showEditPolicyModal(policy);
+}
+
+function showEditPolicyModal(policy) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('editPolicyModalOverlay');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modalHtml = `
+        <div class="modal-overlay" id="editPolicyModalOverlay" onclick="if(event.target === this) closeEditPolicyModal()">
+            <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2><i class="fas fa-edit"></i> Edit Deadline Policy</h2>
+                    <button class="modal-close" onclick="closeEditPolicyModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editPolicyForm" onsubmit="savePolicyEdit(event, ${policy.id})">
+                        <div class="form-group">
+                            <label for="editPolicyName">Policy Name</label>
+                            <input type="text" id="editPolicyName" value="${policy.name}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editPolicyType">Policy Type</label>
+                            <select id="editPolicyType" onchange="updatePolicyTypeFields()" required>
+                                <option value="SIMPLE" ${policy.penalty_type === 'SIMPLE' ? 'selected' : ''}>Simple Late Penalty</option>
+                                <option value="percentage" ${policy.penalty_type === 'percentage' ? 'selected' : ''}>Percentage Penalty</option>
+                                <option value="grace" ${policy.penalty_type === 'grace' ? 'selected' : ''}>Grace Period</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="gracePeriodGroup" style="display: none;">
+                            <label for="editGracePeriodHours">Grace Period (hours)</label>
+                            <input type="number" id="editGracePeriodHours" value="${policy.grace_period_hours || 0}" min="0">
+                            <small>No penalty within this time period</small>
+                        </div>
+                        
+                        <div class="form-group" id="penaltyPercentageGroup" style="display: none;">
+                            <label for="editPenaltyPercentage">Penalty Percentage per Day</label>
+                            <input type="number" id="editPenaltyPercentage" value="${policy.penalty_percentage || 0}" min="0" max="100" step="0.1">
+                            <small>Percentage deducted per day late</small>
+                        </div>
+                        
+                        <div class="form-group" id="maxPenaltyGroup" style="display: none;">
+                            <label for="editMaxPenalty">Maximum Penalty (%)</label>
+                            <input type="number" id="editMaxPenalty" value="${policy.max_penalty_percentage || 100}" min="0" max="100" step="0.1">
+                            <small>Cap on total penalty</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editPolicyDescription">Description (optional)</label>
+                            <textarea id="editPolicyDescription" rows="3" placeholder="Policy description">${policy.description || ''}</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="editPolicyActive" ${policy.is_active ? 'checked' : ''}>
+                                <span>Policy is Active</span>
+                            </label>
+                        </div>
+                        
+                        <div class="modal-actions" style="margin-top: 20px;">
+                            <button type="button" class="action-btn secondary" onclick="closeEditPolicyModal()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="submit" class="action-btn primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Animate modal in
+    setTimeout(() => {
+        document.getElementById('editPolicyModalOverlay').classList.add('show');
+        // Update field visibility based on policy type
+        updatePolicyTypeFields();
+    }, 10);
+}
+
+function updatePolicyTypeFields() {
+    const policyType = document.getElementById('editPolicyType').value;
+    const gracePeriodGroup = document.getElementById('gracePeriodGroup');
+    const penaltyPercentageGroup = document.getElementById('penaltyPercentageGroup');
+    const maxPenaltyGroup = document.getElementById('maxPenaltyGroup');
+    
+    // Hide all conditional fields first
+    gracePeriodGroup.style.display = 'none';
+    penaltyPercentageGroup.style.display = 'none';
+    maxPenaltyGroup.style.display = 'none';
+    
+    // Show relevant fields based on policy type
+    if (policyType === 'grace') {
+        gracePeriodGroup.style.display = 'block';
+    } else if (policyType === 'percentage') {
+        penaltyPercentageGroup.style.display = 'block';
+        maxPenaltyGroup.style.display = 'block';
+    }
+}
+
+function closeEditPolicyModal() {
+    const modal = document.getElementById('editPolicyModalOverlay');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+async function savePolicyEdit(event, policyId) {
+    event.preventDefault();
+    
+    const policyName = document.getElementById('editPolicyName').value;
+    const policyType = document.getElementById('editPolicyType').value;
+    const gracePeriodHours = document.getElementById('editGracePeriodHours').value;
+    const penaltyPercentage = document.getElementById('editPenaltyPercentage').value;
+    const maxPenalty = document.getElementById('editMaxPenalty').value;
+    const description = document.getElementById('editPolicyDescription').value;
+    const isActive = document.getElementById('editPolicyActive').checked;
+    
+    const policyData = {
+        name: policyName,
+        penalty_type: policyType,
+        description: description,
+        is_active: isActive
+    };
+    
+    // Add conditional fields based on policy type
+    if (policyType === 'grace') {
+        policyData.grace_period_hours = parseInt(gracePeriodHours) || 0;
+    } else if (policyType === 'percentage') {
+        policyData.penalty_percentage = parseFloat(penaltyPercentage) || 0;
+        policyData.max_penalty_percentage = parseFloat(maxPenalty) || 100;
+    }
+    
+    try {
+        const response = await fetch(`/instructor/api/deadline-policies/${policyId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(policyData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            moduleBuilder.showToast('Policy updated successfully', 'success');
+            closeEditPolicyModal();
+            
+            // Reload the deadline data
+            await loadDeadlineData();
+        } else {
+            moduleBuilder.showToast(data.error || 'Failed to update policy', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating policy:', error);
+        moduleBuilder.showToast('Error updating policy', 'error');
+    }
 }
 
 function applyPolicy(policyId) {
@@ -18068,6 +18373,10 @@ window.showLiveQuizModal = function showLiveQuizModal(questionGroupId, questionG
                                     <span id="participant-count">0</span> Participants
                                 </div>
                                 <div class="stat">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span id="answered-count">0</span> / <span id="participant-count-answered">0</span> Answered
+                                </div>
+                                <div class="stat">
                                     <i class="fas fa-question"></i>
                                     Question <span id="current-question-num">0</span> / <span id="total-questions">0</span>
                                 </div>
@@ -18079,7 +18388,7 @@ window.showLiveQuizModal = function showLiveQuizModal(questionGroupId, questionG
                                 <i class="fas fa-play"></i>
                                 Start Quiz
                             </button>
-                            <button class="action-btn success" id="next-question-btn" onclick="nextQuestion()" style="display: none;">
+                            <button class="action-btn success" id="next-question-btn" onclick="nextQuestion()">
                                 <i class="fas fa-forward"></i>
                                 Next Question
                             </button>
@@ -18243,7 +18552,18 @@ function connectToLiveQuizSocket(sessionId) {
 
         window.socket.on('answer_submitted', (data) => {
             if (data.session_id === window.__liveQuizInstructorSessionId) {
-                console.log('[MVP LiveQuiz] Answer submitted by participant');
+                console.log('[INSTRUCTOR SOCKET] 📝 Answer submitted by participant');
+                console.log('[INSTRUCTOR SOCKET] Participant:', data.display_name);
+                console.log('[INSTRUCTOR SOCKET] Question index:', data.question_index);
+                
+                // Immediately update answered count
+                const answeredCountEl = document.getElementById('answered-count');
+                if (answeredCountEl && typeof data.answered_count === 'number') {
+                    answeredCountEl.textContent = data.answered_count;
+                    console.log('[INSTRUCTOR SOCKET] ✅ Updated answered count to:', data.answered_count);
+                }
+                
+                // Update leaderboard
                 updateInstructorLeaderboard();
             }
         });
@@ -18372,22 +18692,21 @@ async function startLiveQuiz() {
             console.log('[INSTRUCTOR START] Updating UI...');
             
             document.getElementById('start-quiz-btn').style.display = 'none';
-            document.getElementById('next-question-btn').style.display = 'none';  // Hide manual next button
+            document.getElementById('next-question-btn').style.display = 'inline-flex';  // Show manual next button
             document.getElementById('current-question-num').textContent = '1';
             
-            console.log('[INSTRUCTOR START] UI updated - Start button hidden, Next button hidden (auto-advance enabled)');
+            console.log('[INSTRUCTOR START] UI updated - Start button hidden, Next button shown');
             console.log('[INSTRUCTOR START] Fetching initial leaderboard...');
             
-            moduleBuilder?.showToast?.('MVP: Quiz started! Auto-advancing enabled.', 'success');
+            moduleBuilder?.showToast?.('Quiz started! Use Next Question button to advance.', 'success');
             
             // Fetch and display initial leaderboard
             updateInstructorLeaderboard();
             
-            // Start auto-advance timer for first question
-            questionsAnswered = 0;  // Reset counter
-            startAutoAdvanceTimer();
+            // Start auto-refresh for participant data
+            startLeaderboardAutoRefresh();
             
-            console.log('[INSTRUCTOR START] ✅ Start quiz complete with auto-advance!');
+            console.log('[INSTRUCTOR START] ✅ Start quiz complete with auto-refresh!');
             console.log('%c[INSTRUCTOR START] ════════════════════════════════════════', 'color: #00ff00; font-weight: bold');
         } else {
             console.error('[INSTRUCTOR START] ❌ Failed to start quiz:', data.error);
@@ -18400,17 +18719,13 @@ async function startLiveQuiz() {
     }
 }
 
-// DEPRECATED: This function is kept for backward compatibility but should not be called manually
-// The system now uses automatic question progression via backend timer (auto_advance_question)
-// The "Next Question" button is hidden by default (display: none)
+// Manual Next Question - Instructor can click to advance
 async function nextQuestion() {
-    console.warn('[DEPRECATED] nextQuestion() called manually - auto-advance should handle this');
+    console.log('[NEXT QUESTION] Manual advance requested by instructor');
     
     if (!activeLiveQuizSession) return;
     
     try {
-        console.log('[MVP LiveQuiz] Manual advance requested (should not happen in normal flow)');
-        
         const response = await fetch(`/instructor/api/live-quiz/${activeLiveQuizSession.id}/next-question`, {
             method: 'POST'
         });
@@ -18422,11 +18737,14 @@ async function nextQuestion() {
             const totalQ = data.total_questions;
             document.getElementById('current-question-num').textContent = currentQ;
             
-            console.log(`[MVP LiveQuiz] Advanced to question ${currentQ}/${totalQ}`);
+            // Reset answered count for new question
+            document.getElementById('answered-count').textContent = '0';
+            
+            console.log(`[NEXT QUESTION] Advanced to question ${currentQ}/${totalQ}`);
             
             // Update leaderboard if provided
             if (data.leaderboard && Array.isArray(data.leaderboard)) {
-                console.log('[MVP LiveQuiz] Updating instructor leaderboard from next question response');
+                console.log('[NEXT QUESTION] Updating instructor leaderboard from response');
                 displayInstructorLeaderboard(data.leaderboard);
             } else {
                 // Fallback: fetch leaderboard
@@ -18434,17 +18752,15 @@ async function nextQuestion() {
             }
             
             if (data.quiz_completed) {
-                stopAutoAdvanceTimer();  // Stop timer when quiz completes
+                stopLeaderboardAutoRefresh();  // Stop auto-refresh when quiz completes
                 document.getElementById('next-question-btn').style.display = 'none';
-                moduleBuilder?.showToast?.('MVP: Quiz completed! Final leaderboard shown to students.', 'success');
-                console.log('[MVP LiveQuiz] Quiz completed - showing final results');
+                moduleBuilder?.showToast?.('Quiz completed! Final leaderboard shown to students.', 'success');
+                console.log('[NEXT QUESTION] Quiz completed - showing final results');
             } else {
-                // Restart auto-advance timer for next question
-                startAutoAdvanceTimer();
-                moduleBuilder?.showToast?.(`MVP: Question ${currentQ}/${totalQ} - auto-advancing in ${activeLiveQuizSession.time_per_question}s`, 'success');
-            };
+                moduleBuilder?.showToast?.(`Question ${currentQ}/${totalQ} loaded`, 'success');
+            }
         } else {
-            console.error('[MVP LiveQuiz] Failed to advance question:', data.error);
+            console.error('[NEXT QUESTION] Failed to advance question:', data.error);
             moduleBuilder?.showToast?.(data.error || 'Failed to advance question', 'error');
         }
     } catch (error) {
@@ -18498,6 +18814,9 @@ async function endLiveQuiz() {
         console.log('[INSTRUCTOR END QUIZ] API response body:', data);
 
         if (data.success) {
+            // Stop auto-refresh
+            stopLeaderboardAutoRefresh();
+            
             moduleBuilder?.showToast?.('Live quiz ended', 'success');
             activeLiveQuizSession = null;
             
@@ -18598,14 +18917,28 @@ async function updateInstructorLeaderboard() {
         
         if (data.success) {
             const totalParticipants = Number(data.total_participants ?? data.leaderboard?.length ?? 0);
+            const answeredCount = Number(data.answered_count ?? 0);
             console.log('[INSTRUCTOR LEADERBOARD] ✅ Received', totalParticipants, 'participants');
+            console.log('[INSTRUCTOR LEADERBOARD] 📝 Answered count:', answeredCount);
             console.log('[INSTRUCTOR LEADERBOARD] Leaderboard data:', data.leaderboard);
 
             if (!Number.isNaN(totalParticipants)) {
                 const participantCountEl = document.getElementById('participant-count');
+                const participantCountAnsweredEl = document.getElementById('participant-count-answered');
                 if (participantCountEl) {
                     participantCountEl.textContent = totalParticipants;
                     console.log('[INSTRUCTOR LEADERBOARD] Updated participant count indicator to', totalParticipants);
+                }
+                if (participantCountAnsweredEl) {
+                    participantCountAnsweredEl.textContent = totalParticipants;
+                }
+            }
+
+            if (!Number.isNaN(answeredCount)) {
+                const answeredCountEl = document.getElementById('answered-count');
+                if (answeredCountEl) {
+                    answeredCountEl.textContent = answeredCount;
+                    console.log('[INSTRUCTOR LEADERBOARD] Updated answered count to', answeredCount, '/', totalParticipants);
                 }
             }
 
@@ -18682,6 +19015,33 @@ function copySessionCode() {
     const code = document.getElementById('session-code-display').textContent;
     navigator.clipboard.writeText(code);
     moduleBuilder?.showToast?.('Session code copied!', 'success');
+}
+
+// Auto-refresh leaderboard data every 2 seconds
+let leaderboardRefreshInterval = null;
+
+function startLeaderboardAutoRefresh() {
+    console.log('[AUTO-REFRESH] Starting auto-refresh for leaderboard data (every 2 seconds)');
+    
+    // Clear any existing interval
+    stopLeaderboardAutoRefresh();
+    
+    // Fetch immediately
+    updateInstructorLeaderboard();
+    
+    // Then fetch every 2 seconds
+    leaderboardRefreshInterval = setInterval(() => {
+        console.log('[AUTO-REFRESH] Fetching updated leaderboard data...');
+        updateInstructorLeaderboard();
+    }, 2000);
+}
+
+function stopLeaderboardAutoRefresh() {
+    if (leaderboardRefreshInterval) {
+        console.log('[AUTO-REFRESH] Stopping auto-refresh');
+        clearInterval(leaderboardRefreshInterval);
+        leaderboardRefreshInterval = null;
+    }
 }
 
 // Add styles for live quiz modal

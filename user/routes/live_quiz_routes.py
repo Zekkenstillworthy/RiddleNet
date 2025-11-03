@@ -287,6 +287,13 @@ def submit_answer():
         # Get updated leaderboard
         leaderboard = get_session_leaderboard(session_id)
         
+        # Count how many participants have answered the current question
+        # Count unique participants who have submitted answers for current question
+        answered_count = db.session.query(LiveQuizResponse.participant_id).filter_by(
+            session_id=session_id,
+            question_id=question_id
+        ).distinct().count()
+        
         # ===== REAL-TIME LEADERBOARD UPDATE: Broadcast to all participants =====
         from socket_manager import socketio
         room_name = f'live_quiz_{session_id}'
@@ -294,13 +301,17 @@ def submit_answer():
         print(f'\n[LEADERBOARD UPDATE] 📊 Broadcasting updated leaderboard to room: {room_name}')
         print(f'[LEADERBOARD UPDATE] Trigger: {participant.display_name} answered Q{question_id}')
         print(f'[LEADERBOARD UPDATE] Answer: {"✅ Correct" if is_correct else "❌ Incorrect"} | Points: {points}')
+        print(f'[LEADERBOARD UPDATE] Answered count: {answered_count}')
         print(f'[LEADERBOARD UPDATE] Leaderboard size: {len(leaderboard)} participants\n')
         
         socketio.emit('leaderboard_updated', {
             'session_id': session_id,
             'leaderboard': leaderboard,
             'trigger_user': participant.display_name,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.utcnow().isoformat(),
+            'answered_count': answered_count,
+            'display_name': participant.display_name,
+            'question_index': session.current_question_index
         }, room=room_name)
         
         return jsonify({

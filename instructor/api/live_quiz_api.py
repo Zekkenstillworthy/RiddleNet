@@ -533,7 +533,7 @@ def get_instructor_leaderboard(session_id):
             return jsonify({'success': False, 'error': 'Session not found'}), 404
         
         # Get leaderboard without current_user context
-        from user.models.live_quiz import LiveQuizParticipant
+        from user.models.live_quiz import LiveQuizParticipant, LiveQuizResponse
         
         participants = LiveQuizParticipant.query.filter_by(
             session_id=session_id,
@@ -541,6 +541,26 @@ def get_instructor_leaderboard(session_id):
         ).all()
         
         print(f'[INSTRUCTOR LEADERBOARD] Found {len(participants)} active participants')
+        
+        # Count how many participants have answered the current question
+        # We need to get the actual question_id for the current question
+        answered_count = 0
+        if session.status == 'active' and session.current_question_index is not None:
+            # Get the question group and find the question at current_question_index
+            from instructor.models.question_group import QuestionGroup
+            question_group = QuestionGroup.query.get(session.question_group_id)
+            if question_group and question_group.questions:
+                questions = question_group.questions
+                if session.current_question_index < len(questions):
+                    current_question = questions[session.current_question_index]
+                    current_question_id = current_question.id
+                    
+                    # Count unique participants who answered this specific question
+                    answered_count = db.session.query(LiveQuizResponse.participant_id).filter_by(
+                        session_id=session_id,
+                        question_id=current_question_id
+                    ).distinct().count()
+                    print(f'[INSTRUCTOR LEADERBOARD] Question {session.current_question_index} (ID: {current_question_id}): {answered_count}/{len(participants)} answered')
         
         # Calculate rank scores and sort
         participant_scores = []
@@ -575,7 +595,9 @@ def get_instructor_leaderboard(session_id):
         return jsonify({
             'success': True,
             'leaderboard': leaderboard,
-            'total_participants': len(participants)
+            'total_participants': len(participants),
+            'answered_count': answered_count,
+            'current_question_index': session.current_question_index
         })
         
     except Exception as e:
