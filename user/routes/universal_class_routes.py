@@ -43,7 +43,7 @@ def dynamic_class_detail(class_id):
         # QUICK REDIRECT: For classes 6 and 7, send users directly to first module's first lesson
         if class_id in [6, 7]:
             try:
-                first_module = Module.query.filter_by(class_id=class_id, is_active=True, is_published=True).order_by(Module.order_index.asc()).first()
+                first_module = Module.query.filter_by(class_id=class_id, is_active=True).order_by(Module.order_index.asc()).first()
                 if first_module:
                     first_lesson = Lesson.query.filter_by(module_id=first_module.id, is_active=True).order_by(Lesson.order_index.asc()).first()
                     if first_lesson:
@@ -78,7 +78,7 @@ def dynamic_class_detail(class_id):
         
         # Get class modules from database (using Module model)
         class_modules = []
-        modules = Module.query.filter_by(class_id=class_id, is_active=True, is_published=True).order_by(Module.order_index).all()
+        modules = Module.query.filter_by(class_id=class_id, is_active=True).order_by(Module.order_index).all()
         # Normalizer to ensure objective/concept fields become lists
         def _normalize_list_field(raw_value):
             try:
@@ -398,7 +398,7 @@ def module_detail(class_id, module_id):
         class_obj = Class.query.get_or_404(class_id)
         
         # Get ALL class modules for sidebar navigation
-        all_class_modules = Module.query.filter_by(class_id=class_id, is_active=True, is_published=True).order_by(Module.order_index).all()
+        all_class_modules = Module.query.filter_by(class_id=class_id, is_active=True).order_by(Module.order_index).all()
         class_modules_data = []
         for mod in all_class_modules:
             try:
