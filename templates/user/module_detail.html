@@ -4331,8 +4331,9 @@ async function loadLiveQuiz(quizId) {
         quizScore = 0;
         correctAnswers = 0;
         
-        // Render quiz start screen
-        renderQuizStartScreen();
+        // Initialize Live Quiz (connects to SocketIO and shows lobby)
+        console.log('🎯 Initializing Live Quiz with session:', joinData.session.id);
+        initializeLiveQuizLobby(String(joinData.session.id), quizQuestions);
         
     } catch (error) {
         console.error('❌ Error loading quiz:', error);
@@ -5148,38 +5149,13 @@ function updateLiveQuizButton(sessions) {
 // Make function globally accessible for WebSocket handlers
 window.updateLiveQuizButton = updateLiveQuizButton;
 
-function handleLiveQuizClick() {
-    const button = document.getElementById('liveQuizButton');
-    const sessionId = button.dataset.sessionId;
-    const status = button.dataset.status;
-    console.log('[LiveQuiz][Click] Button dataset snapshot:', {
-        sessionId,
-        status,
-        dataset: Object.assign({}, button.dataset)
-    });
-    
-    if (!sessionId) {
-        console.log('[LiveQuiz] No active quiz session found');
-        return;
-    }
-    
-    // Allow joining 'waiting' or 'active' sessions (lobby flow)
-    // Block only 'completed' sessions
-    if (status === 'completed') {
-        console.log('[LiveQuiz][MVP] Quiz session has ended');
-        alert('This Live Quiz has already ended.');
-        return;
-    }
-    
-    if (!status || (status !== 'waiting' && status !== 'active')) {
-        console.log('[LiveQuiz][MVP] Invalid session status:', status);
-        return;
-    }
-    
-    console.log('[LiveQuiz][MVP] Joining session with status:', status);
-    joinLiveQuizSession(sessionId);
-}
-
+// ✅ REMOVED: Duplicate handleLiveQuizClick definition
+// This function is already defined in base.html (line 1715) and properly delegates to joinLiveQuizSession
+// Having it defined here causes DOUBLE EXECUTION of the join logic:
+//   1. base.html handleLiveQuizClick calls window.joinLiveQuizSession(sessionId)
+//   2. module_detail.html handleLiveQuizClick ALSO calls joinLiveQuizSession(sessionId)
+// Result: Student joins the quiz TWICE, causing duplicate socket events and leaderboard updates
+// Solution: Remove this duplicate - let base.html handle the click, it will delegate to our joinLiveQuizSession
 
 function joinLiveQuizSession(sessionId) {
     const context = window.__moduleContext || {};
@@ -5492,7 +5468,10 @@ function initializeLiveQuizWithLobby(sessionId, questions) {
                         setTimeout(() => {
                             console.log('[LiveQuiz][Lobby] Auto-transitioning to active quiz...');
                             if (liveQuizState.questions.length > 0) {
-                                loadQuestion(0);
+                                // Load the current question from session status, not always question 0
+                                const currentIndex = statusData.current_question_index || 0;
+                                console.log('[LiveQuiz][Lobby] Loading current question index:', currentIndex);
+                                loadQuestion(currentIndex);
                             } else {
                                 console.warn('[LiveQuiz][Lobby] No cached questions available during active transition.');
                             }
@@ -5724,6 +5703,7 @@ function connectToLiveQuiz() {
             console.log('[STUDENT SOCKET] Question index:', data.question_index);
             console.log('[STUDENT SOCKET] Timestamp:', data.timestamp);
             console.log('[STUDENT SOCKET] Has leaderboard:', !!data.leaderboard);
+            console.log('[STUDENT SOCKET] Show leaderboard break:', data.show_leaderboard_break);
             if (data.leaderboard) {
                 console.log('[STUDENT SOCKET] Leaderboard size:', data.leaderboard.length);
             }
@@ -5743,9 +5723,15 @@ function connectToLiveQuiz() {
                 console.log('[STUDENT SOCKET] ✅ Cleared previous answer feedback');
             }
             
-            // Load the new question
-            console.log('[STUDENT SOCKET] 📝 Loading question index:', data.question_index);
-            loadQuestion(data.question_index);
+            // Check if we should show leaderboard break (every 5 questions)
+            if (data.show_leaderboard_break) {
+                console.log('[STUDENT SOCKET] 🏆 Showing leaderboard break for 5 seconds');
+                showLeaderboardBreakScreen(data.leaderboard, data.question_index);
+            } else {
+                // Load the new question immediately
+                console.log('[STUDENT SOCKET] 📝 Loading question index:', data.question_index);
+                loadQuestion(data.question_index);
+            }
             
             // Reset answered state for new question
             liveQuizState.answered = false;
@@ -5927,6 +5913,57 @@ function joinLiveQuiz() {
   showWaitingForInstructor();
 }
 
+// Show Leaderboard Break Screen (every 5 questions)
+function showLeaderboardBreakScreen(leaderboard, nextQuestionIndex) {
+  console.log('[LEADERBOARD BREAK] Showing leaderboard for 5 seconds');
+  console.log('[LEADERBOARD BREAK] Next question index:', nextQuestionIndex);
+  
+  const questionArea = document.getElementById('questionArea');
+  if (!questionArea) {
+    console.error('[LEADERBOARD BREAK] Question area not found');
+    return;
+  }
+  
+  // Build leaderboard HTML
+  let leaderboardHTML = '<div style="text-align: center; padding: 20px; animation: fadeIn 0.3s;">';
+  leaderboardHTML += '<h2 style="color: var(--primary); margin-bottom: 10px;"><i class="fas fa-trophy"></i> Live Leaderboard</h2>';
+  leaderboardHTML += '<p style="color: var(--text-muted); margin-bottom: 20px;">Great job! Next question in 5 seconds...</p>';
+  leaderboardHTML += '<div style="background: var(--card-bg); border-radius: 8px; padding: 20px; max-width: 600px; margin: 0 auto;">';
+  
+  if (leaderboard && leaderboard.length > 0) {
+    leaderboard.forEach((entry, index) => {
+      const rankColor = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'var(--text-muted)';
+      const isCurrentUser = entry.is_current_user ? 'font-weight: bold; background: rgba(79, 70, 229, 0.1);' : '';
+      
+      leaderboardHTML += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; margin-bottom: 8px; border-radius: 6px; ${isCurrentUser}">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="color: ${rankColor}; font-size: 1.2rem; font-weight: bold; width: 30px;">#${entry.rank}</span>
+            <span style="color: var(--text-primary);">${entry.username}${entry.is_current_user ? ' (You)' : ''}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <span style="color: var(--success);"><i class="fas fa-check-circle"></i> ${entry.correct_answers}</span>
+            <span style="color: var(--primary); font-weight: bold;">${entry.total_score} pts</span>
+          </div>
+        </div>
+      `;
+    });
+  } else {
+    leaderboardHTML += '<p style="color: var(--text-muted);">No participants yet</p>';
+  }
+  
+  leaderboardHTML += '</div></div>';
+  
+  // Display leaderboard in question area
+  questionArea.innerHTML = leaderboardHTML;
+  
+  // After 5 seconds, load the next question
+  setTimeout(() => {
+    console.log('[LEADERBOARD BREAK] 5 seconds elapsed - loading next question');
+    loadQuestion(nextQuestionIndex);
+  }, 5000);
+}
+
 // Load Question
 function loadQuestion(index) {
   console.log('[LiveQuiz] Loading question index:', index);
@@ -6003,6 +6040,7 @@ function renderAnswerOptions() {
 // Select Answer
 function selectAnswer(answer, element) {
   if (liveQuizState.answered) {
+    console.log('[LiveQuiz] Answer already submitted for this question');
     return;
   }
   
@@ -6015,6 +6053,7 @@ function selectAnswer(answer, element) {
   stopQuestionTimer();
   
   liveQuizState.answered = true;
+  console.log('[LiveQuiz] Submitting answer:', answer, 'for question:', liveQuizState.currentQuestion.id);
   
   // Submit answer via socket
   liveQuizState.socket.emit('submit_live_answer', {
@@ -6028,25 +6067,42 @@ function selectAnswer(answer, element) {
 // Start Question Timer (using liveQuizState)
 function startQuestionTimer() {
   console.log('🕒 [TIMER] Starting question timer (liveQuizState version)');
+  
+  // CRITICAL: Clear any existing timer first to prevent multiple timers
+  stopQuestionTimer();
+  
   liveQuizState.timeRemaining = 30;
   liveQuizState.answered = false;
   updateTimerDisplay();
   
   liveQuizState.timer = setInterval(() => {
-    // Check if time has already expired to prevent negative values
-    if (liveQuizState.timeRemaining <= 0) {
-      console.log('⏰ [TIMER] Time expired!');
-      liveQuizState.timeRemaining = 0; // Ensure it stays at 0
-      updateTimerDisplay();
+    // GUARD: Check if quiz has ended - stop immediately if so
+    if (liveQuizState.quizEnded) {
+      console.log('⏰ [TIMER] Quiz ended, stopping timer');
       stopQuestionTimer();
-      // Auto-submit or show time's up message
-      handleQuizTimeout();
+      return;
+    }
+    
+    // GUARD: Check if already answered - stop immediately if so
+    if (liveQuizState.answered) {
+      console.log('⏰ [TIMER] Already answered, stopping timer');
+      stopQuestionTimer();
       return;
     }
     
     liveQuizState.timeRemaining--;
     console.log('🕒 [TIMER] Time remaining:', liveQuizState.timeRemaining);
     updateTimerDisplay();
+    
+    // Check if time has expired
+    if (liveQuizState.timeRemaining <= 0) {
+      console.log('⏰ [TIMER] Time expired!');
+      liveQuizState.timeRemaining = 0; // Ensure it stays at 0
+      updateTimerDisplay();
+      stopQuestionTimer(); // Stop timer FIRST
+      handleQuizTimeout(); // Then handle timeout
+      return;
+    }
   }, 1000);
 }
 
@@ -6096,17 +6152,19 @@ function updateTimerDisplay() {
 function handleQuizTimeout() {
   console.log('⏰ [TIMEOUT] Handling quiz timeout');
   
-  // GUARD: Don't do anything if already answered or quiz has ended
-  if (liveQuizState.answered) {
-    console.log('⏰ [TIMEOUT] Already answered, ignoring timeout');
-    return;
-  }
-  
+  // GUARD: Check quiz ended FIRST - most critical check
   if (liveQuizState.quizEnded) {
     console.log('⏰ [TIMEOUT] Quiz already ended, ignoring timeout');
     return;
   }
   
+  // GUARD: Don't do anything if already answered
+  if (liveQuizState.answered) {
+    console.log('⏰ [TIMEOUT] Already answered, ignoring timeout');
+    return;
+  }
+  
+  // Mark as answered to prevent duplicate submissions
   liveQuizState.answered = true;
   
   // Disable all options
@@ -6145,12 +6203,26 @@ function handleQuizTimeout() {
 
 // Show Answer Feedback
 function showAnswerFeedback(data) {
+  console.log('📝 [FEEDBACK] Showing answer feedback:', data);
+  
   const feedbackEl = document.getElementById('answerFeedback');
+  if (!feedbackEl) {
+    console.warn('⚠️ [FEEDBACK] answerFeedback element not found');
+    return;
+  }
+  
   const feedbackContent = feedbackEl.querySelector('.feedback-content');
+  if (!feedbackContent) {
+    console.warn('⚠️ [FEEDBACK] feedback-content element not found');
+    return;
+  }
   
   // Mark correct/incorrect options
   document.querySelectorAll('.answer-option').forEach(el => {
-    const optionText = el.querySelector('span').textContent;
+    const optionSpan = el.querySelector('span');
+    if (!optionSpan) return;
+    
+    const optionText = optionSpan.textContent;
     if (optionText === data.correct_answer) {
       el.classList.add('correct');
     } else if (el.classList.contains('selected') && !data.is_correct) {
@@ -6160,18 +6232,37 @@ function showAnswerFeedback(data) {
   
   // Show feedback
   feedbackContent.className = `feedback-content ${data.is_correct ? 'correct' : 'incorrect'}`;
-  feedbackContent.querySelector('.feedback-icon').innerHTML = data.is_correct ? 
-    '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>';
-  feedbackContent.querySelector('.feedback-title').textContent = data.is_correct ? 
-    'Correct!' : 'Incorrect';
-  feedbackContent.querySelector('.feedback-details').textContent = data.is_correct ? 
-    `Great job! You earned ${data.points_awarded} points.` : 
-    `The correct answer is: ${data.correct_answer}`;
   
-  document.getElementById('pointsEarned').textContent = `+${data.points_awarded}`;
-  document.getElementById('userTotalScore').textContent = data.total_score;
+  const feedbackIcon = feedbackContent.querySelector('.feedback-icon');
+  if (feedbackIcon) {
+    feedbackIcon.innerHTML = data.is_correct ? 
+      '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>';
+  }
+  
+  const feedbackTitle = feedbackContent.querySelector('.feedback-title');
+  if (feedbackTitle) {
+    feedbackTitle.textContent = data.is_correct ? 'Correct!' : 'Incorrect';
+  }
+  
+  const feedbackDetails = feedbackContent.querySelector('.feedback-details');
+  if (feedbackDetails) {
+    feedbackDetails.textContent = data.is_correct ? 
+      `Great job! You earned ${data.points_awarded} points.` : 
+      `The correct answer is: ${data.correct_answer}`;
+  }
+  
+  const pointsEarned = document.getElementById('pointsEarned');
+  if (pointsEarned) {
+    pointsEarned.textContent = `+${data.points_awarded}`;
+  }
+  
+  const userTotalScore = document.getElementById('userTotalScore');
+  if (userTotalScore) {
+    userTotalScore.textContent = data.total_score;
+  }
   
   feedbackEl.style.display = 'block';
+  console.log('✅ [FEEDBACK] Feedback displayed successfully');
 }
 
 // Show "Waiting for Next Question" screen
