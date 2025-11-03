@@ -1195,7 +1195,16 @@ def run_simulation(simulation_id):
         # CRITICAL FIX: Always prioritize network_topology to match admin edit page
         # The admin edit page uses simulation_config.network_topology.devices exclusively
         # We need to ensure dynamic simulation uses the same source for consistency
-        if network_topology and (network_topology.get('devices') or network_topology.get('connections')):
+        
+        # Parse network_topology if it's a string
+        if isinstance(network_topology, str):
+            try:
+                import json
+                network_topology = json.loads(network_topology)
+            except (json.JSONDecodeError, ValueError):
+                network_topology = None
+        
+        if network_topology and isinstance(network_topology, dict) and (network_topology.get('devices') or network_topology.get('connections')):
             # Use the canonical network topology structure (SAME as admin edit page)
             simulation_topology = network_topology
             print(f"DEBUG [USER ROUTE CONSISTENCY]: Using network_topology with {len(network_topology.get('devices', []))} devices (matches admin)")
