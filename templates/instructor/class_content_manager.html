@@ -8938,6 +8938,9 @@ function createNewSimulation() {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
     submitBtn.disabled = true;
     
+    // Debug: Log the form data being sent
+    console.log('📤 Sending simulation data:', formData);
+    
     // Create simulation
     fetch('/instructor/simulation/api/create', {
         method: 'POST',
@@ -8947,9 +8950,14 @@ function createNewSimulation() {
         credentials: 'same-origin',
         body: JSON.stringify(formData)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success && data.simulation) {
+    .then(response => {
+        console.log('📥 Response status:', response.status);
+        return response.json().then(data => ({status: response.status, data: data}));
+    })
+    .then(({status, data}) => {
+        console.log('📥 Response data:', data);
+        
+        if (status === 200 && data.success && data.simulation) {
             moduleBuilder.showToast('Simulation created successfully!', 'success');
             
             // Now assign the simulation
@@ -8958,13 +8966,15 @@ function createNewSimulation() {
             
             assignNewSimulation(data.simulation.id, assignmentTarget, moduleId);
         } else {
-            moduleBuilder.showToast('Error: ' + (data.error || 'Failed to create simulation'), 'error');
+            const errorMsg = data.error || 'Failed to create simulation';
+            console.error('❌ Server error:', errorMsg);
+            moduleBuilder.showToast('Error: ' + errorMsg, 'error');
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
         }
     })
     .catch(error => {
-        console.error('Error creating simulation:', error);
+        console.error('❌ Network error:', error);
         moduleBuilder.showToast('Failed to create simulation: ' + error.message, 'error');
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
