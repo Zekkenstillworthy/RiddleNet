@@ -1298,9 +1298,9 @@ class CollaborationRealTime {
      * Handle cursor update
      */
     handleCursorUpdate(data) {
-        console.log('🖱️ [CURSOR DEBUG] ============================================');
-        console.log('🖱️ [CURSOR DEBUG] Handling cursor update');
-        console.log('🖱️ [CURSOR DEBUG] Raw data received:', data);
+        // console.log('🖱️ [CURSOR DEBUG] ============================================');
+        // console.log('🖱️ [CURSOR DEBUG] Handling cursor update');
+        // console.log('🖱️ [CURSOR DEBUG] Raw data received:', data);
         
         // Backend sends: {user_id, username, position: {x, y}, color, profile_image}
         // Normalize to: {user_id, username, x, y, color, profile_image}
@@ -1313,14 +1313,14 @@ class CollaborationRealTime {
             profile_image: data.profile_image
         };
         
-        console.log('🖱️ [CURSOR DEBUG] Normalized data:', normalizedData);
-        console.log('🖱️ [CURSOR DEBUG] Current user ID:', this.currentUser?.id);
-        console.log('🖱️ [CURSOR DEBUG] Is own cursor?', String(normalizedData.user_id) === String(this.currentUser?.id));
+        // console.log('🖱️ [CURSOR DEBUG] Normalized data:', normalizedData);
+        // console.log('🖱️ [CURSOR DEBUG] Current user ID:', this.currentUser?.id);
+        // console.log('🖱️ [CURSOR DEBUG] Is own cursor?', String(normalizedData.user_id) === String(this.currentUser?.id));
         
         this.updateCursorPosition(normalizedData.user_id, normalizedData);
         this.emit('cursor_updated', normalizedData);
         
-        console.log('🖱️ [CURSOR DEBUG] ============================================');
+        // console.log('🖱️ [CURSOR DEBUG] ============================================');
     }
 
     // ===== CURSOR TRACKING METHODS =====
@@ -1329,11 +1329,11 @@ class CollaborationRealTime {
      * Initialize cursor tracking system
      */
     initializeCursorTracking() {
-        console.log('🖱️ [CURSOR DEBUG] ============================================');
-        console.log('🖱️ [CURSOR DEBUG] Initializing cursor tracking system');
-        console.log('🖱️ [CURSOR DEBUG] Current user:', this.currentUser);
-        console.log('🖱️ [CURSOR DEBUG] Session ID:', this.sessionId);
-        console.log('🖱️ [CURSOR DEBUG] ============================================');
+        // console.log('🖱️ [CURSOR DEBUG] ============================================');
+        // console.log('🖱️ [CURSOR DEBUG] Initializing cursor tracking system');
+        // console.log('🖱️ [CURSOR DEBUG] Current user:', this.currentUser);
+        // console.log('🖱️ [CURSOR DEBUG] Session ID:', this.sessionId);
+        // console.log('🖱️ [CURSOR DEBUG] ============================================');
         
         // Create cursor container
         this.setupCursorContainer();
@@ -1342,14 +1342,14 @@ class CollaborationRealTime {
         let lastEmit = 0;
         const throttle = 8; // Ultra-smooth 120fps (1000ms / 120 = 8.33ms)
         
-        console.log('🖱️ [CURSOR DEBUG] Setting up mousemove listener with throttle:', throttle + 'ms');
+        // console.log('🖱️ [CURSOR DEBUG] Setting up mousemove listener with throttle:', throttle + 'ms');
         
         document.addEventListener('mousemove', (e) => {
             const now = Date.now();
             if (now - lastEmit < throttle) return;
             
             lastEmit = now;
-            console.log('🖱️ [CURSOR DEBUG] Mouse moved to:', e.clientX, e.clientY);
+            // console.log('🖱️ [CURSOR DEBUG] Mouse moved to:', e.clientX, e.clientY);
             this.throttledCursorUpdate(e.clientX, e.clientY);
         });
         
@@ -1357,14 +1357,14 @@ class CollaborationRealTime {
         let lastScrollEmit = 0;
         const scrollThrottle = 500; // Update viewport less frequently
         
-        console.log('👁️ [VIEWPORT DEBUG] Setting up scroll listener with throttle:', scrollThrottle + 'ms');
+        // console.log('👁️ [VIEWPORT DEBUG] Setting up scroll listener with throttle:', scrollThrottle + 'ms');
         
         window.addEventListener('scroll', () => {
             const now = Date.now();
             if (now - lastScrollEmit < scrollThrottle) return;
             
             lastScrollEmit = now;
-            console.log('👁️ [VIEWPORT DEBUG] Scroll detected, updating viewport');
+            // console.log('👁️ [VIEWPORT DEBUG] Scroll detected, updating viewport');
             
             // Get current mouse position (use last known position)
             const lastX = this.lastMouseX || 0;
@@ -1386,11 +1386,11 @@ class CollaborationRealTime {
      * Setup cursor container in DOM
      */
     setupCursorContainer() {
-        console.log('🖱️ [CURSOR DEBUG] Setting up cursor container...');
+        // console.log('🖱️ [CURSOR DEBUG] Setting up cursor container...');
         
         // Check if container already exists
         if (this.cursorContainer) {
-            console.log('🖱️ [CURSOR DEBUG] Container already exists:', this.cursorContainer);
+            // console.log('🖱️ [CURSOR DEBUG] Container already exists:', this.cursorContainer);
             return;
         }
         
@@ -1407,9 +1407,9 @@ class CollaborationRealTime {
         
         document.body.appendChild(this.cursorContainer);
         
-        console.log('✅ [CURSOR DEBUG] Cursor container created and appended to body');
-        console.log('🖱️ [CURSOR DEBUG] Container element:', this.cursorContainer);
-        console.log('🖱️ [CURSOR DEBUG] Container in DOM:', document.getElementById('collaboration-cursors'));
+        // console.log('✅ [CURSOR DEBUG] Cursor container created and appended to body');
+        // console.log('🖱️ [CURSOR DEBUG] Container element:', this.cursorContainer);
+        // console.log('🖱️ [CURSOR DEBUG] Container in DOM:', document.getElementById('collaboration-cursors'));
     }
 
     /**
@@ -1419,10 +1419,10 @@ class CollaborationRealTime {
      * @param {String} color - Color scheme (user-1 through user-6)
      */
     createCursor(userId, username, color = 'user-1') {
-        console.log('🖱️ [CURSOR DEBUG] ============================================');
-        console.log('🖱️ [CURSOR DEBUG] Creating cursor for user:', userId);
-        console.log('🖱️ [CURSOR DEBUG] Username:', username);
-        console.log('🖱️ [CURSOR DEBUG] Color class:', color);
+        // console.log('🖱️ [CURSOR DEBUG] ============================================');
+        // console.log('🖱️ [CURSOR DEBUG] Creating cursor for user:', userId);
+        // console.log('🖱️ [CURSOR DEBUG] Username:', username);
+        // console.log('🖱️ [CURSOR DEBUG] Color class:', color);
         
         // Create cursor wrapper
         const cursor = document.createElement('div');
@@ -1432,7 +1432,7 @@ class CollaborationRealTime {
         cursor.style.willChange = 'transform';
         cursor.dataset.userId = userId;
         
-        console.log('🖱️ [CURSOR DEBUG] Cursor element created:', cursor);
+        // console.log('🖱️ [CURSOR DEBUG] Cursor element created:', cursor);
         
         // Create avatar circle
         const avatar = document.createElement('div');
@@ -1767,23 +1767,23 @@ class CollaborationRealTime {
      * Throttled cursor update (called on mouse move)
      */
     throttledCursorUpdate(x, y) {
-        console.log('🖱️ [CURSOR DEBUG] Throttled cursor update called');
-        console.log('🖱️ [CURSOR DEBUG] Position: x=', x, 'y=', y);
-        console.log('🖱️ [CURSOR DEBUG] Session ID:', this.sessionId);
+        // console.log('🖱️ [CURSOR DEBUG] Throttled cursor update called');
+        // console.log('🖱️ [CURSOR DEBUG] Position: x=', x, 'y=', y);
+        // console.log('🖱️ [CURSOR DEBUG] Session ID:', this.sessionId);
         
         if (!this.sessionId) {
-            console.log('⚠️ [CURSOR DEBUG] No session ID - not emitting cursor position');
+            // console.log('⚠️ [CURSOR DEBUG] No session ID - not emitting cursor position');
             return; // Not in a session
         }
         
         const now = Date.now();
         const timeSinceLastUpdate = now - this.lastCursorUpdate;
         
-        console.log('🖱️ [CURSOR DEBUG] Time since last update:', timeSinceLastUpdate, 'ms');
-        console.log('🖱️ [CURSOR DEBUG] Throttle threshold:', this.config.cursorUpdateThrottle, 'ms');
+        // console.log('🖱️ [CURSOR DEBUG] Time since last update:', timeSinceLastUpdate, 'ms');
+        // console.log('🖱️ [CURSOR DEBUG] Throttle threshold:', this.config.cursorUpdateThrottle, 'ms');
         
         if (timeSinceLastUpdate < this.config.cursorUpdateThrottle) {
-            console.log('🖱️ [CURSOR DEBUG] Update throttled (too soon)');
+            // console.log('🖱️ [CURSOR DEBUG] Update throttled (too soon)');
             return; // Throttle
         }
         
