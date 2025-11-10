@@ -541,6 +541,10 @@ class LobbyManager:
     def _cleanup_old_db_lobbies(self):
         """Clean up old lobbies from database"""
         try:
+            # Only run cleanup if we have an active application context
+            if not has_app_context():
+                return
+            
             from services.lobby_persistence import lobby_persistence
             lobby_persistence.cleanup_old_lobbies(hours=24)
         except Exception as e:

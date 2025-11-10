@@ -15,13 +15,15 @@ if project_root not in sys.path:
 try:
     from __init__ import create_app, db, login_manager
 except ImportError as e:
-    print(f"Error importing Flask app components: {e}")
+    import logging
+    logging.error(f"Error importing Flask app components: {e}")
     sys.exit(1)
 
 try:
     from socket_manager import socketio
 except ImportError as e:
-    print(f"Error importing socketio: {e}")
+    import logging
+    logging.warning(f"Error importing socketio: {e}")
     socketio = None
 
 from user.quiz import QuizController
@@ -40,7 +42,8 @@ try:
         'TEMPLATE_FOLDER': template_dir
     })
 except Exception as e:
-    print(f"Fatal error creating Flask app: {e}")
+    import logging
+    logging.critical(f"Fatal error creating Flask app: {e}")
     sys.exit(1)
 
 # Configure session settings for production
@@ -52,27 +55,6 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=86400  # 24 hour session lifetime
 )
 
-# Initialize application context properly
-try:
-    ctx = app.app_context()
-    ctx.push()
-    print("[OK] Application context initialized successfully")
-except Exception as e:
-    print(f"Warning: Application context setup failed: {e}")
-    print("Continuing without explicit context push...")
-
-# Initialize SocketIO with better error handling
-if socketio:
-    try:
-        from socket_manager import init_socketio
-        init_socketio(app)
-        print("[OK] SocketIO initialized successfully")
-    except Exception as e:
-        print(f"Warning: SocketIO initialization failed: {e}")
-        print("WebSocket functionality may be limited")
-else:
-    print("[WARNING] SocketIO not available - WebSocket functionality disabled")
-
 # Configure structured logging
 import logging
 logging.basicConfig(
@@ -80,6 +62,27 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Initialize application context properly
+try:
+    ctx = app.app_context()
+    ctx.push()
+    logger.info("Application context initialized successfully")
+except Exception as e:
+    logger.warning(f"Application context setup failed: {e}")
+    logger.info("Continuing without explicit context push...")
+
+# Initialize SocketIO with better error handling
+if socketio:
+    try:
+        from socket_manager import init_socketio
+        init_socketio(app)
+        logger.info("SocketIO initialized successfully")
+    except Exception as e:
+        logger.warning(f"SocketIO initialization failed: {e}")
+        logger.info("WebSocket functionality may be limited")
+else:
+    logger.warning("SocketIO not available - WebSocket functionality disabled")
 
 # Inject socketio instance into notification controller
 if socketio:
@@ -183,31 +186,27 @@ def load_user(user_id):
     try:
         user_id_int = int(user_id)
     except (ValueError, TypeError):
-        print(f"[ERROR] Invalid user_id: {user_id}")
+        logger.error(f"Invalid user_id: {user_id}")
         return None
     
     # CRITICAL FIX: Check session namespace FIRST - this works for both HTTP and WebSocket
     auth_namespace = session.get('auth_namespace', 'unknown')
     request_path = getattr(request, 'path', '') if request else ''
     
-    print(f"[DEBUG] User loader: ID={user_id_int}, namespace={auth_namespace}, path={request_path}")
-    
     # PRIORITY 1: Load instructor user if session indicates admin auth (works for WebSocket + HTTP)
     if auth_namespace == 'instructor':
         admin = db.session.get(Instructor, user_id_int)
         if admin:
-            print(f"[AUTH] Admin session: Loaded admin {admin.username} (ID: {user_id_int})")
             return admin
-        print(f"[ERROR] Admin session: No admin found for ID {user_id_int}")
+        logger.warning(f"Admin session: No admin found for ID {user_id_int}")
         return None
     
     # PRIORITY 2: Load user if session indicates user auth
     elif auth_namespace == 'user':
         user = db.session.get(User, user_id_int)
         if user:
-            print(f"[USER] User session: Loaded user {user.username} (ID: {user_id_int})")
             return user
-        print(f"[ERROR] User session: No user found for ID {user_id_int}")
+        logger.warning(f"User session: No user found for ID {user_id_int}")
         return None
     
     # FALLBACK: Use path-based detection if no namespace in session (legacy support)
@@ -215,26 +214,22 @@ def load_user(user_id):
         # Try instructor table first for instructor/admin paths
         admin = db.session.get(Instructor, user_id_int)
         if admin:
-            print(f"[AUTH] Admin path fallback: Loaded admin {admin.username} (ID: {user_id_int})")
             # Auto-fix the session namespace if missing
             if auth_namespace == 'unknown':
                 session['auth_namespace'] = 'instructor'
-                print(f"[FIX] Auto-fixed instructor session namespace for {admin.username}")
             return admin
-        print(f"[ERROR] Admin path fallback: No admin found for ID {user_id_int}")
+        logger.warning(f"Admin path fallback: No admin found for ID {user_id_int}")
         return None
     
     else:
         # Try user table as final fallback
         user = db.session.get(User, user_id_int)
         if user:
-            print(f"[USER] User path fallback: Loaded user {user.username} (ID: {user_id_int})")
             # Auto-fix the session namespace if missing
             if auth_namespace == 'unknown':
                 session['auth_namespace'] = 'user'
-                print(f"[FIX] Auto-fixed user session namespace for {user.username}")
             return user
-        print(f"[ERROR] No user found in any table for ID {user_id_int}")
+        logger.warning(f"No user found in any table for ID {user_id_int}")
         return None
 
 # Register global session guard to enforce single-device logins before other middleware
@@ -267,16 +262,14 @@ def before_request_handler():
                 # Check if this is an Instructor by checking the class name
                 if current_user.__class__.__name__ == 'Instructor':
                     if current_namespace != 'instructor':
-                        print(f"[FIX] BEFORE_REQUEST: Fixing auth_namespace from '{current_namespace}' to 'instructor'")
                         session['auth_namespace'] = 'instructor'
                         session.modified = True
                 elif current_user.__class__.__name__ == 'User':
                     if current_namespace != 'user':
-                        print(f"[FIX] BEFORE_REQUEST: Fixing auth_namespace from '{current_namespace}' to 'user'")
                         session['auth_namespace'] = 'user'
                         session.modified = True
         except Exception as e:
-            print(f"[WARNING] BEFORE_REQUEST: Error fixing namespace: {e}")
+            logger.warning(f"BEFORE_REQUEST: Error fixing namespace: {e}")
         
         if app.debug:  # Only log in debug mode
             logger.debug("="*80)
@@ -459,55 +452,30 @@ except Exception as e:
     logger.error(f"Error registering enhanced user routes: {e}", exc_info=True)
 
 # Register Progression API for sequential unlock mechanics
-print("\n=== Registering Progression API ===")
 try:
     from user.api.progression_api import progression_api
     app.register_blueprint(progression_api)
-    print("[OK] Progression API registered successfully")
-    print("   • /api/progression/simulation/<id>/unlock-status - Check unlock status")
-    print("   • /api/progression/learning-path/<id>/progress - Get progress")
-    print("   • /api/progression/simulation/<id>/complete - Mark completed")
-    print("   • /api/progression/user/achievements - Get achievements")
+    logger.info("Progression API registered successfully")
 except Exception as e:
-    print(f"[ERROR] Error registering progression API: {e}")
-    import traceback
-    traceback.print_exc()
+    logger.error(f"Error registering progression API: {e}")
 
 # Register User Lesson Routes
-print("\n=== Registering User Lesson Routes ===")
 try:
     from user.routes.lesson_routes import lesson_bp
     app.register_blueprint(lesson_bp)
-    print("[OK] User lesson routes registered successfully")
-    print("   • /lesson/class/<id>/lesson/<id> - View lesson content")
-    print("   • /lesson/class/<id>/lesson/<id>/complete - Mark lesson complete")
-    print("   • /lesson/class/<id>/lesson/<id>/progress - Update reading progress")
-    print("   • /lesson/class/<id>/lesson/<id>/start-simulation/<id> - Start simulation")
-    print("   • /lesson/api/class/<id>/lesson/<id>/analytics - Get lesson analytics")
+    logger.info("User lesson routes registered successfully")
 except Exception as e:
-    print(f"[ERROR] Error registering user lesson routes: {e}")
-    import traceback
-    traceback.print_exc()
+    logger.error(f"Error registering user lesson routes: {e}")
 
 # Register Enhanced User Simulation Routes
-print("\n=== Registering Enhanced User Simulation Routes ===")
 try:
     from user.routes.simulation_runner import user_simulation_bp
     app.register_blueprint(user_simulation_bp)
-    print("[OK] Enhanced user simulation routes registered successfully")
-    print("   • /simulation/dashboard - Simulation dashboard for users")
-    print("   • /simulation/<id> - Run specific simulation")
-    print("   • /simulation/<id>/results/<attempt_id> - View simulation results")
-    print("   • /simulation/api/<id>/submit-step - Submit step response")
-    print("   • /simulation/api/<id>/complete - Complete simulation")
-    print("   • /simulation/api/<id>/restart - Restart simulation")
+    logger.info("Enhanced user simulation routes registered successfully")
 except Exception as e:
-    print(f"[ERROR] Error registering enhanced user simulation routes: {e}")
-    import traceback
-    traceback.print_exc()
+    logger.error(f"Error registering enhanced user simulation routes: {e}")
 
 # Initialize and register dynamic class routes
-print("\n=== Registering Dynamic Class Routes ===")
 try:
     from instructor.services.dynamic_route_registry import route_registry
     
@@ -516,27 +484,13 @@ try:
     
     # Get statistics about registered routes
     stats = route_registry.get_statistics()
-    print(f"[OK] Dynamic route registry initialized")
-    print(f"   Total classes: {stats.get('total_classes', 0)}")
-    print(f"   Registered classes: {stats.get('registered_classes', 0)}")
-    print(f"   Route files: {stats.get('route_files', 0)}")
-    print(f"   Registration rate: {stats.get('registration_rate', 0):.1f}%")
-    
-    if stats.get('registered_class_ids'):
-        print(f"   Registered class IDs: {stats['registered_class_ids']}")
+    logger.info(f"Dynamic route registry initialized (Classes: {stats.get('registered_classes', 0)}/{stats.get('total_classes', 0)})")
     
 except Exception as e:
-    print(f"[ERROR] Error initializing dynamic route registry: {e}")
-    print("[OK] Continuing with universal template system only...")
+    logger.error(f"Error initializing dynamic route registry: {e}")
+    logger.info("Continuing with universal template system only...")
     # Universal template system should handle all classes
     # No need for class-specific route fallback
-
-# Print all registered routes for debugging
-print("\n=== Registered Routes ===")
-for rule in sorted(app.url_map.iter_rules(), key=lambda x: str(x)):
-    methods = ', '.join(sorted(rule.methods)) if rule.methods else ''
-    print(f"{rule.endpoint:30} {methods:20} {rule.rule}")
-print("=========================\n")
 
 # Set up Jinja2 environment to ensure it can find templates
 def setup_jinja_environment():
@@ -560,12 +514,12 @@ def setup_jinja_environment():
     
     for template_dir in template_dirs:
         loaders.append(FileSystemLoader(template_dir))
-        print(f"Added template directory to Jinja2 environment: {template_dir}")
+        logger.debug(f"Added template directory: {template_dir}")
     
     # Set up the ChoiceLoader
     if len(loaders) > 1:
         app.jinja_loader = ChoiceLoader(loaders)
-        print("Created ChoiceLoader for application")
+        logger.debug("Created ChoiceLoader for application")
 
 # Configure Jinja2 environment
 setup_jinja_environment()

@@ -69,38 +69,30 @@ class SplitSessionInterface(SecureCookieSessionInterface):
 
     def _select_cookie_for_request(self):
         path = (request.path or "").lower()
-        print(f"[COOKIE] SplitSession: _select_cookie_for_request called for path: {path}")
         
         # INSTRUCTOR PATHS: /instructor* AND /admin* both use instructor_session
         if path.startswith("/instructor") or path.startswith("/admin"):
-            print(f"[COOKIE] SplitSession: Instructor/Admin path detected, returning INSTRUCTOR_COOKIE ({INSTRUCTOR_COOKIE})")
             return INSTRUCTOR_COOKIE
         
         if path.startswith("/socket.io"):
-            print(f"[COOKIE] SplitSession: Socket.io path detected, returning None for later decision")
             # WebSocket handshake: we don't know original page path; we will
             # decide later in open_session by inspecting both cookies.
             return None
         
-        print(f"[COOKIE] SplitSession: User path, returning USER_COOKIE ({USER_COOKIE})")
         return USER_COOKIE
 
     # ---------- OPEN SESSION ----------
     def open_session(self, app, request):  # type: ignore[override]
         serializer = self.get_signing_serializer(app)
         if not serializer:
-            print(f"[COOKIE] SplitSession: No serializer available for path: {request.path}")
             return self.session_class()
 
         chosen = self._select_cookie_for_request()
-        print(f"[COOKIE] SplitSession: Chosen cookie: {chosen}")
 
         # Normal HTTP request that maps cleanly to a cookie name
         if chosen:
             raw = request.cookies.get(chosen)
-            print(f"[COOKIE] SplitSession: Raw cookie value for {chosen}: {raw[:50] if raw else 'None'}...")
             if not raw:
-                print(f"[COOKIE] SplitSession: No cookie found for {chosen}, returning empty session")
                 return self.session_class()
             try:
                 max_age = int(app.permanent_session_lifetime.total_seconds())
@@ -119,10 +111,8 @@ class SplitSessionInterface(SecureCookieSessionInterface):
                 else:
                     if not actual_ns:
                         data["auth_namespace"] = expected_ns
-                print(f"[COOKIE] SplitSession: Successfully loaded session data, keys: {list(data.keys())}")
                 return self.session_class(data)
             except BadSignature:
-                print(f"[COOKIE] SplitSession: Bad signature for {chosen}")
                 return self.session_class()
             except Exception as e:
                 print(f"[COOKIE] SplitSession: Error loading session: {str(e)}")
@@ -131,11 +121,9 @@ class SplitSessionInterface(SecureCookieSessionInterface):
         # WebSocket (or ambiguous) – inspect both cookies and pick the most appropriate
         # First, try to determine context from Referer header (for Socket.IO handshakes)
         referer = request.headers.get('Referer', '').lower()
-        print(f"[COOKIE] SplitSession: WebSocket/ambiguous path, Referer: {referer}")
         
         # If Referer indicates instructor context, prefer instructor cookie
         prefer_instructor = '/instructor' in referer
-        print(f"[COOKIE] SplitSession: Prefer instructor based on Referer: {prefer_instructor}")
         
         sessions = []
         max_age = int(app.permanent_session_lifetime.total_seconds())
@@ -160,9 +148,7 @@ class SplitSessionInterface(SecureCookieSessionInterface):
                     data["auth_namespace"] = expected_ns
 
                 sessions.append((name, data))
-                print(f"[COOKIE] SplitSession: Loaded {name} with namespace: {data.get('auth_namespace')}")
             except BadSignature:
-                print(f"[COOKIE] SplitSession: Bad signature for {name}")
                 continue
             except Exception as e:
                 app.logger.warning(f"[COOKIE] Error loading {name}: {str(e)}")
@@ -172,21 +158,17 @@ class SplitSessionInterface(SecureCookieSessionInterface):
         if prefer_instructor:
             for name, data in sessions:
                 if name == INSTRUCTOR_COOKIE or data.get("auth_namespace") == "instructor":
-                    print(f"[COOKIE] SplitSession: Returning instructor session based on Referer")
                     return self.session_class(data)
         
         # Otherwise prefer user session (for non-instructor contexts)
         for name, data in sessions:
             if name == USER_COOKIE or data.get("auth_namespace") != "instructor":
-                print(f"[COOKIE] SplitSession: Returning user session (default)")
                 return self.session_class(data)
         
         # Fallback: return first available session
         if sessions:
-            print(f"[COOKIE] SplitSession: Fallback - returning first available session")
             return self.session_class(sessions[0][1])
         
-        print(f"[COOKIE] SplitSession: No valid sessions found, returning empty")
         return self.session_class()
 
     # ---------- SAVE SESSION ----------

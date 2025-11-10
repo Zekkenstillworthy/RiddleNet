@@ -40,24 +40,19 @@ def create_app(config=None):
     app = Flask(__name__, instance_path=instance_path, template_folder=template_folder)    # Configure the app
     # Use local instance config file (PostgreSQL settings) instead of user.config
     loaded_instance_config = app.config.from_pyfile('config.py', silent=True)
-    print(f"[create_app] Attempted to load instance/config.py (silent=True). Exists: {os.path.exists(os.path.join(instance_path, 'config.py'))}")
     # If not loaded, attempt to construct URI from env vars as emergency fallback
     if 'SQLALCHEMY_DATABASE_URI' not in app.config:
-        print("[create_app] SQLALCHEMY_DATABASE_URI not found after from_pyfile. Building from environment variables...")
         pg_host = os.getenv("POSTGRES_HOST", "localhost")
         pg_port = os.getenv("POSTGRES_PORT", "5432")
         pg_db = os.getenv("POSTGRES_DB", "riddlenet")
         pg_user = os.getenv("POSTGRES_USER", "postgres")
         pg_password = os.getenv("POSTGRES_PASSWORD", "")
         pg_sslmode = os.getenv("POSTGRES_SSL_MODE")
-        if not (pg_host and pg_db and pg_user):
-            print(f"[create_app] Incomplete PostgreSQL env configuration: host={pg_host} db={pg_db} user={pg_user}")
         auth_segment = f"{pg_user}:{pg_password}" if pg_password else pg_user
         uri = f"postgresql+psycopg2://{auth_segment}@{pg_host}:{pg_port}/{pg_db}"
         if pg_sslmode:
             uri += f"?sslmode={pg_sslmode}"
         app.config['SQLALCHEMY_DATABASE_URI'] = uri
-        print(f"[create_app] Constructed PostgreSQL URI from env: {uri}")
     
     # Enforce that the instance config provided a PostgreSQL URI
     if 'SQLALCHEMY_DATABASE_URI' not in app.config:
@@ -130,12 +125,14 @@ def create_app(config=None):
     #             return None
 
     # Install split session interface to isolate admin/user auth states
+    import logging
+    logger = logging.getLogger(__name__)
     try:
         from utils.split_session_interface import SplitSessionInterface
         app.session_interface = SplitSessionInterface()
-        print("[create_app] SplitSessionInterface enabled (instructor_session / user_session cookies)")
+        logger.info("SplitSessionInterface enabled (instructor_session / user_session cookies)")
     except Exception as e:
-        print(f"[create_app] WARNING: Could not enable SplitSessionInterface: {e}")
+        logger.warning(f"Could not enable SplitSessionInterface: {e}")
 
     # Register blueprints
     try:
@@ -143,34 +140,30 @@ def create_app(config=None):
         app.register_blueprint(user_bp)
         
         # Register universal class routes
-        print("🔍 Attempting to register universal class routes...")
         try:
             from user.routes.universal_class_routes import universal_class_bp
-            print("🔍 Universal class blueprint imported successfully")
             app.register_blueprint(universal_class_bp)
-            print("✅ Universal class routes registered successfully")
+            logger.info("Universal class routes registered successfully")
         except Exception as e:
-            print(f"⚠️ Error registering universal class blueprint: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.warning(f"Error registering universal class blueprint: {e}")
         
         # Register dynamic simulation routes blueprint
         try:
             from user.dynamic_simulation_routes import dynamic_sim_bp
             app.register_blueprint(dynamic_sim_bp)
-            print("✅ Dynamic simulation routes registered successfully")
+            logger.info("Dynamic simulation routes registered successfully")
         except Exception as e:
-            print(f"⚠️ Error registering dynamic simulation blueprint: {e}")
+            logger.warning(f"Error registering dynamic simulation blueprint: {e}")
         
         try:
             from api.live_quiz_api import live_quiz_bp as live_quiz_api_bp
             if live_quiz_api_bp.name not in app.blueprints:
                 app.register_blueprint(live_quiz_api_bp)
-                print("Live Quiz API blueprint registered")
+                logger.info("Live Quiz API blueprint registered")
             else:
-                print("Live Quiz API blueprint already registered")
+                logger.info("Live Quiz API blueprint already registered")
         except Exception as e:
-            print(f"Error registering Live Qui API blueprint: {e}")
+            logger.warning(f"Error registering Live Quiz API blueprint: {e}")
 
         # Register the API blueprint with explicit url_prefix
         # Commented out to avoid conflicts with QuizController routes
@@ -242,40 +235,33 @@ def create_app(config=None):
             
         '''
         
-        # Print registered rules for debugging        print("Registered URL rules:")
-        for rule in app.url_map.iter_rules():
-            print(f"{rule.endpoint}: {rule.rule}")
     except ImportError as e:
         # If a blueprint can't be imported, continue without it
-        print(f"Warning: Could not import blueprint: {e}")
+        logger.warning(f"Could not import blueprint: {e}")
     
     # Register RNet file viewer blueprint (moved out of commented section)
     try:
         from instructor.routes.rnet_viewer_routes import rnet_viewer_bp
         app.register_blueprint(rnet_viewer_bp)
-        print("✅ RNet file viewer blueprint registered")
+        logger.info("RNet file viewer blueprint registered")
     except Exception as e:
-        print(f"⚠️ Error registering RNet file viewer blueprint: {e}")
+        logger.warning(f"Error registering RNet file viewer blueprint: {e}")
     
     # Register Grades API blueprint (MVP implementation)
     try:
         from instructor.api.grades_api import grades_api
         app.register_blueprint(grades_api)
-        print("✅ Grades API blueprint registered (MVP)")
+        logger.info("Grades API blueprint registered (MVP)")
     except Exception as e:
-        print(f"⚠️ Error registering Grades API blueprint: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.warning(f"Error registering Grades API blueprint: {e}")
     
     # Register Deadlines API blueprint (MVP implementation)
     try:
         from instructor.api.deadlines_api import deadlines_api
         app.register_blueprint(deadlines_api)
-        print("✅ Deadlines API blueprint registered (MVP)")
+        logger.info("Deadlines API blueprint registered (MVP)")
     except Exception as e:
-        print(f"⚠️ Error registering Deadlines API blueprint: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.warning(f"Error registering Deadlines API blueprint: {e}")
     
     # Admin user controller blueprint is registered in run.py with other admin blueprints
     # (Removed duplicate registration to prevent "name already registered" error)
@@ -314,10 +300,8 @@ def create_app(config=None):
             if current_user.is_authenticated and auth_namespace == 'instructor':
                 from instructor.models.user import Instructor
                 if isinstance(current_user, Instructor):
-                    print(f"Context processor [{path}]: Instructor route - authenticated instructor: {current_user.username} (namespace: {auth_namespace})")
                     return dict(user=current_user)
             
-            print(f"Context processor [{path}]: Instructor route - no instructor authentication (namespace: {auth_namespace})")
             return dict(user=None)
         
         # User routes: Support both user and instructor access with namespace checking
@@ -326,18 +310,14 @@ def create_app(config=None):
             from instructor.models.user import Instructor
             
             if isinstance(current_user, User) and auth_namespace == 'user':
-                print(f"Context processor [{path}]: User route - authenticated user: {current_user.username} (namespace: {auth_namespace})")
                 return dict(user=current_user)
             elif isinstance(current_user, Instructor) and auth_namespace == 'instructor':
                 # Allow instructor to access class routes but maintain instructor context
                 if '/class/' in path:
-                    print(f"Context processor [{path}]: Instructor {current_user.username} accessing class route (namespace: {auth_namespace})")
                     return dict(user=current_user)
                 else:
-                    print(f"Context processor [{path}]: Instructor {current_user.username} blocked from user route (namespace: {auth_namespace})")
                     return dict(user=None)
             else:
-                print(f"Context processor [{path}]: Authentication type/namespace mismatch - user type: {type(current_user)}, namespace: {auth_namespace}")
                 return dict(user=None)
         
         # Session-based authentication ONLY for user namespace
@@ -346,19 +326,15 @@ def create_app(config=None):
                 from user.models.user import User
                 user = User.query.get(session['user_id'])
                 if user:
-                    print(f"Context processor [{path}]: Found user via session: {user.username} (namespace: {auth_namespace})")
                     return dict(user=user)
                 else:
-                    print(f"Context processor [{path}]: User ID {session['user_id']} not found - clearing session")
                     session.pop('user_id', None)
                     session.pop('auth_namespace', None)
             except Exception as e:
-                print(f"Context processor [{path}]: Error getting user from session: {e}")
                 session.pop('user_id', None)
                 session.pop('auth_namespace', None)
         
         # No user found
-        print(f"Context processor [{path}]: No user found (namespace: {auth_namespace})")
         return dict(user=None)
     
     # Add context processor for admin sidebar classes
@@ -391,12 +367,10 @@ def create_app(config=None):
                     all_classes = active_classes if active_classes else all_classes_query
                     all_classes = sorted(all_classes, key=lambda x: x.name) if all_classes else []
                     
-                    print(f"Context processor [{path}]: Injected {len(all_classes)} classes for sidebar")
                     return dict(all_classes=all_classes)
                 else:
                     return dict(all_classes=[])
             except Exception as e:
-                print(f"Context processor [{path}]: Error loading classes for sidebar: {e}")
                 return dict(all_classes=[])
         
         return dict()

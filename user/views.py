@@ -145,14 +145,6 @@ def dashboard():
     
     # Get user badges (MVP)
     user_badges = UserBadge.get_user_badges(user.id)
-    
-    # 🔍 DEBUG: Log all badges from database
-    print(f"\n{'='*80}")
-    print(f"[DASHBOARD DEBUG] User ID: {user.id} ({user.username})")
-    print(f"[DASHBOARD DEBUG] Total badges in database: {len(user_badges)}")
-    for idx, badge in enumerate(user_badges, 1):
-        print(f"  Badge {idx}: {badge.badge_id} | {badge.badge_name} | {badge.challenge_type} | Score: {badge.earned_score}%")
-    print(f"{'='*80}\n")
 
     # Deduplicate badges by badge_id while keeping most recent award first
     deduped_badges = []
@@ -160,13 +152,9 @@ def dashboard():
     for badge in user_badges:
         normalized_badge_id = (badge.badge_id or '').strip().lower()
         if not normalized_badge_id or normalized_badge_id in seen_badge_ids:
-            print(f"[DASHBOARD DEBUG] ❌ SKIPPING duplicate badge: {badge.badge_id} ({badge.badge_name})")
             continue
         deduped_badges.append(badge)
         seen_badge_ids.add(normalized_badge_id)
-        print(f"[DASHBOARD DEBUG] ✅ KEEPING unique badge: {badge.badge_id} ({badge.badge_name})")
-
-    print(f"\n[DASHBOARD DEBUG] After badge_id deduplication: {len(deduped_badges)} unique badges")
 
     # Pick the highest value badge per challenge type (legendary > rare > common)
     rarity_rank = {'legendary': 3, 'rare': 2, 'common': 1}
@@ -174,7 +162,6 @@ def dashboard():
     for badge in deduped_badges:
         challenge_key = (badge.challenge_type or '').strip().lower()
         if not challenge_key:
-            print(f"[DASHBOARD DEBUG] ⚠️ Badge without challenge_type: {badge.badge_id}")
             continue
         current_choice = challenge_badge_map.get(challenge_key)
         current_rank = rarity_rank.get((current_choice.badge_rarity or '').lower(), 0) if current_choice else -1
@@ -192,8 +179,6 @@ def dashboard():
 
         if should_replace:
             challenge_badge_map[challenge_key] = badge
-            action = "SELECTED" if current_choice is None else "REPLACED"
-            print(f"[DASHBOARD DEBUG] 🏅 {action} badge for {challenge_key}: {badge.badge_id} ({badge.badge_rarity})")
         else:
             print(f"[DASHBOARD DEBUG] ⏭  Keeping better badge for {challenge_key}, skipping {badge.badge_id}")
 
