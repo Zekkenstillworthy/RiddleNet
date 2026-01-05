@@ -9,6 +9,13 @@ from instructor.models.class_model import Class, class_students  # Import class_
 from __init__ import db  # Import db from main app
 from user.models.user import User as UserModel  # Import User model directly
 from user.models.score import Score as UserScore  # Use the regular Score model for all scoring
+from user.constants.linkup import (
+    LINKUP_FOUNDATION_TOTAL,
+    LINKUP_FOUNDATION_SET,
+    canonicalize_completed_ids,
+    calculate_linkup_counts,
+    normalize_linkup_id,
+)
 # Static content imports removed - using database-driven content
 import json
 from datetime import datetime
@@ -650,57 +657,49 @@ def get_completed_challenges(challenge_type):
             challenge_type=mapped_type
         ).first()
         
-        completed_scenarios = []
+        completed_payload = []
+        linkup_counts = None
         
         if score_record:
             print(f"[API] 📊 ChallengeScore record found - Score: {score_record.best_score}, Completed: {score_record.is_completed}")
-            
-            if score_record.challenge_metadata:
-                print(f"[API] 📦 Metadata keys: {list(score_record.challenge_metadata.keys())}")
-                
-                # For Link Up/Troubleshooting, metadata contains scenario info
-                if mapped_type == 'troubleshooting':
-                    scenario_id = score_record.challenge_metadata.get('category', 'unknown')
-                    difficulty = score_record.challenge_metadata.get('difficulty', 'unknown')
-                    timestamp = score_record.challenge_metadata.get('timestamp', score_record.updated_at.isoformat())
-                    
-                    print(f"[API] [OK] Found Link Up completion: {scenario_id} ({difficulty})")
-                    
-                    completed_scenarios.append({
-                        'scenario_id': scenario_id,
-                        'scenario_title': scenario_id.replace('-', ' ').title(),
-                        'difficulty': difficulty,
-                        'score': score_record.best_score,
-                        'completed_at': timestamp
-                    })
-                else:
-                    # For other challenge types, return basic completion info
-                    if score_record.is_completed:
-                        completed_scenarios.append({
-                            'challenge_type': challenge_type,
-                            'score': score_record.best_score,
-                            'completed_at': score_record.last_completed_at.isoformat() if score_record.last_completed_at else None
-                        })
+            metadata = score_record.challenge_metadata or {}
+            if mapped_type == 'troubleshooting':
+                raw_completed = metadata.get('completed_challenges', [])
+                completed_payload = canonicalize_completed_ids(raw_completed)
+                linkup_counts = metadata.get('challenge_counts')
+                if not isinstance(linkup_counts, dict):
+                    linkup_counts = calculate_linkup_counts(completed_payload)
+                print(
+                    f"[API] [OK] Canonical Link Up completions: {len(completed_payload)}/{LINKUP_FOUNDATION_TOTAL}"
+                )
             else:
-                print(f"[API] [WARNING] Score record exists but challenge_metadata is empty")
-                
-                # Still return basic completion info if challenge is completed
+                if metadata:
+                    print(f"[API] 📦 Metadata keys: {list(metadata.keys())}")
                 if score_record.is_completed:
-                    completed_scenarios.append({
+                    entry = {
                         'challenge_type': challenge_type,
                         'score': score_record.best_score,
                         'completed_at': score_record.last_completed_at.isoformat() if score_record.last_completed_at else None
-                    })
+                    }
+                    completed_payload.append(entry)
         else:
             print(f"[API] ℹ️ No ChallengeScore record found for challenge_type: {mapped_type}")
         
-        print(f"[API] 📤 Returning {len(completed_scenarios)} completed scenarios")
+        print(f"[API] 📤 Returning {len(completed_payload)} completed entries")
         
-        return jsonify({
+        response_payload = {
             'success': True,
-            'completed_challenges': completed_scenarios,
-            'total_completed': len(completed_scenarios)
-        }), 200
+            'completed_challenges': completed_payload,
+            'total_completed': len(completed_payload)
+        }
+
+        if mapped_type == 'troubleshooting':
+            linkup_counts = linkup_counts or calculate_linkup_counts(completed_payload)
+            response_payload['challenge_counts'] = linkup_counts
+            response_payload['foundation_total'] = LINKUP_FOUNDATION_TOTAL
+            response_payload['is_complete'] = linkup_counts.get('foundation', 0) >= LINKUP_FOUNDATION_TOTAL
+
+        return jsonify(response_payload), 200
         
     except Exception as e:
         import traceback
@@ -824,8 +823,11 @@ def save_foundation_completion():
         # Validation
         if not module_id:
             return jsonify({'success': False, 'error': 'Missing module_id'}), 400
+        canonical_module = normalize_linkup_id(module_id)
+        if not canonical_module or canonical_module not in LINKUP_FOUNDATION_SET:
+            return jsonify({'success': False, 'error': 'Invalid foundation module id'}), 400
         
-        print(f"[Link Up Foundation] User {user_id} completed: {module_id}")
+        print(f"[Link Up Foundation] User {user_id} completed: {canonical_module}")
         
         # Get or create troubleshooting challenge score
         challenge_score = ChallengeScore.query.filter_by(
@@ -852,59 +854,63 @@ def save_foundation_completion():
         if challenge_score.challenge_metadata is None:
             challenge_score.challenge_metadata = {}
         
-        completed_challenges = challenge_score.challenge_metadata.get('completed_challenges', [])
-        
-        # Add module if not already completed
-        if module_id not in completed_challenges:
-            completed_challenges.append(module_id)
-            challenge_score.challenge_metadata['completed_challenges'] = completed_challenges
-            
-            # Add Foundation-specific metadata
+        existing_completed = challenge_score.challenge_metadata.get('completed_challenges', [])
+        already_completed = canonical_module in existing_completed
+        merged_completed = canonicalize_completed_ids(
+            existing_completed if already_completed else existing_completed + [canonical_module]
+        )
+        challenge_score.challenge_metadata['completed_challenges'] = merged_completed
+        challenge_score.challenge_metadata['challenge_counts'] = calculate_linkup_counts(merged_completed)
+
+        if not already_completed:
             if 'foundation_modules' not in challenge_score.challenge_metadata:
                 challenge_score.challenge_metadata['foundation_modules'] = {}
-            
-            challenge_score.challenge_metadata['foundation_modules'][module_id] = {
+
+            challenge_score.challenge_metadata['foundation_modules'][canonical_module] = {
                 'completed_at': datetime.utcnow().isoformat(),
                 'score': score,
                 'time_spent': time_spent
             }
-            
-            # Mark JSONB field as modified
+
             flag_modified(challenge_score, 'challenge_metadata')
-            
-            # Update best_score (use percentage of 26 total items)
-            TOTAL_LINK_UP_ITEMS = 26
-            progress_percentage = (len(completed_challenges) / TOTAL_LINK_UP_ITEMS) * 100.0
+
+            foundation_completed = challenge_score.challenge_metadata['challenge_counts']['foundation']
+            progress_percentage = (foundation_completed / LINKUP_FOUNDATION_TOTAL) * 100.0 if LINKUP_FOUNDATION_TOTAL else 0.0
+
             if progress_percentage > challenge_score.best_score:
                 challenge_score.best_score = progress_percentage
                 challenge_score.latest_score = progress_percentage
-            
-            # Check if all 26 items complete
-            if len(completed_challenges) >= TOTAL_LINK_UP_ITEMS:
+
+            if foundation_completed >= LINKUP_FOUNDATION_TOTAL:
                 challenge_score.is_completed = True
                 if not challenge_score.first_completed_at:
                     challenge_score.first_completed_at = datetime.utcnow()
                 challenge_score.last_completed_at = datetime.utcnow()
-            
+
             db.session.commit()
-            
-            print(f"[Link Up Foundation] Progress: {len(completed_challenges)}/26 ({progress_percentage:.1f}%)")
-            
+
+            print(
+                f"[Link Up Foundation] Progress: {foundation_completed}/{LINKUP_FOUNDATION_TOTAL} "
+                f"({progress_percentage:.1f}%)"
+            )
+
             return jsonify({
                 'success': True,
-                'message': f'Foundation module {module_id} saved',
-                'total_completed': len(completed_challenges),
+                'message': f'Foundation module {canonical_module} saved',
+                'total_completed': foundation_completed,
                 'progress_percentage': progress_percentage,
-                'all_complete': len(completed_challenges) >= TOTAL_LINK_UP_ITEMS
+                'all_complete': foundation_completed >= LINKUP_FOUNDATION_TOTAL
             }), 200
-        else:
-            print(f"[Link Up Foundation] Module {module_id} already completed")
-            return jsonify({
-                'success': True,
-                'message': 'Module already completed',
-                'total_completed': len(completed_challenges),
-                'progress_percentage': (len(completed_challenges) / 26) * 100.0
-            }), 200
+
+        print(f"[Link Up Foundation] Module {canonical_module} already completed")
+        foundation_completed = challenge_score.challenge_metadata.get('challenge_counts', {}).get('foundation', 0)
+        progress_percentage = (foundation_completed / LINKUP_FOUNDATION_TOTAL) * 100.0 if LINKUP_FOUNDATION_TOTAL else 0.0
+        return jsonify({
+            'success': True,
+            'message': 'Module already completed',
+            'total_completed': foundation_completed,
+            'progress_percentage': progress_percentage
+        }), 200
         
     except Exception as e:
         db.session.rollback()

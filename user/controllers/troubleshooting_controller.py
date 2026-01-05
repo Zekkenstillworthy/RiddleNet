@@ -6,6 +6,13 @@ from __init__ import db
 from datetime import datetime
 import json
 import numpy as np
+from user.constants.linkup import (
+    LINKUP_FOUNDATION_TOTAL,
+    LINKUP_ADVANCED_CHALLENGES,
+    canonicalize_completed_ids,
+    calculate_linkup_counts,
+    normalize_linkup_id,
+)
 
 class TroubleshootingController:
     def __init__(self, app=None):
@@ -128,22 +135,28 @@ class TroubleshootingController:
         # Save to database
         db.session.add(progress)
         
-        # 🔧 FIX: Get existing completed_challenges array to accumulate all completions
+        # 🔧 FIX: Only count completions when the learner hits 100% accuracy
+        completed_module_id = scenario.id if match_percentage >= 100.0 else None
+        if completed_module_id:
+            print(f"[PROGRESS] ✅ Scenario {scenario.id} logged as perfected completion")
+        else:
+            print(
+                f"[PROGRESS] ⚠️ Scenario {scenario.id} scored {match_percentage}% – not counting toward foundation tally"
+            )
+
+        # 🔧 FIX: Get unified metadata with canonical Link Up! progress
         from user.models.challenge_score import ChallengeScore
-        existing_score = ChallengeScore.query.filter_by(
-            user_id=user_id,
-            challenge_type='troubleshooting'
-        ).first()
+        unified_metadata = self._get_unified_linkup_metadata(user_id, completed_module_id)
         
-        # Build accumulated completed_challenges array
-        completed_challenges = []
-        if existing_score and existing_score.challenge_metadata:
-            completed_challenges = existing_score.challenge_metadata.get('completed_challenges', [])
+        # Add scenario-specific details to unified metadata
+        unified_metadata.update({
+            'scenario_id': scenario.id,  # Most recent scenario
+            'time_taken': time_taken,
+            'attempts': progress.attempts
+        })
         
-        # Add current scenario if not already in list
-        if scenario.id not in completed_challenges:
-            completed_challenges.append(scenario.id)
-            print(f"[Link Up] Added {scenario.id} to completed_challenges. Total: {len(completed_challenges)}/26")
+        total_completed = unified_metadata['challenge_counts']['total']
+        print(f"[Link Up] Updated progress: {total_completed}/{LINKUP_FOUNDATION_TOTAL} foundation modules complete")
         
         # Save to new ChallengeScore table (MVP)
         # Use match_percentage (0-100) which is already normalized
@@ -151,12 +164,7 @@ class TroubleshootingController:
             user_id=user_id,
             challenge_type='troubleshooting',
             score=match_percentage,  # Already normalized 0-100 percentage
-            metadata={
-                'scenario_id': scenario.id,  # Most recent scenario
-                'time_taken': time_taken,
-                'attempts': progress.attempts,
-                'completed_challenges': completed_challenges  # 🔧 FIX: Accumulate ALL completed scenarios
-            },
+            metadata=unified_metadata,  # 🔧 FIX: Pass unified metadata with ALL completions
             completion_time=time_taken
         )
         
@@ -166,7 +174,7 @@ class TroubleshootingController:
             user_id=user_id,
             challenge_type='troubleshooting',
             score=match_percentage,
-            metadata={'scenario_id': scenario.id}
+            metadata=unified_metadata  # 🔧 FIX: Pass unified metadata to badge service
         )
         
         db.session.commit()
@@ -244,6 +252,39 @@ class TroubleshootingController:
         """Get user's progress on troubleshooting scenarios"""
         progress = TroubleshootingProgress.query.filter_by(user_id=user_id).all()
         return progress
+    
+    def _get_unified_linkup_metadata(self, user_id, current_scenario_id=None):
+        """Build canonical Link Up! metadata across all challenge buckets."""
+        from user.models.challenge_score import ChallengeScore
+
+        all_scores = ChallengeScore.query.filter_by(user_id=user_id).filter(
+            ChallengeScore.challenge_type.in_(
+                ['troubleshooting', 'linkup_easy', 'troubleshooting_medium', 'troubleshooting_hard']
+            )
+        ).all()
+
+        completed_ids = []
+        for score in all_scores:
+            if score.challenge_metadata:
+                completed_ids.extend(score.challenge_metadata.get('completed_challenges', []))
+
+        if current_scenario_id:
+            completed_ids.append(current_scenario_id)
+
+        canonical_completed = canonicalize_completed_ids(completed_ids)
+        counts = calculate_linkup_counts(canonical_completed)
+
+        print("[UNIFIED METADATA] Link Up! Progress:")
+        print(f"  Foundation: {counts['foundation']}/{counts['required']}")
+        print(f"  Easy: {counts['easy']}/{len(LINKUP_ADVANCED_CHALLENGES['easy'])}")
+        print(f"  Intermediate: {counts['intermediate']}/{len(LINKUP_ADVANCED_CHALLENGES['intermediate'])}")
+        print(f"  Hard: {counts['hard']}/{len(LINKUP_ADVANCED_CHALLENGES['hard'])}")
+        print(f"  Total (foundation only): {counts['total']}/{counts['required']}")
+
+        return {
+            'completed_challenges': canonical_completed,
+            'challenge_counts': counts,
+        }
     
     def _submit_hardcoded_challenge(self, user_id, scenario_id, user_solution, time_taken):
         """Handle hardcoded Link Up challenges (vlan-basics, default-gateway, etc.)"""
@@ -359,74 +400,28 @@ class TroubleshootingController:
             else:
                 challenge_type = 'linkup_easy'
             
-            # 🔧 FIX: Track sub-item completion for badge requirements
-            # Get all previous troubleshooting scores for this user (across all difficulty levels)
+            # 🔧 FIX: Get unified metadata with ALL 26 completions (foundation + advanced)
             from user.models.challenge_score import ChallengeScore
-            all_troubleshooting_scores = ChallengeScore.query.filter_by(
-                user_id=user_id
-            ).filter(
-                ChallengeScore.challenge_type.in_(['linkup_easy', 'troubleshooting_medium', 'troubleshooting_hard', 'troubleshooting'])
-            ).all()
             
-            # Extract completed scenarios (those with 100% score normalized)
-            # Note: We only count challenges completed at 100% (perfect score)
-            completed_scenarios = set()
-            for score_record in all_troubleshooting_scores:
-                if score_record.score >= 100.0:  # Must be 100% to count as complete
-                    scenario = score_record.metadata.get('scenario_id') if score_record.metadata else None
-                    if scenario:
-                        completed_scenarios.add(scenario)
-            
-            # Add current scenario if 100% (match_percentage is already 0-100)
+            # Only add current scenario to unified metadata if completed at 100%
+            current_scenario = scenario_id if match_percentage >= 100.0 else None
             if match_percentage >= 100.0:
-                completed_scenarios.add(scenario_id)
                 print(f"[PROGRESS] ✅ Challenge {scenario_id} completed at 100%")
             else:
                 print(f"[PROGRESS] ⚠️ Challenge {scenario_id} completed at {match_percentage}% (needs 100% to count)")
             
-            # Define all challenge IDs by difficulty
-            EASY_CHALLENGES = ['vlan-basics', 'default-gateway', 'default-gateway-setup', 'dhcp-client', 'dhcp-client-config']
-            MEDIUM_CHALLENGES = ['extended-ring-redundancy', 'hybrid-star-ring', 'partial-mesh-ospf']
-            HARD_CHALLENGES = ['mpls-vpn-complex', 'datacenter-fabric', 'sd-wan-overlay']
+            unified_metadata = self._get_unified_linkup_metadata(user_id, current_scenario)
             
-            # Count by difficulty (normalize alternative names)
-            normalized_completed = set()
-            for scenario in completed_scenarios:
-                # Normalize alternative names
-                if scenario in ['default-gateway', 'default-gateway-setup']:
-                    normalized_completed.add('default-gateway')
-                elif scenario in ['dhcp-client', 'dhcp-client-config']:
-                    normalized_completed.add('dhcp-client')
-                else:
-                    normalized_completed.add(scenario)
-            
-            # Recalculate with normalized names
-            EASY_CHALLENGES_NORMALIZED = ['vlan-basics', 'default-gateway', 'dhcp-client']
-            easy_count = sum(1 for s in normalized_completed if s in EASY_CHALLENGES_NORMALIZED)
-            medium_count = sum(1 for s in normalized_completed if s in MEDIUM_CHALLENGES)
-            hard_count = sum(1 for s in normalized_completed if s in HARD_CHALLENGES)
-            total_count = easy_count + medium_count + hard_count
-            
-            print(f"[PROGRESS] Sub-item completion tracking:")
-            print(f"  Easy: {easy_count}/3 - {[s for s in normalized_completed if s in EASY_CHALLENGES_NORMALIZED]}")
-            print(f"  Medium: {medium_count}/3 - {[s for s in normalized_completed if s in MEDIUM_CHALLENGES]}")
-            print(f"  Hard: {hard_count}/3 - {[s for s in normalized_completed if s in HARD_CHALLENGES]}")
-            print(f"  Total: {total_count}/9")
-            
-            # Store in metadata for badge service and progress tracking
-            metadata = {
+            # Add scenario-specific details to unified metadata
+            unified_metadata.update({
                 'scenario_id': scenario_id,
                 'scenario_name': challenge_info['name'],
                 'time_taken': time_taken,
-                'difficulty': challenge_info['difficulty'],
-                'completed_challenges': list(normalized_completed),
-                'challenge_counts': {
-                    'easy': easy_count,
-                    'medium': medium_count,
-                    'hard': hard_count,
-                    'total': total_count
-                }
-            }
+                'difficulty': challenge_info['difficulty']
+            })
+            
+            # Use unified metadata for all operations
+            metadata = unified_metadata
             
             # Save to ChallengeScore table (MVP system) using normalized score
             challenge_score = ChallengeScore.save_score(
@@ -443,7 +438,7 @@ class TroubleshootingController:
                 user_id=user_id,
                 challenge_type=challenge_type,
                 score=total_score,
-                metadata={'scenario_id': scenario_id, 'difficulty': difficulty}
+                metadata=metadata  # 🔧 FIX: Pass unified metadata to badge service
             )
             
             db.session.commit()

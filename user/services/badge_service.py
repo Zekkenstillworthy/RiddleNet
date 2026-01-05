@@ -5,6 +5,7 @@ Automatic badge awarding based on challenge completion criteria
 from user.models.user_badge import UserBadge, BADGE_DEFINITIONS
 from user.models.challenge_score import ChallengeScore
 from __init__ import db
+from user.constants.linkup import LINKUP_FOUNDATION_TOTAL
 
 
 class BadgeService:
@@ -212,45 +213,30 @@ class BadgeService:
     
     @staticmethod
     def _check_troubleshooting_badges(user_id, score, metadata):
-        """
-        Check and award troubleshooting-related badges - ONE badge per challenge
-        
-        🔧 MVP FIX: Badge is awarded ONLY when ALL 26 Link Up! sub-challenges are completed at 100%
-        
-        Sub-challenges:
-        - Foundation (17): Basic network scenarios
-        - Easy (3): vlan-basics, default-gateway, dhcp-client
-        - Intermediate (3): extended-ring-redundancy, hybrid-star-ring, partial-mesh-ospf
-        - Hard (3): mpls-vpn-complex, datacenter-fabric, sd-wan-overlay
-        
-        Badge requirements: CompletedItems == TotalItems (26/26)
-        """
+        """Check and award troubleshooting badges when all 16 MVP modules are perfect."""
         badges = []
         
         # Get completed challenges from metadata
         completed_challenges = metadata.get('completed_challenges', []) if metadata else []
         challenge_counts = metadata.get('challenge_counts', {}) if metadata else {}
         
-        # 🔧 MVP FIX: Update total to include Foundation (17) + Easy (3) + Intermediate (3) + Hard (3) = 26
-        TOTAL_REQUIRED = 26  # Foundation (17) + Easy (3) + Intermediate (3) + Hard (3)
-        total_completed = len(completed_challenges)  # Use direct count from completed_challenges list
+        foundation_completed = challenge_counts.get('foundation', 0)
+        total_completed = min(foundation_completed, LINKUP_FOUNDATION_TOTAL)
         
         print(f"[BADGE SERVICE] Troubleshooting (Link Up!) Badge Check")
-        print(f"  Completed challenges: {total_completed}/{TOTAL_REQUIRED}")
-        print(f"  Foundation: {challenge_counts.get('foundation', 0)}/17")
+        print(f"  Completed foundation modules: {total_completed}/{LINKUP_FOUNDATION_TOTAL}")
+        print(f"  Foundation: {challenge_counts.get('foundation', 0)}/{LINKUP_FOUNDATION_TOTAL}")
         print(f"  Easy: {challenge_counts.get('easy', 0)}/3")
         print(f"  Intermediate: {challenge_counts.get('intermediate', 0)}/3")
         print(f"  Hard: {challenge_counts.get('hard', 0)}/3")
         print(f"  List: {completed_challenges}")
         
-        # 🔧 MVP FIX: Award badge ONLY when ALL 26 challenges are completed
-        # This implements the requirement: Badges = Earned only when CompletedItems == TotalItems
-        if total_completed >= TOTAL_REQUIRED:
-            print(f"[BADGE SERVICE] ✅ All {TOTAL_REQUIRED} Link Up! challenges complete - awarding badge!")
+        if total_completed >= LINKUP_FOUNDATION_TOTAL:
+            print(f"[BADGE SERVICE] ✅ All {LINKUP_FOUNDATION_TOTAL} Link Up! modules complete - awarding badge!")
             
             badge_metadata = {
                 'completed_challenges': completed_challenges,
-                'total_challenges': TOTAL_REQUIRED,
+                'total_challenges': LINKUP_FOUNDATION_TOTAL,
                 'challenge_counts': challenge_counts
             }
             
@@ -259,7 +245,7 @@ class BadgeService:
                 user_id=user_id,
                 badge_id='troubleshooting_pro',
                 badge_name='Troubleshooting Pro',
-                badge_description='Completed all 26 Link Up! challenges at 100%!',
+                badge_description='Completed all 16 Link Up! MVP modules at 100%!',
                 challenge_type='troubleshooting',
                 earned_score=100.0,  # Badge represents 100% completion
                 badge_rarity='legendary',
@@ -272,11 +258,14 @@ class BadgeService:
             else:
                 print(f"[BADGE SERVICE] ℹ️ Badge already exists: Troubleshooting Pro")
         else:
-            remaining = TOTAL_REQUIRED - total_completed
-            print(f"[BADGE SERVICE] ❌ Only {total_completed}/{TOTAL_REQUIRED} complete - No badge yet")
+            remaining = LINKUP_FOUNDATION_TOTAL - total_completed
+            print(f"[BADGE SERVICE] ❌ Only {total_completed}/{LINKUP_FOUNDATION_TOTAL} complete - No badge yet")
             print(f"[BADGE SERVICE] Still need: {remaining} more challenge(s)")
             print(f"[BADGE SERVICE] Progress breakdown:")
-            print(f"  - Foundation: {challenge_counts.get('foundation', 0)}/17 (need {17 - challenge_counts.get('foundation', 0)} more)")
+            print(
+                f"  - Foundation: {challenge_counts.get('foundation', 0)}/{LINKUP_FOUNDATION_TOTAL} "
+                f"(need {LINKUP_FOUNDATION_TOTAL - challenge_counts.get('foundation', 0)} more)"
+            )
             print(f"  - Easy: {challenge_counts.get('easy', 0)}/3 (need {3 - challenge_counts.get('easy', 0)} more)")
             print(f"  - Intermediate: {challenge_counts.get('intermediate', 0)}/3 (need {3 - challenge_counts.get('intermediate', 0)} more)")
             print(f"  - Hard: {challenge_counts.get('hard', 0)}/3 (need {3 - challenge_counts.get('hard', 0)} more)")

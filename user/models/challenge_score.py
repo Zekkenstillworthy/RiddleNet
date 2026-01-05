@@ -5,6 +5,11 @@ Unified tracking of challenge completions across all challenge types
 from __init__ import db
 from datetime import datetime
 from sqlalchemy.orm.attributes import flag_modified
+from user.constants.linkup import (
+    LINKUP_FOUNDATION_TOTAL,
+    canonicalize_completed_ids,
+    calculate_linkup_counts,
+)
 
 
 class ChallengeScore(db.Model):
@@ -122,12 +127,19 @@ class ChallengeScore(db.Model):
             osi_state = ChallengeScore._evaluate_osi_progress(challenge)
             return osi_state['fully_completed']
         
-        # 🔧 FIX: Link Up! completion requires ALL 26 sub-items (not just is_completed flag)
+        # 🔧 FIX: Link Up! completion requires ALL 16 foundation modules (not just is_completed flag)
         if challenge.challenge_type == 'troubleshooting':
             if challenge.challenge_metadata:
-                completed_challenges = challenge.challenge_metadata.get('completed_challenges', [])
-                TOTAL_LINK_UP_ITEMS = 26  # Foundation (17) + Easy (3) + Intermediate (3) + Hard (3)
-                return len(completed_challenges) >= TOTAL_LINK_UP_ITEMS
+                counts = challenge.challenge_metadata.get('challenge_counts') or {}
+                foundation_completed = counts.get('foundation')
+
+                if foundation_completed is None:
+                    completed = canonicalize_completed_ids(
+                        challenge.challenge_metadata.get('completed_challenges', [])
+                    )
+                    foundation_completed = calculate_linkup_counts(completed)['foundation']
+
+                return foundation_completed >= LINKUP_FOUNDATION_TOTAL
             return False
         
         # 🔧 FIX: Crimping completion requires ALL 3 difficulties complete (not just high score)
@@ -318,29 +330,7 @@ class ChallengeScore(db.Model):
     
     @staticmethod
     def get_troubleshooting_progress(user_id):
-        """
-        🔧 MVP FIX: Get Link Up! challenge progress with sub-item tracking across ALL difficulty levels
-        
-        Returns progress across ALL difficulty levels:
-        - Foundation (17 challenges): Basic network scenarios
-        - Easy (3 challenges): vlan-basics, default-gateway, dhcp-client
-        - Intermediate (3 challenges): extended-ring-redundancy, hybrid-star-ring, partial-mesh-ospf
-        - Hard (3 challenges): mpls-vpn-complex, datacenter-fabric, sd-wan-overlay
-        
-        Returns:
-            {
-                'completed_challenges': [...],  # List of completed scenario IDs
-                'challenge_counts': {
-                    'foundation': 17,
-                    'easy': 2,
-                    'intermediate': 1,
-                    'hard': 0,
-                    'total': 20
-                },
-                'progress_percentage': 76.9,  # (20/26) * 100
-                'is_complete': False
-            }
-        """
+        """Return normalized Link Up! progress across foundation and advanced tiers."""
         # Query all troubleshooting-related challenges (across all difficulty levels)
         challenges = ChallengeScore.query.filter_by(
             user_id=user_id
@@ -364,18 +354,18 @@ class ChallengeScore(db.Model):
                 latest_metadata = challenge.challenge_metadata
                 break
         
-        # Extract completed challenges from metadata
-        completed_challenges = latest_metadata.get('completed_challenges', [])
-        challenge_counts = latest_metadata.get('challenge_counts', {'foundation': 0, 'easy': 0, 'intermediate': 0, 'hard': 0, 'total': 0})
-        
-        # 🔧 MVP FIX: Update total to 26 (Foundation 17 + Easy 3 + Intermediate 3 + Hard 3)
-        TOTAL_REQUIRED = 26  # Foundation (17) + Easy (3) + Intermediate (3) + Hard (3)
-        total_completed = len(completed_challenges)  # Direct count from completed list
-        progress_percentage = (total_completed / TOTAL_REQUIRED) * 100.0
-        
+        completed_challenges = canonicalize_completed_ids(latest_metadata.get('completed_challenges', []))
+        challenge_counts = latest_metadata.get('challenge_counts')
+
+        if not challenge_counts:
+            challenge_counts = calculate_linkup_counts(completed_challenges)
+
+        foundation_completed = min(challenge_counts.get('foundation', 0), LINKUP_FOUNDATION_TOTAL)
+        progress_percentage = (foundation_completed / LINKUP_FOUNDATION_TOTAL) * 100.0 if LINKUP_FOUNDATION_TOTAL else 0.0
+
         return {
             'completed_challenges': completed_challenges,
             'challenge_counts': challenge_counts,
             'progress_percentage': round(progress_percentage, 1),
-            'is_complete': total_completed >= TOTAL_REQUIRED
+            'is_complete': foundation_completed >= LINKUP_FOUNDATION_TOTAL
         }

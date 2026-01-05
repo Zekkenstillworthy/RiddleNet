@@ -38,6 +38,7 @@ class NetworkSimulationEngine {
         this.panOffset = { x: 0, y: 0 };
         this.showGrid = true;
         this.showLabels = true;
+        this.isLightTheme = this.getIsLightTheme();
         
         // Device Type Definitions (from troubleshoot.html)
         this.deviceTypes = {
@@ -152,6 +153,14 @@ class NetworkSimulationEngine {
         };
 
         this.loadDeviceImages();
+
+        if (typeof window !== 'undefined') {
+            window.addEventListener('mvp-theme-changed', (event) => {
+                const theme = event?.detail?.theme;
+                this.isLightTheme = theme ? theme === 'light' : this.getIsLightTheme();
+                this.needsRender = true;
+            });
+        }
         
         // Animation and Rendering
         this.animationFrame = null;
@@ -179,6 +188,13 @@ class NetworkSimulationEngine {
                 console.warn('⚠️ Failed to load device image', type, info.image);
             };
         });
+    }
+
+    getIsLightTheme() {
+        if (typeof document === 'undefined') return false;
+        const rootTheme = document.documentElement.getAttribute('data-theme');
+        const bodyTheme = document.body ? document.body.getAttribute('data-theme') : null;
+        return rootTheme === 'light' || bodyTheme === 'light';
     }
 
     init() {
@@ -1105,11 +1121,37 @@ class NetworkSimulationEngine {
         this.ctx.strokeStyle = device.selected ? '#39FF14' : device.color;
         this.ctx.strokeRect(x - size/2, y - size/2, size, size);
         
-        // Device label
+        // Device label with theme-aware contrast
         if (this.showLabels) {
+            const labelText = device.label || device.name || 'Device';
+            const isLightTheme = this.isLightTheme ?? this.getIsLightTheme();
+            const labelBackground = isLightTheme ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.85)';
+            const labelStroke = isLightTheme ? 'rgba(148, 163, 184, 0.7)' : 'rgba(0, 0, 0, 0.5)';
+            const labelColor = isLightTheme ? '#0F172A' : '#CBD5E1';
+            const paddingX = 8 / this.zoom;
+            const paddingY = 4 / this.zoom;
+
             this.ctx.font = `${12 / this.zoom}px "Inter", sans-serif`;
-            this.ctx.fillStyle = '#CBD5E1';
-            this.ctx.fillText(device.label, x, y + size/2 + 15/this.zoom);
+            const textMetrics = this.ctx.measureText(labelText);
+            const textWidth = textMetrics.width;
+            const textHeight = (textMetrics.actualBoundingBoxAscent || 10) + (textMetrics.actualBoundingBoxDescent || 2);
+            const labelWidth = textWidth + paddingX * 2;
+            const labelHeight = textHeight + paddingY * 2;
+            const labelX = x - labelWidth / 2;
+            const labelY = y + size/2 + 6 / this.zoom;
+
+            this.ctx.fillStyle = labelBackground;
+            this.ctx.strokeStyle = labelStroke;
+            this.ctx.lineWidth = 1 / this.zoom;
+            this.ctx.beginPath();
+            this.ctx.rect(labelX, labelY, labelWidth, labelHeight);
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            this.ctx.fillStyle = labelColor;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(labelText, x, labelY + labelHeight / 2);
         }
         
         // Connection points (when selected or connecting)

@@ -13,6 +13,13 @@ from .models import db
 from .models import User as UserModel  # Rename to avoid conflicts
 from .models import Score as UserScore  # Rename to avoid conflicts
 from user.models.challenge_score import ChallengeScore
+from user.constants.linkup import (
+    LINKUP_FOUNDATION_TOTAL,
+    LINKUP_FOUNDATION_ORDER,
+    LINKUP_FOUNDATION_PHASES,
+    canonicalize_completed_ids,
+    calculate_linkup_counts,
+)
 from instructor.models.topology import Topology
 from user.models.topology_progress import TopologyProgress
 from instructor.models.class_model import Class
@@ -207,13 +214,18 @@ def dashboard():
         challenge = challenge_score_map.get(challenge_type)
         
         if challenge:
-            # 🔧 MVP FIX: For Link Up!, check sub-item completion (all 26 items must be complete)
+            # 🔧 MVP FIX: Link Up! requires every foundation module at 100%
             if challenge_type == 'troubleshooting':
                 if challenge.challenge_metadata:
-                    completed_count = len(challenge.challenge_metadata.get('completed_challenges', []))
-                    TOTAL_LINK_UP_ITEMS = 26  # Foundation (17) + Easy (3) + Intermediate (3) + Hard (3)
-                    is_truly_completed = completed_count >= TOTAL_LINK_UP_ITEMS
-                    print(f"[DASHBOARD DEBUG] Link Up! validation: {completed_count}/{TOTAL_LINK_UP_ITEMS} sub-items")
+                    completed_ids = canonicalize_completed_ids(
+                        challenge.challenge_metadata.get('completed_challenges', [])
+                    )
+                    counts = calculate_linkup_counts(completed_ids)
+                    foundation_completed = counts.get('foundation', 0)
+                    is_truly_completed = foundation_completed >= LINKUP_FOUNDATION_TOTAL
+                    print(
+                        f"[DASHBOARD DEBUG] Link Up! validation: {foundation_completed}/{LINKUP_FOUNDATION_TOTAL} foundation modules"
+                    )
                 else:
                     is_truly_completed = False
                     print(f"[DASHBOARD DEBUG] Link Up! has no metadata")
@@ -647,7 +659,15 @@ def troubleshoot():
         except Exception as e:
             print(f"Error loading scenario {scenario_id}: {e}")
     
-    return render_template('user/troubleshoot.html', title="troubleshoot", user=user, scenario=scenario_data)
+    return render_template(
+        'user/troubleshoot.html',
+        title="troubleshoot",
+        user=user,
+        scenario=scenario_data,
+        linkup_foundation_total=LINKUP_FOUNDATION_TOTAL,
+        linkup_foundation_order=LINKUP_FOUNDATION_ORDER,
+        linkup_foundation_phases=LINKUP_FOUNDATION_PHASES,
+    )
 
 @user_bp.route('/crimp')
 @user_bp.route('/crimping-simulation')
@@ -728,10 +748,12 @@ def challenges():
     
     # Get sub-item completion data from metadata
     if troubleshoot_score and troubleshoot_score.challenge_metadata:
-        completed_challenges = troubleshoot_score.challenge_metadata.get('completed_challenges', [])
-        # 🔧 MVP FIX: Total required: Foundation (17) + Easy (3) + Intermediate (3) + Hard (3) = 26 items
-        TOTAL_LINK_UP_ITEMS = 26
-        troubleshoot_progress_value = (len(completed_challenges) / TOTAL_LINK_UP_ITEMS) * 100.0
+        completed_ids = canonicalize_completed_ids(
+            troubleshoot_score.challenge_metadata.get('completed_challenges', [])
+        )
+        counts = calculate_linkup_counts(completed_ids)
+        foundation_completed = counts.get('foundation', 0)
+        troubleshoot_progress_value = (foundation_completed / LINKUP_FOUNDATION_TOTAL) * 100.0
     else:
         troubleshoot_progress_value = 0.0
     

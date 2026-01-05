@@ -134,7 +134,7 @@ with app.app_context():
         logger.error(f"Database initialization error: {e}", exc_info=True)
         if app.config.get('FLASK_ENV') == 'production':
             logger.critical("Database initialization failed in production mode")
-            raise  # Don't continue in production if DB setup fails
+            raise  
         else:
             logger.warning("Continuing with application startup despite database errors")
 

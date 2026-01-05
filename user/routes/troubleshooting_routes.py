@@ -7,6 +7,11 @@ from datetime import datetime
 import json
 import numpy as np
 from user.controllers.troubleshooting_controller import TroubleshootingController
+from user.constants.linkup import (
+    LINKUP_FOUNDATION_ORDER,
+    LINKUP_FOUNDATION_PHASES,
+    LINKUP_FOUNDATION_TOTAL,
+)
 
 # Create blueprint
 troubleshooting_bp = Blueprint('troubleshooting', __name__, url_prefix='/troubleshooting')
@@ -43,7 +48,13 @@ def index():
             print(f"Error getting current user: {e}")
     
     print(f"Troubleshooting route - User: {user.username if user else 'None'}")
-    return render_template('user/troubleshoot.html', user=user)
+    return render_template(
+        'user/troubleshoot.html',
+        user=user,
+        linkup_foundation_total=LINKUP_FOUNDATION_TOTAL,
+        linkup_foundation_order=LINKUP_FOUNDATION_ORDER,
+        linkup_foundation_phases=LINKUP_FOUNDATION_PHASES,
+    )
 
 @troubleshooting_bp.route('/api/<int:scenario_id>', methods=['GET'])
 @login_required
